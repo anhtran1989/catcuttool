@@ -2,6 +2,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
     
+    // Initialize dropdown manager
+    DropdownManager.init();
+    
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
     
@@ -25,31 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set the default tab
     document.getElementById('template-tab').style.display = 'block';
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        // Close transition dropdowns
-        document.querySelectorAll('.transitions-dropdown.show').forEach(dropdown => {
-            // Check if click is outside the dropdown and its button
-            const parentContainer = dropdown.closest('.transitions-container');
-            const transitionButton = parentContainer.querySelector('.transition-button');
-            
-            if (!dropdown.contains(e.target) && !transitionButton.contains(e.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
-        
-        // Close effects dropdowns
-        document.querySelectorAll('.effects-dropdown.show').forEach(dropdown => {
-            // Check if click is outside the dropdown and its label
-            const effectsContainer = dropdown.closest('.effects-container');
-            const effectsLabel = effectsContainer.querySelector('.effects-label');
-            
-            if (!dropdown.contains(e.target) && !effectsLabel.contains(e.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
-    });
     
     // File upload functionality
     const uploadArea = document.querySelector('.upload-area');
@@ -223,6 +201,12 @@ function createThumbnail(file, originalPath) {
         const fileSize = document.createElement('p');
         fileSize.textContent = formatFileSize(file.size);
         
+        // Create a hidden input for the path
+        const pathInput = document.createElement('input');
+        pathInput.type = 'hidden';
+        pathInput.className = 'path-input';
+        pathInput.value = formattedPath;
+        
         // Create time duration input container
         const durationContainer = document.createElement('div');
         durationContainer.className = 'duration-container';
@@ -260,56 +244,94 @@ function createThumbnail(file, originalPath) {
         const effectsContainer = document.createElement('div');
         effectsContainer.className = 'effects-container';
         
-        // Create effects label
-        const effectsLabel = document.createElement('div');
-        effectsLabel.className = 'effects-label';
-        effectsLabel.innerHTML = '<i class="fas fa-magic"></i> Effects: <span class="selected-effect">None</span>';
-        effectsLabel.onclick = function(e) {
+        // Create effects button
+        const effectsButton = document.createElement('div');
+        effectsButton.className = 'effects-button';
+        effectsButton.innerHTML = '<i class="fas fa-magic"></i>';
+        effectsButton.onclick = function(e) {
             e.stopPropagation();
             toggleEffectsDropdown(this);
         };
+        
+        // Create selected effect display
+        const selectedEffect = document.createElement('div');
+        selectedEffect.className = 'selected-effect';
+        selectedEffect.innerHTML = '<i class="fas fa-ban"></i> None';
         
         // Create effects dropdown
         const effectsDropdown = document.createElement('div');
         effectsDropdown.className = 'effects-dropdown';
         
-        // Add effects title
-        const effectsTitle = document.createElement('div');
-        effectsTitle.className = 'effects-title';
-        effectsTitle.textContent = 'Select Effect';
-        effectsDropdown.appendChild(effectsTitle);
-        
-        // Add effects list
-        const effectsList = document.createElement('div');
-        effectsList.className = 'effects-list';
-        
-        // Define effects options
+        // Define effect options
         const effectOptions = [
-            'None', 'Fade', 'Zoom In', 'Zoom Out', 
-            'Blur', 'Black & White', 'Sepia', 'Brightness',
-            'Contrast', 'Saturation', 'Hue Rotate', 'Invert'
+            { name: 'None', icon: 'fas fa-ban' },
+            { name: 'Fade', icon: 'fas fa-adjust' },
+            { name: 'Zoom In', icon: 'fas fa-search-plus' },
+            { name: 'Zoom Out', icon: 'fas fa-search-minus' },
+            { name: 'Blur', icon: 'fas fa-water' },
+            { name: 'Black & White', icon: 'fas fa-tint' },
+            { name: 'Sepia', icon: 'fas fa-image' },
+            { name: 'Brightness', icon: 'fas fa-sun' },
+            { name: 'Contrast', icon: 'fas fa-adjust' },
+            { name: 'Saturation', icon: 'fas fa-palette' },
+            { name: 'Hue Rotate', icon: 'fas fa-sync' },
+            { name: 'Invert', icon: 'fas fa-exchange-alt' },
+            { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
+            { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
+            { name: 'Lắc lư', icon: 'fas fa-random' },
+            { name: 'Màn hình 3D', icon: 'fas fa-cube' },
+            { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
+            { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
+            { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
+            { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
+            { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
+            { name: 'Mở ngược', icon: 'fas fa-undo' },
+            { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
+            { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
+            { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
+            { name: 'Phim', icon: 'fas fa-film' },
+            { name: 'Điểm lục giác', icon: 'fas fa-stop' },
+            { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
+            { name: 'Bụi rơi', icon: 'fas fa-feather' },
+            { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
+            { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
+            { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
+            { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
+            { name: 'Lũ quét qua', icon: 'fas fa-water' },
+            { name: 'S-Movement', icon: 'fas fa-wave-square' },
+            { name: 'Cười lên', icon: 'fas fa-smile' },
+            { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
+            { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
+            { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
+            { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
+            { name: 'Lấp lánh 2', icon: 'fas fa-star' },
+            { name: 'Trục trặc pixel', icon: 'fas fa-th' },
+            { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
+            { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
         ];
         
-        // Add effect options to the list
-        effectOptions.forEach(effect => {
-            const option = document.createElement('div');
-            option.className = 'effect-option';
-            if (effect === 'None') option.classList.add('selected');
-            option.textContent = effect;
-            option.onclick = function(e) {
+        // Add effect options to the dropdown
+        effectOptions.forEach(option => {
+            const effectOption = document.createElement('div');
+            effectOption.className = 'effect-option';
+            effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+            effectOption.dataset.name = option.name; // Store the name for easier reference
+            effectOption.dataset.icon = option.icon; // Store the icon class
+            effectOption.onclick = function(e) {
+                e.preventDefault();
                 e.stopPropagation();
-                selectEffect(this, effectsLabel);
-                effectsDropdown.classList.remove('show');
+                selectEffect(this, selectedEffect);
             };
-            effectsList.appendChild(option);
+            effectsDropdown.appendChild(effectOption);
         });
         
-        effectsDropdown.appendChild(effectsList);
-        effectsContainer.appendChild(effectsLabel);
+        effectsContainer.appendChild(effectsButton);
+        effectsContainer.appendChild(selectedEffect);
         effectsContainer.appendChild(effectsDropdown);
         
         thumbnailInfo.appendChild(fileName);
         thumbnailInfo.appendChild(fileSize);
+        thumbnailInfo.appendChild(pathInput); // Add the hidden path input
         thumbnailInfo.appendChild(durationContainer);
         thumbnailInfo.appendChild(effectsContainer);
         
@@ -401,55 +423,333 @@ function createTransitionsElement() {
     return transitionsContainer;
 }
 
-// Function to toggle transitions dropdown
-function toggleTransitionsDropdown(button) {
-    const dropdown = button.parentNode.querySelector('.transitions-dropdown');
-    dropdown.classList.toggle('show');
+// Dropdown manager - unified solution for all dropdowns
+const DropdownManager = {
+    activeDropdown: null,
+    scrollListener: null,
+    closeListener: null,
+    resizeListener: null,
     
-    // Close all other dropdowns
-    document.querySelectorAll('.transitions-dropdown.show').forEach(item => {
-        if (item !== dropdown) {
-            item.classList.remove('show');
+    init: function() {
+        // Add resize listener to reposition any open dropdowns on window resize
+        this.resizeListener = this.handleWindowResize.bind(this);
+        window.addEventListener('resize', this.resizeListener);
+        
+        // This will handle any dropdown clicks outside of the standard flow
+        document.addEventListener('click', (e) => {
+            // Don't do anything if we're already handling a dropdown
+            if (this.activeDropdown) return;
+            
+            // Check all effects dropdowns
+            document.querySelectorAll('.effects-dropdown.show').forEach(dropdown => {
+                const effectsContainer = dropdown.closest('.effects-container');
+                const effectsLabel = effectsContainer?.querySelector('.effects-label');
+                
+                if (effectsLabel && !dropdown.contains(e.target) && !effectsLabel.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+            
+            // Check all transitions dropdowns
+            document.querySelectorAll('.transitions-dropdown.show').forEach(dropdown => {
+                const transitionsContainer = dropdown.closest('.transitions-container');
+                const transitionButton = transitionsContainer?.querySelector('.transition-button');
+                
+                if (transitionButton && !dropdown.contains(e.target) && !transitionButton.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+    },
+    
+    showDropdown: function(trigger, dropdown, positionCalculator) {
+        // First, close any open dropdown
+        this.closeAllDropdowns();
+        
+        // Position and show this dropdown
+        dropdown.classList.add('show');
+        this.activeDropdown = {
+            dropdown: dropdown,
+            trigger: trigger,
+            positionCalculator: positionCalculator
+        };
+        
+        // Calculate initial position
+        this.updateDropdownPosition();
+        
+        // Set up scroll listener
+        this.scrollListener = this.updateDropdownPosition.bind(this);
+        window.addEventListener('scroll', this.scrollListener, { passive: true });
+        
+        // Set up click listener to close when clicking outside
+        setTimeout(() => {
+            this.closeListener = this.handleOutsideClick.bind(this);
+            document.addEventListener('click', this.closeListener);
+        }, 10);
+    },
+    
+    updateDropdownPosition: function() {
+        if (!this.activeDropdown || !this.activeDropdown.dropdown.classList.contains('show')) {
+            this.cleanup();
+            return;
         }
-    });
+        
+        const { dropdown, trigger, positionCalculator } = this.activeDropdown;
+        
+        // Get updated position
+        const position = positionCalculator(trigger, dropdown);
+        
+        // Apply position
+        Object.keys(position).forEach(prop => {
+            dropdown.style[prop] = position[prop];
+        });
+    },
     
-    document.querySelectorAll('.effects-dropdown.show').forEach(item => {
+    handleWindowResize: function() {
+        if (this.activeDropdown) {
+            this.updateDropdownPosition();
+        }
+    },
+    
+    handleOutsideClick: function(e) {
+        if (!this.activeDropdown) return;
+        
+        const { dropdown, trigger } = this.activeDropdown;
+        
+        if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+            this.closeAllDropdowns();
+        }
+    },
+    
+    closeAllDropdowns: function() {
+        // Close any open dropdowns
+        document.querySelectorAll('.effects-dropdown.show, .transitions-dropdown.show').forEach(item => {
+            item.classList.remove('show');
+        });
+        
+        this.cleanup();
+    },
+    
+    cleanup: function() {
+        if (this.scrollListener) {
+            window.removeEventListener('scroll', this.scrollListener);
+            this.scrollListener = null;
+        }
+        
+        if (this.closeListener) {
+            document.removeEventListener('click', this.closeListener);
+            this.closeListener = null;
+        }
+        
+        this.activeDropdown = null;
+    }
+};
+
+// Function to create the effects dropdown overlay
+function createEffectsOverlay(thumbnailItem, dropdown) {
+    // Get dimensions of the thumbnail
+    const thumbnailRect = thumbnailItem.getBoundingClientRect();
+    
+    // Style the dropdown
+    dropdown.style.position = 'fixed';
+    dropdown.style.left = thumbnailRect.left + 'px';
+    dropdown.style.top = thumbnailRect.top + 'px';
+    dropdown.style.width = thumbnailRect.width + 'px';
+    dropdown.style.height = thumbnailRect.height + 'px';
+    dropdown.style.maxHeight = 'none';
+    dropdown.style.zIndex = '10000';
+    dropdown.style.display = 'flex'; // Use flex for better layout
+    dropdown.style.flexDirection = 'column';
+    dropdown.style.justifyContent = 'flex-start';
+    dropdown.style.alignItems = 'stretch';
+    dropdown.style.overflowY = 'auto';
+    
+    // Check if we need to adjust for scroll if many effects
+    if (dropdown.scrollHeight > thumbnailRect.height) {
+        // Set a slightly smaller height to show scrollbar
+        dropdown.style.paddingRight = '5px';
+    }
+    
+    return thumbnailRect;
+}
+
+// Function to toggle effects dropdown
+function toggleEffectsDropdown(button) {
+    // Get the dropdown element
+    const dropdown = button.parentNode.querySelector('.effects-dropdown');
+    const thumbnailItem = button.closest('.thumbnail-item');
+    
+    // If dropdown is already open and we click on the same button, close it
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        return;
+    }
+    
+    // Close any existing dropdowns
+    document.querySelectorAll('.effects-dropdown.show, .transitions-dropdown.show').forEach(item => {
         item.classList.remove('show');
     });
+    
+    // Set up the dropdown overlay
+    const thumbnailRect = createEffectsOverlay(thumbnailItem, dropdown);
+    
+    // Show the dropdown
+    dropdown.classList.add('show');
+    
+    // Add event listener to close when clicking outside
+    setTimeout(() => {
+        const closeDropdownHandler = (e) => {
+            // Close if clicked outside the dropdown and not on the button
+            if (!dropdown.contains(e.target) && e.target !== button) {
+                dropdown.classList.remove('show');
+                document.removeEventListener('click', closeDropdownHandler);
+                window.removeEventListener('scroll', repositionDropdown);
+            }
+        };
+        
+        document.addEventListener('click', closeDropdownHandler);
+        
+        // Reposition dropdown on scroll
+        const repositionDropdown = () => {
+            if (!dropdown.classList.contains('show')) {
+                window.removeEventListener('scroll', repositionDropdown);
+                return;
+            }
+            
+            // Update position based on current thumbnail position
+            const updatedRect = thumbnailItem.getBoundingClientRect();
+            dropdown.style.left = updatedRect.left + 'px';
+            dropdown.style.top = updatedRect.top + 'px';
+        };
+        
+        window.addEventListener('scroll', repositionDropdown, { passive: true });
+        
+        // Handle window resize
+        const handleResize = () => {
+            if (dropdown.classList.contains('show')) {
+                createEffectsOverlay(thumbnailItem, dropdown);
+            } else {
+                window.removeEventListener('resize', handleResize);
+            }
+        };
+        
+        window.addEventListener('resize', handleResize, { passive: true });
+    }, 10);
+}
+
+// Function to toggle transitions dropdown
+function toggleTransitionsDropdown(button) {
+    // Get the dropdown element
+    const dropdown = button.parentNode.querySelector('.transitions-dropdown');
+    
+    // If dropdown is already open and we click on the same button, close it
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        return;
+    }
+    
+    // Close any existing dropdowns
+    document.querySelectorAll('.effects-dropdown.show, .transitions-dropdown.show').forEach(item => {
+        item.classList.remove('show');
+    });
+    
+    // Calculate position function
+    const transitionsPositionCalculator = (trigger, dropdown) => {
+        const rect = trigger.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Calculate optimal position
+        const left = Math.min(Math.max(10, rect.left - 75 + rect.width/2), viewportWidth - 160) + 'px';
+        const top = (rect.bottom + 5) + 'px';
+        const maxHeight = Math.min(300, viewportHeight - rect.bottom - 20) + 'px';
+        
+        return {
+            position: 'fixed',
+            left,
+            top,
+            maxHeight,
+            width: '150px',
+            zIndex: '10000'
+        };
+    };
+    
+    // Position the dropdown before showing it
+    const position = transitionsPositionCalculator(button, dropdown);
+    Object.keys(position).forEach(prop => {
+        dropdown.style[prop] = position[prop];
+    });
+    
+    // Show the dropdown
+    dropdown.classList.add('show');
+    
+    // Scroll handler to reposition dropdown as needed
+    const repositionDropdown = () => {
+        if (!dropdown.classList.contains('show')) {
+            window.removeEventListener('scroll', repositionDropdown);
+            return;
+        }
+        
+        const updatedPosition = transitionsPositionCalculator(button, dropdown);
+        Object.keys(updatedPosition).forEach(prop => {
+            dropdown.style[prop] = updatedPosition[prop];
+        });
+    };
+    
+    // Add event listener for scrolling
+    window.addEventListener('scroll', repositionDropdown, { passive: true });
+    
+    // Add event listener to close when clicking outside
+    setTimeout(() => {
+        const closeDropdownHandler = (e) => {
+            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                dropdown.classList.remove('show');
+                document.removeEventListener('click', closeDropdownHandler);
+                window.removeEventListener('scroll', repositionDropdown);
+            }
+        };
+        
+        document.addEventListener('click', closeDropdownHandler);
+    }, 10);
 }
 
 // Function to select a transition
 function selectTransition(option, selectedElement) {
     selectedElement.innerHTML = option.innerHTML;
-}
-
-// Function to toggle effects dropdown
-function toggleEffectsDropdown(label) {
-    const dropdown = label.nextElementSibling;
-    dropdown.classList.toggle('show');
     
-    // Close all other dropdowns
-    document.querySelectorAll('.effects-dropdown.show').forEach(item => {
-        if (item !== dropdown) {
-            item.classList.remove('show');
-        }
-    });
-    
-    document.querySelectorAll('.transitions-dropdown.show').forEach(item => {
-        item.classList.remove('show');
-    });
+    // Ensure the dropdown is closed
+    const dropdown = option.closest('.transitions-dropdown');
+    if (dropdown) {
+        dropdown.classList.remove('show');
+        
+        // Remove any event listeners attached to this dropdown
+        window.removeEventListener('scroll', option.repositionDropdown);
+        document.removeEventListener('click', option.closeDropdownHandler);
+    }
 }
 
 // Function to select an effect
-function selectEffect(option, labelElement) {
-    const effectName = option.textContent;
-    labelElement.querySelector('.selected-effect').textContent = effectName;
+function selectEffect(option, selectedElement) {
+    // Keep track of which option was clicked
+    const optionName = option.textContent.trim().replace(/^\S+\s+/, '');
     
-    // Mark this option as selected
-    option.parentNode.querySelectorAll('.effect-option').forEach(item => {
-        item.classList.remove('selected');
-    });
+    // Update the display with icon
+    const iconClass = option.querySelector('i').className;
+    selectedElement.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+    
+    // Highlight selected option for visual feedback
+    const allOptions = option.parentNode.querySelectorAll('.effect-option');
+    allOptions.forEach(opt => opt.classList.remove('selected'));
     option.classList.add('selected');
+    
+    // Wait a moment before closing the dropdown for better visual feedback
+    setTimeout(() => {
+        // Find and close the dropdown
+        const dropdown = option.closest('.effects-dropdown');
+        if (dropdown) {
+            dropdown.classList.remove('show');
+        }
+    }, 150);
 }
 
 // Function to setup drag listeners for thumbnail items
@@ -673,17 +973,49 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Transition icons mapping
-const transitionIcons = {
-    'Cut': 'fas fa-cut',
-    'Fade': 'fas fa-adjust',
-    'Dissolve': 'fas fa-water',
-    'Wipe Right': 'fas fa-arrow-right',
-    'Wipe Left': 'fas fa-arrow-left',
-    'Wipe Up': 'fas fa-arrow-up',
-    'Wipe Down': 'fas fa-arrow-down',
-    'Zoom In': 'fas fa-search-plus',
-    'Zoom Out': 'fas fa-search-minus'
+// CapCut effect and transition mappings
+const capcut = {
+    // Effects mapping (name -> effect_id)
+    effects: {
+        'None': null,
+        'Fade': '7399470719085595910',
+        'Zoom In': '7399470719085595911',
+        'Zoom Out': '7399470719085595912',
+        'Blur': '7399470719085595913',
+        'Black & White': '7399470719085595914',
+        'Sepia': '7399470719085595915',
+        'Brightness': '7399470719085595916',
+        'Contrast': '7399470719085595917',
+        'Saturation': '7399470719085595918',
+        'Hue Rotate': '7399470719085595919',
+        'Invert': '7399470719085595920'
+    },
+    
+    // Transitions mapping (name -> effect_id)
+    transitions: {
+        'Cut': null,
+        'Fade': '7291211157254181377',
+        'Dissolve': '7291211157254181378',
+        'Wipe Right': '7291211157254181379',
+        'Wipe Left': '7291211157254181380',
+        'Wipe Up': '7291211157254181381',
+        'Wipe Down': '7291211157254181382',
+        'Zoom In': '7291211157254181383',
+        'Zoom Out': '7291211157254181384'
+    },
+    
+    // Icon mapping for transitions
+    transitionIcons: {
+        'Cut': 'fas fa-cut',
+        'Fade': 'fas fa-adjust',
+        'Dissolve': 'fas fa-water',
+        'Wipe Right': 'fas fa-arrow-right',
+        'Wipe Left': 'fas fa-arrow-left',
+        'Wipe Up': 'fas fa-arrow-up',
+        'Wipe Down': 'fas fa-arrow-down',
+        'Zoom In': 'fas fa-search-plus',
+        'Zoom Out': 'fas fa-search-minus'
+    }
 };
 
 // Generate a random UUID for CapCut JSON
@@ -726,11 +1058,24 @@ function exportToCapcut() {
                 const video = item.querySelector('video');
                 const fileName = item.querySelector('.thumbnail-info p:first-child').textContent;
                 const duration = parseInt(item.querySelector('.duration-input').value) * 1000000; // Convert to microseconds
-                const effectName = item.querySelector('.selected-effect').textContent;
                 
-                // Get the file path from stored data attribute
+                // Get the effect name
+                const effectElement = item.querySelector('.selected-effect');
+                // Extract effect name from the element
+                let effectName = 'None';
+                if (effectElement) {
+                    // Remove the icon part and get just the name
+                    effectName = effectElement.textContent.trim().replace(/^\S+\s+/, '');
+                }
+                
+                // Get the file path directly from the path input field
+                const pathInput = item.querySelector('.path-input');
                 let filePath = '';
-                if (item.dataset.originalPath) {
+                
+                if (pathInput && pathInput.value && pathInput.value.trim() !== '') {
+                    // Use the real file path provided by Electron or path input
+                    filePath = pathInput.value.trim();
+                } else if (item.dataset.originalPath) {
                     // Use the path stored in the data attribute
                     filePath = item.dataset.originalPath;
                 } else {
@@ -777,31 +1122,11 @@ function exportToCapcut() {
                 });
             });
             
-            // Calculate total duration
-            let totalDuration = 0;
-            mediaItems.forEach(item => {
-                totalDuration += item.duration;
-            });
-            
-            // Update template data for new CapCut version
-            capcutData.duration = totalDuration;
+            // Add media items to the template
+            capcutData.mediaItems = mediaItems;
             
             // Generate a random UUID for the template
-            capcutData.id = generateUUID();
-            
-            // Update the last_modified_platform and platform data with current version
-            capcutData.last_modified_platform = {
-                app_id: 359289,
-                app_source: "cc",
-                app_version: "5.8.0",
-                device_id: generateUUID().toLowerCase().replace(/-/g, ''),
-                hard_disk_id: generateUUID().toLowerCase().replace(/-/g, ''),
-                mac_address: generateUUID().toLowerCase().replace(/-/g, ''),
-                os: "windows",
-                os_version: "10.0.19045"
-            };
-            
-            capcutData.platform = {...capcutData.last_modified_platform};
+            capcutData.uuid = generateUUID();
             
             // Reset sections that will be populated
             capcutData.materials.videos = [];
@@ -810,10 +1135,6 @@ function exportToCapcut() {
             capcutData.materials.speeds = [];
             capcutData.materials.placeholder_infos = [];
             capcutData.materials.vocal_separations = [];
-            capcutData.materials.sound_channel_mappings = [];
-            capcutData.materials.canvases = []; 
-            
-            // Reset tracks with a new video track
             capcutData.tracks = [{
                 attribute: 0,
                 flag: 0,
@@ -824,6 +1145,13 @@ function exportToCapcut() {
                 type: "video"
             }];
             
+            // Calculate total duration
+            let totalDuration = 0;
+            mediaItems.forEach(item => {
+                totalDuration += item.duration;
+            });
+            capcutData.duration = totalDuration;
+            
             // Track IDs to reference later
             const idMap = {
                 speeds: [],
@@ -832,72 +1160,42 @@ function exportToCapcut() {
                 soundMappings: [],
                 vocalSeparations: [],
                 transitions: [],
-                videoEffects: [],
-                materialAnimations: []
+                videoEffects: []
             };
             
-            // Create default canvas for each media item
-            mediaItems.forEach(() => {
-                const canvasId = generateUUID();
-                capcutData.materials.canvases.push({
-                    album_image: "",
-                    blur: 0.0,
-                    color: "",
-                    id: canvasId,
-                    image: "",
-                    image_id: "",
-                    image_name: "",
-                    source_platform: 0,
-                    team_id: "",
-                    type: "canvas_color"
-                });
-                idMap.canvases.push(canvasId);
-                
-                // Create material animation for each item (required for new CapCut version)
-                const materialAnimationId = generateUUID();
-                capcutData.materials.material_animations = capcutData.materials.material_animations || [];
-                capcutData.materials.material_animations.push({
-                    animations: [],
-                    id: materialAnimationId,
-                    multi_language_current: "none",
-                    type: "sticker_animation"
-                });
-                idMap.materialAnimations.push(materialAnimationId);
-            });
+            // Create default canvas
+            const canvasId = generateUUID();
+            capcutData.materials.canvases = [{
+                album_image: "",
+                blur: 0.0,
+                color: "",
+                id: canvasId,
+                image: "",
+                image_id: "",
+                image_name: "",
+                source_platform: 0,
+                team_id: "",
+                type: "canvas_color"
+            }];
+            idMap.canvases.push(canvasId);
             
-            // Create transition elements
+            // Create transition elements first
             mediaItems.forEach((item, index) => {
                 if (item.transition && item.transition !== 'Cut' && index < mediaItems.length - 1) {
                     const transitionId = generateUUID();
-                    // Use existing or updated transition effect IDs
-                    const transitionMap = {
-                        'Fade': '7384056244421530113',
-                        'Dissolve': '7384056244421530114',
-                        'Wipe Right': '7384056244421530115',
-                        'Wipe Left': '7384056244421530116',
-                        'Wipe Up': '7384056244421530117',
-                        'Wipe Down': '7384056244421530118',
-                        'Zoom In': '7384056244421530119',
-                        'Zoom Out': '7384056244421530120'
-                    };
-                    
-                    const transitionEffectId = transitionMap[item.transition] || null;
+                    const transitionEffectId = capcut.transitions[item.transition];
                     
                     if (transitionEffectId) {
                         capcutData.materials.transitions.push({
                             id: transitionId,
                             effect_id: transitionEffectId,
-                            duration: 466666, // Default duration (about 0.466 seconds)
+                            duration: 866666, // Default duration (about 0.866 seconds)
                             name: item.transition,
                             is_overlap: true,
                             path: "", // Will be configured by CapCut
                             category_id: "25835",
-                            category_name: "Đang thịnh hành",
-                            type: "transition",
-                            platform: "all",
-                            source_platform: 1,
-                            resource_id: transitionEffectId,
-                            request_id: generateUUID().replace(/-/g, '')
+                            category_name: "remen",
+                            type: "transition"
                         });
                         idMap.transitions.push(transitionId);
                     } else {
@@ -908,9 +1206,8 @@ function exportToCapcut() {
                 }
             });
             
-            // Create support materials for each media
+            // Create speed element for each media and other supporting materials
             mediaItems.forEach((item, index) => {
-                // Create speed
                 const speedId = generateUUID();
                 capcutData.materials.speeds.push({
                     curve_speed: null,
@@ -959,23 +1256,7 @@ function exportToCapcut() {
                 // Create video effect if needed
                 if (item.effect && item.effect !== 'None') {
                     const effectId = generateUUID();
-                    
-                    // Updated effect IDs for new CapCut version
-                    const effectMap = {
-                        'Fade': '7399467327726587141',
-                        'Zoom In': '7399465413527899398',
-                        'Zoom Out': '7399465413527899399',
-                        'Blur': '7399465413527899400',
-                        'Black & White': '7399465413527899401',
-                        'Sepia': '7399465413527899402',
-                        'Brightness': '7399465413527899403',
-                        'Contrast': '7399465413527899404',
-                        'Saturation': '7399465413527899405',
-                        'Hue Rotate': '7399465413527899406',
-                        'Invert': '7399465413527899407'
-                    };
-                    
-                    const effectEffectId = effectMap[item.effect] || null;
+                    const effectEffectId = capcut.effects[item.effect];
                     
                     if (effectEffectId) {
                         capcutData.materials.video_effects.push({
@@ -984,7 +1265,7 @@ function exportToCapcut() {
                             name: item.effect,
                             type: "video_effect",
                             category_id: "27296",
-                            category_name: "Đang thịnh hành",
+                            category_name: "hot2",
                             adjust_params: [
                                 { name: "effects_adjust_color", default_value: 0.5, value: 0.5 },
                                 { name: "effects_adjust_sharpen", default_value: 0.25, value: 0.25 },
@@ -994,25 +1275,7 @@ function exportToCapcut() {
                                 { name: "effects_adjust_speed", default_value: 0.33, value: 0.33 }
                             ],
                             render_index: 0,
-                            value: 1.0,
-                            path: "",
-                            platform: "all",
-                            source_platform: 1,
-                            resource_id: effectEffectId,
-                            request_id: generateUUID().replace(/-/g, ''),
-                            apply_target_type: 2,
-                            apply_time_range: null,
-                            common_keyframes: [],
-                            covering_relation_change: 0,
-                            disable_effect_faces: [],
-                            effect_mask: [],
-                            enable_mask: true,
-                            formula_id: "",
-                            item_effect_type: 0,
-                            algorithm_artifact_path: "",
-                            time_range: null,
-                            track_render_index: 0,
-                            version: ""
+                            value: 1.0
                         });
                         idMap.videoEffects.push(effectId);
                     } else {
@@ -1023,17 +1286,18 @@ function exportToCapcut() {
                 }
             });
             
-            // Add media items
+            // Add media items and create segments
             mediaItems.forEach((item, index) => {
                 const mediaId = generateUUID();
                 
+                // Default values
                 const mediaObject = {
                     id: mediaId,
                     type: item.isVideo ? "video" : "photo",
                     material_name: item.fileName,
-                    path: item.filePath,
-                    width: 1280,
-                    height: 720,
+                    path: item.filePath, // Use the actual file path from the source
+                    width: 1280, // Default width
+                    height: 720, // Default height
                     duration: item.isVideo ? item.duration : 10800000000, // Long duration for images
                     has_audio: item.isVideo,
                     has_sound_separated: false,
@@ -1050,86 +1314,7 @@ function exportToCapcut() {
                     crop_ratio: "free",
                     crop_scale: 1.0,
                     category_name: "local",
-                    check_flag: 62978047,
-                    // New fields for CapCut 5.8.0
-                    aigc_history_id: "",
-                    aigc_item_id: "",
-                    aigc_type: "none",
-                    audio_fade: null,
-                    beauty_body_preset_id: "",
-                    beauty_face_preset_infos: [],
-                    cartoon_path: "",
-                    category_id: "",
-                    extra_type_option: 0,
-                    formula_id: "",
-                    freeze: null,
-                    intensifies_audio_path: "",
-                    intensifies_path: "",
-                    is_ai_generate_content: false,
-                    is_copyright: false,
-                    is_text_edit_overdub: false,
-                    is_unified_beauty_mode: false,
-                    live_photo_cover_path: "",
-                    live_photo_timestamp: -1,
-                    local_id: "",
-                    local_material_from: "",
-                    local_material_id: "",
-                    material_id: "",
-                    material_url: "",
-                    matting: {
-                        custom_matting_id: "",
-                        enable_matting_stroke: false,
-                        expansion: 0,
-                        feather: 0,
-                        flag: 0,
-                        has_use_quick_brush: false,
-                        has_use_quick_eraser: false,
-                        interactiveTime: [],
-                        path: "",
-                        reverse: false,
-                        strokes: []
-                    },
-                    media_path: "",
-                    multi_camera_info: null,
-                    object_locked: null,
-                    origin_material_id: "",
-                    picture_from: "none",
-                    picture_set_category_id: "",
-                    picture_set_category_name: "",
-                    request_id: "",
-                    reverse_intensifies_path: "",
-                    reverse_path: "",
-                    smart_match_info: null,
-                    smart_motion: null,
-                    source: 0,
-                    source_platform: 0,
-                    stable: {
-                        matrix_path: "",
-                        stable_level: 0,
-                        time_range: {
-                            duration: 0,
-                            start: 0
-                        }
-                    },
-                    team_id: "",
-                    video_algorithm: {
-                        ai_background_configs: [],
-                        ai_expression_driven: null,
-                        ai_motion_driven: null,
-                        aigc_generate: null,
-                        algorithms: [],
-                        complement_frame_config: null,
-                        deflicker: null,
-                        gameplay_configs: [],
-                        motion_blur_config: null,
-                        mouth_shape_driver: null,
-                        noise_reduction: null,
-                        path: "",
-                        quality_enhance: null,
-                        smart_complement_frame: null,
-                        super_resolution: null,
-                        time_range: null
-                    }
+                    check_flag: 62978047
                 };
                 
                 capcutData.materials.videos.push(mediaObject);
@@ -1144,18 +1329,17 @@ function exportToCapcut() {
                 const extraRefs = [
                     idMap.speeds[index],
                     idMap.placeholders[index],
-                    idMap.canvases[index],
-                    idMap.materialAnimations[index],
+                    idMap.canvases[0],
                     idMap.soundMappings[index],
                     idMap.vocalSeparations[index]
                 ];
                 
                 // Add transition if it exists
-                if (index > 0 && idMap.transitions[index - 1]) {
-                    extraRefs.push(idMap.transitions[index - 1]);
+                if (idMap.transitions[index]) {
+                    extraRefs.push(idMap.transitions[index]);
                 }
                 
-                // Create segment with updated structure for CapCut 5.8.0
+                // Create segment
                 const segmentId = generateUUID();
                 const segment = {
                     id: segmentId,
@@ -1192,54 +1376,6 @@ function exportToCapcut() {
                             x: 0.0,
                             y: 0.0
                         }
-                    },
-                    // New fields for CapCut 5.8.0
-                    caption_info: null,
-                    cartoon: false,
-                    color_correct_alg_result: "",
-                    common_keyframes: [],
-                    desc: "",
-                    digital_human_template_group_id: "",
-                    enable_adjust_mask: false,
-                    enable_color_correct_adjust: false,
-                    enable_color_match_adjust: false,
-                    enable_hsl: false,
-                    enable_smart_color_adjust: false,
-                    group_id: "",
-                    hdr_settings: {
-                        intensity: 1.0,
-                        mode: 1,
-                        nits: 1000
-                    },
-                    intensifies_audio: false,
-                    is_loop: false,
-                    is_placeholder: false,
-                    is_tone_modify: false,
-                    keyframe_refs: [],
-                    last_nonzero_volume: 1.0,
-                    lyric_keyframes: null,
-                    raw_segment_id: "",
-                    render_index: 0,
-                    render_timerange: {
-                        duration: 0,
-                        start: 0
-                    },
-                    responsive_layout: {
-                        enable: false,
-                        horizontal_pos_layout: 0,
-                        size_layout: 0,
-                        target_follow: "",
-                        vertical_pos_layout: 0
-                    },
-                    reverse: false,
-                    state: 0,
-                    template_id: "",
-                    template_scene: "default",
-                    track_attribute: 0,
-                    track_render_index: 0,
-                    uniform_scale: {
-                        on: true,
-                        value: 1.0
                     }
                 };
                 
@@ -1259,7 +1395,7 @@ function exportToCapcut() {
                     segments: []
                 };
                 
-                // Add effect segments with updated structure for CapCut 5.8.0
+                // Add effect segments
                 mediaItems.forEach((item, index) => {
                     if (idMap.videoEffects[index]) {
                         let startTime = 0;
@@ -1277,55 +1413,7 @@ function exportToCapcut() {
                             render_index: 11000,
                             track_render_index: 1,
                             visible: true,
-                            volume: 1.0,
-                            // New fields for CapCut 5.8.0
-                            caption_info: null,
-                            cartoon: false,
-                            clip: null,
-                            color_correct_alg_result: "",
-                            common_keyframes: [],
-                            desc: "",
-                            digital_human_template_group_id: "",
-                            enable_adjust: false,
-                            enable_adjust_mask: false,
-                            enable_color_correct_adjust: false,
-                            enable_color_curves: true,
-                            enable_color_match_adjust: false,
-                            enable_color_wheels: true,
-                            enable_hsl: false,
-                            enable_lut: false,
-                            enable_smart_color_adjust: false,
-                            enable_video_mask: true,
-                            extra_material_refs: [],
-                            group_id: "",
-                            hdr_settings: null,
-                            intensifies_audio: false,
-                            is_loop: false,
-                            is_placeholder: false,
-                            is_tone_modify: false,
-                            keyframe_refs: [],
-                            last_nonzero_volume: 1.0,
-                            lyric_keyframes: null,
-                            raw_segment_id: "",
-                            render_timerange: {
-                                duration: 0,
-                                start: 0
-                            },
-                            responsive_layout: {
-                                enable: false,
-                                horizontal_pos_layout: 0,
-                                size_layout: 0,
-                                target_follow: "",
-                                vertical_pos_layout: 0
-                            },
-                            reverse: false,
-                            source_timerange: null,
-                            speed: 1.0,
-                            state: 0,
-                            template_id: "",
-                            template_scene: "default",
-                            track_attribute: 0,
-                            uniform_scale: null
+                            volume: 1.0
                         });
                     }
                 });
@@ -1334,10 +1422,6 @@ function exportToCapcut() {
                     capcutData.tracks.push(effectTrack);
                 }
             }
-            
-            // Update version and new fields
-            capcutData.new_version = "131.0.0";
-            capcutData.version = 360000;
             
             // Download the JSON file
             const jsonString = JSON.stringify(capcutData);
@@ -1450,6 +1534,12 @@ function createElectronThumbnail(fileDetail) {
     const fileSize = document.createElement('p');
     fileSize.textContent = formatFileSize(fileDetail.size);
     
+    // Create a hidden input to store the path
+    const pathInput = document.createElement('input');
+    pathInput.type = 'hidden';
+    pathInput.className = 'path-input';
+    pathInput.value = realPath;
+    
     // Create time duration input container
     const durationContainer = document.createElement('div');
     durationContainer.className = 'duration-container';
@@ -1487,56 +1577,94 @@ function createElectronThumbnail(fileDetail) {
     const effectsContainer = document.createElement('div');
     effectsContainer.className = 'effects-container';
     
-    // Create effects label
-    const effectsLabel = document.createElement('div');
-    effectsLabel.className = 'effects-label';
-    effectsLabel.innerHTML = '<i class="fas fa-magic"></i> Effects: <span class="selected-effect">None</span>';
-    effectsLabel.onclick = function(e) {
+    // Create effects button
+    const effectsButton = document.createElement('div');
+    effectsButton.className = 'effects-button';
+    effectsButton.innerHTML = '<i class="fas fa-magic"></i>';
+    effectsButton.onclick = function(e) {
         e.stopPropagation();
         toggleEffectsDropdown(this);
     };
+    
+    // Create selected effect display
+    const selectedEffect = document.createElement('div');
+    selectedEffect.className = 'selected-effect';
+    selectedEffect.innerHTML = '<i class="fas fa-ban"></i> None';
     
     // Create effects dropdown
     const effectsDropdown = document.createElement('div');
     effectsDropdown.className = 'effects-dropdown';
     
-    // Add effects title
-    const effectsTitle = document.createElement('div');
-    effectsTitle.className = 'effects-title';
-    effectsTitle.textContent = 'Select Effect';
-    effectsDropdown.appendChild(effectsTitle);
-    
-    // Add effects list
-    const effectsList = document.createElement('div');
-    effectsList.className = 'effects-list';
-    
-    // Define effects options
+    // Define effect options
     const effectOptions = [
-        'None', 'Fade', 'Zoom In', 'Zoom Out', 
-        'Blur', 'Black & White', 'Sepia', 'Brightness',
-        'Contrast', 'Saturation', 'Hue Rotate', 'Invert'
+        { name: 'None', icon: 'fas fa-ban' },
+        { name: 'Fade', icon: 'fas fa-adjust' },
+        { name: 'Zoom In', icon: 'fas fa-search-plus' },
+        { name: 'Zoom Out', icon: 'fas fa-search-minus' },
+        { name: 'Blur', icon: 'fas fa-water' },
+        { name: 'Black & White', icon: 'fas fa-tint' },
+        { name: 'Sepia', icon: 'fas fa-image' },
+        { name: 'Brightness', icon: 'fas fa-sun' },
+        { name: 'Contrast', icon: 'fas fa-adjust' },
+        { name: 'Saturation', icon: 'fas fa-palette' },
+        { name: 'Hue Rotate', icon: 'fas fa-sync' },
+        { name: 'Invert', icon: 'fas fa-exchange-alt' },
+        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
+        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
+        { name: 'Lắc lư', icon: 'fas fa-random' },
+        { name: 'Màn hình 3D', icon: 'fas fa-cube' },
+        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
+        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
+        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
+        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
+        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
+        { name: 'Mở ngược', icon: 'fas fa-undo' },
+        { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
+        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
+        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
+        { name: 'Phim', icon: 'fas fa-film' },
+        { name: 'Điểm lục giác', icon: 'fas fa-stop' },
+        { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
+        { name: 'Bụi rơi', icon: 'fas fa-feather' },
+        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
+        { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
+        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
+        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
+        { name: 'Lũ quét qua', icon: 'fas fa-water' },
+        { name: 'S-Movement', icon: 'fas fa-wave-square' },
+        { name: 'Cười lên', icon: 'fas fa-smile' },
+        { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
+        { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
+        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
+        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
+        { name: 'Lấp lánh 2', icon: 'fas fa-star' },
+        { name: 'Trục trặc pixel', icon: 'fas fa-th' },
+        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
+        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
     ];
     
-    // Add effect options to the list
-    effectOptions.forEach(effect => {
-        const option = document.createElement('div');
-        option.className = 'effect-option';
-        if (effect === 'None') option.classList.add('selected');
-        option.textContent = effect;
-        option.onclick = function(e) {
+    // Add effect options to the dropdown
+    effectOptions.forEach(option => {
+        const effectOption = document.createElement('div');
+        effectOption.className = 'effect-option';
+        effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+        effectOption.dataset.name = option.name; // Store the name for easier reference
+        effectOption.dataset.icon = option.icon; // Store the icon class
+        effectOption.onclick = function(e) {
+            e.preventDefault();
             e.stopPropagation();
-            selectEffect(this, effectsLabel);
-            effectsDropdown.classList.remove('show');
+            selectEffect(this, selectedEffect);
         };
-        effectsList.appendChild(option);
+        effectsDropdown.appendChild(effectOption);
     });
     
-    effectsDropdown.appendChild(effectsList);
-    effectsContainer.appendChild(effectsLabel);
+    effectsContainer.appendChild(effectsButton);
+    effectsContainer.appendChild(selectedEffect);
     effectsContainer.appendChild(effectsDropdown);
     
     thumbnailInfo.appendChild(fileName);
     thumbnailInfo.appendChild(fileSize);
+    thumbnailInfo.appendChild(pathInput); // Add the hidden path input
     thumbnailInfo.appendChild(durationContainer);
     thumbnailInfo.appendChild(effectsContainer);
     
