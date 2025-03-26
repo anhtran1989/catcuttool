@@ -258,6 +258,36 @@ p {
     font-weight: 600;
 }
 
+/* Export button styles */
+.export-container {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.export-button {
+    background-color: #ff5e4c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 3px 10px rgba(255, 94, 76, 0.3);
+}
+
+.export-button:hover {
+    background-color: #ff4433;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 94, 76, 0.4);
+}
+
+.export-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(255, 94, 76, 0.4);
+}
+
 .thumbnail-index {
     position: absolute;
     top: 5px;

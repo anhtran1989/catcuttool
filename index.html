@@ -37,6 +37,9 @@
                 <div class="thumbnail-list" id="thumbnail-list">
                     <!-- Thumbnails will be dynamically added here -->
                 </div>
+                <div class="export-container">
+                    <button id="export-button" class="export-button">Export to CapCut</button>
+                </div>
             </div>
         </div>
 
@@ -630,6 +633,408 @@
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // CapCut effect and transition mappings
+            const capcut = {
+                // Effects mapping (name -> effect_id)
+                effects: {
+                    'None': null,
+                    'Fade': '7399470719085595910',
+                    'Zoom In': '7399470719085595911',
+                    'Zoom Out': '7399470719085595912',
+                    'Blur': '7399470719085595913',
+                    'Black & White': '7399470719085595914',
+                    'Sepia': '7399470719085595915',
+                    'Brightness': '7399470719085595916',
+                    'Contrast': '7399470719085595917',
+                    'Saturation': '7399470719085595918',
+                    'Hue Rotate': '7399470719085595919',
+                    'Invert': '7399470719085595920'
+                },
+                
+                // Transitions mapping (name -> effect_id)
+                transitions: {
+                    'Cut': null,
+                    'Fade': '7291211157254181377',
+                    'Dissolve': '7291211157254181378',
+                    'Wipe Right': '7291211157254181379',
+                    'Wipe Left': '7291211157254181380',
+                    'Wipe Up': '7291211157254181381',
+                    'Wipe Down': '7291211157254181382',
+                    'Zoom In': '7291211157254181383',
+                    'Zoom Out': '7291211157254181384'
+                },
+                
+                // Icon mapping for transitions
+                transitionIcons: {
+                    'Cut': 'fas fa-cut',
+                    'Fade': 'fas fa-adjust',
+                    'Dissolve': 'fas fa-water',
+                    'Wipe Right': 'fas fa-arrow-right',
+                    'Wipe Left': 'fas fa-arrow-left',
+                    'Wipe Up': 'fas fa-arrow-up',
+                    'Wipe Down': 'fas fa-arrow-down',
+                    'Zoom In': 'fas fa-search-plus',
+                    'Zoom Out': 'fas fa-search-minus'
+                }
+            };
+            
+            // Generate a random UUID for CapCut JSON
+            function generateUUID() {
+                const pattern = 'XXXXXXXX-XXXX-4XXX-XXXX-XXXXXXXXXXXX';
+                return pattern.replace(/X/g, function() {
+                    return Math.floor(Math.random() * 16).toString(16).toUpperCase();
+                });
+            }
+            
+            // Add export button functionality
+            const exportButton = document.getElementById('export-button');
+            exportButton.addEventListener('click', exportToCapcut);
+            
+            // Function to export data to CapCut JSON format
+            function exportToCapcut() {
+                // Ensure we have media items
+                const thumbnailItems = document.querySelectorAll('.thumbnail-item');
+                if (thumbnailItems.length === 0) {
+                    alert('Please add at least one media file before exporting');
+                    return;
+                }
+                
+                // Get the default template
+                fetch('draft_content_default.json')
+                    .then(response => response.json())
+                    .then(templateData => {
+                        // Create a deep copy of the template
+                        const capcutData = JSON.parse(JSON.stringify(templateData));
+                        
+                        // Collect all media items, transitions, and effects
+                        const mediaItems = [];
+                        const transitionElements = document.querySelectorAll('.transitions-container');
+                        
+                        // Get all thumbnail items
+                        const thumbnails = Array.from(thumbnailItems);
+                        thumbnails.forEach((item, index) => {
+                            // Get media details
+                            const img = item.querySelector('img');
+                            const video = item.querySelector('video');
+                            const fileName = item.querySelector('.thumbnail-info p:first-child').textContent;
+                            const duration = parseInt(item.querySelector('.duration-input').value) * 1000000; // Convert to microseconds
+                            const effectName = item.querySelector('.selected-effect').textContent;
+                            
+                            // Get transition (if not the last item)
+                            let transitionName = null;
+                            if (index < thumbnails.length - 1) {
+                                const transitionElement = transitionElements[index];
+                                const transitionText = transitionElement.querySelector('.selected-transition').textContent.trim();
+                                transitionName = transitionText.split(' ').slice(1).join(' '); // Remove the icon part
+                            }
+                            
+                            mediaItems.push({
+                                fileName: fileName,
+                                isVideo: !!video,
+                                src: img ? img.src : (video ? video.src : null),
+                                duration: duration,
+                                effect: effectName,
+                                transition: transitionName
+                            });
+                        });
+                        
+                        // Reset sections that will be populated
+                        capcutData.materials.videos = [];
+                        capcutData.materials.transitions = [];
+                        capcutData.materials.video_effects = [];
+                        capcutData.materials.speeds = [];
+                        capcutData.materials.placeholder_infos = [];
+                        capcutData.materials.vocal_separations = [];
+                        capcutData.tracks = [{
+                            attribute: 0,
+                            flag: 0,
+                            id: generateUUID(),
+                            is_default_name: true,
+                            name: "",
+                            segments: [],
+                            type: "video"
+                        }];
+                        
+                        // Calculate total duration
+                        let totalDuration = 0;
+                        mediaItems.forEach(item => {
+                            totalDuration += item.duration;
+                        });
+                        capcutData.duration = totalDuration;
+                        
+                        // Track IDs to reference later
+                        const idMap = {
+                            speeds: [],
+                            placeholders: [],
+                            canvases: [],
+                            soundMappings: [],
+                            vocalSeparations: [],
+                            transitions: [],
+                            videoEffects: []
+                        };
+                        
+                        // Create default canvas
+                        const canvasId = generateUUID();
+                        capcutData.materials.canvases = [{
+                            album_image: "",
+                            blur: 0.0,
+                            color: "",
+                            id: canvasId,
+                            image: "",
+                            image_id: "",
+                            image_name: "",
+                            source_platform: 0,
+                            team_id: "",
+                            type: "canvas_color"
+                        }];
+                        idMap.canvases.push(canvasId);
+                        
+                        // Create speed element for each media
+                        mediaItems.forEach((item, index) => {
+                            const speedId = generateUUID();
+                            capcutData.materials.speeds.push({
+                                curve_speed: null,
+                                id: speedId,
+                                mode: 0,
+                                speed: 1.0,
+                                type: "speed"
+                            });
+                            idMap.speeds.push(speedId);
+                            
+                            // Create placeholder
+                            const placeholderId = generateUUID();
+                            capcutData.materials.placeholder_infos.push({
+                                error_path: "",
+                                error_text: "",
+                                id: placeholderId,
+                                meta_type: "none",
+                                res_path: "",
+                                res_text: "",
+                                type: "placeholder_info"
+                            });
+                            idMap.placeholders.push(placeholderId);
+                            
+                            // Create sound channel mapping
+                            const soundMappingId = generateUUID();
+                            capcutData.materials.sound_channel_mappings.push({
+                                audio_channel_mapping: 0,
+                                id: soundMappingId,
+                                is_config_open: false,
+                                type: ""
+                            });
+                            idMap.soundMappings.push(soundMappingId);
+                            
+                            // Create vocal separation
+                            const vocalSeparationId = generateUUID();
+                            capcutData.materials.vocal_separations.push({
+                                choice: 0,
+                                id: vocalSeparationId,
+                                production_path: "",
+                                removed_sounds: [],
+                                time_range: null,
+                                type: "vocal_separation"
+                            });
+                            idMap.vocalSeparations.push(vocalSeparationId);
+                            
+                            // Create transition if needed
+                            if (item.transition && item.transition !== 'Cut' && index < mediaItems.length - 1) {
+                                const transitionId = generateUUID();
+                                const transitionEffectId = capcut.transitions[item.transition];
+                                
+                                if (transitionEffectId) {
+                                    capcutData.materials.transitions.push({
+                                        id: transitionId,
+                                        effect_id: transitionEffectId,
+                                        duration: 866666, // Default duration (about 0.866 seconds)
+                                        name: item.transition,
+                                        is_overlap: true,
+                                        path: "", // Will be configured by CapCut
+                                        category_id: "25835",
+                                        category_name: "remen",
+                                        type: "transition"
+                                    });
+                                    idMap.transitions.push(transitionId);
+                                }
+                            }
+                            
+                            // Create video effect if needed
+                            if (item.effect && item.effect !== 'None') {
+                                const effectId = generateUUID();
+                                const effectEffectId = capcut.effects[item.effect];
+                                
+                                if (effectEffectId) {
+                                    capcutData.materials.video_effects.push({
+                                        id: effectId,
+                                        effect_id: effectEffectId,
+                                        name: item.effect,
+                                        type: "video_effect",
+                                        category_id: "27296",
+                                        category_name: "hot2",
+                                        adjust_params: [
+                                            { name: "effects_adjust_color", default_value: 0.5, value: 0.5 },
+                                            { name: "effects_adjust_sharpen", default_value: 0.25, value: 0.25 },
+                                            { name: "effects_adjust_luminance", default_value: 1.0, value: 1.0 },
+                                            { name: "effects_adjust_background_animation", default_value: 0.5, value: 0.5 },
+                                            { name: "effects_adjust_intensity", default_value: 0.6, value: 0.6 },
+                                            { name: "effects_adjust_speed", default_value: 0.33, value: 0.33 }
+                                        ],
+                                        render_index: 0,
+                                        value: 1.0
+                                    });
+                                    idMap.videoEffects.push(effectId);
+                                }
+                            }
+                        });
+                        
+                        // Add media items
+                        mediaItems.forEach((item, index) => {
+                            const mediaId = generateUUID();
+                            
+                            // Default values
+                            const mediaObject = {
+                                id: mediaId,
+                                type: item.isVideo ? "video" : "photo",
+                                material_name: item.fileName,
+                                path: "media/" + item.fileName, // Relative path, will be set by CapCut when importing
+                                width: 1280, // Default width
+                                height: 720, // Default height
+                                duration: item.isVideo ? item.duration : 10800000000, // Long duration for images
+                                has_audio: item.isVideo,
+                                has_sound_separated: false,
+                                crop: {
+                                    lower_left_x: 0.0,
+                                    lower_left_y: 1.0,
+                                    lower_right_x: 1.0,
+                                    lower_right_y: 1.0,
+                                    upper_left_x: 0.0,
+                                    upper_left_y: 0.0,
+                                    upper_right_x: 1.0,
+                                    upper_right_y: 0.0
+                                },
+                                crop_ratio: "free",
+                                crop_scale: 1.0,
+                                category_name: "local",
+                                check_flag: 62978047
+                            };
+                            
+                            capcutData.materials.videos.push(mediaObject);
+                            
+                            // Calculate target timerange
+                            let startTime = 0;
+                            for (let i = 0; i < index; i++) {
+                                startTime += mediaItems[i].duration;
+                            }
+                            
+                            // Build extra material references
+                            const extraRefs = [
+                                idMap.speeds[index],
+                                idMap.placeholders[index],
+                                idMap.canvases[0],
+                                idMap.soundMappings[index],
+                                idMap.vocalSeparations[index]
+                            ];
+                            
+                            // Add transition if it exists
+                            if (index < idMap.transitions.length && idMap.transitions[index]) {
+                                extraRefs.push(idMap.transitions[index]);
+                            }
+                            
+                            // Create segment
+                            const segmentId = generateUUID();
+                            const segment = {
+                                id: segmentId,
+                                material_id: mediaId,
+                                target_timerange: {
+                                    start: startTime,
+                                    duration: item.duration
+                                },
+                                source_timerange: {
+                                    start: 0,
+                                    duration: item.duration
+                                },
+                                extra_material_refs: extraRefs,
+                                enable_adjust: true,
+                                enable_color_curves: true,
+                                enable_color_wheels: true,
+                                enable_lut: true,
+                                enable_video_mask: true,
+                                speed: 1.0,
+                                volume: 1.0,
+                                visible: true,
+                                clip: {
+                                    alpha: 1.0,
+                                    flip: {
+                                        horizontal: false,
+                                        vertical: false
+                                    },
+                                    rotation: 0.0,
+                                    scale: {
+                                        x: 1.0,
+                                        y: 1.0
+                                    },
+                                    transform: {
+                                        x: 0.0,
+                                        y: 0.0
+                                    }
+                                }
+                            };
+                            
+                            capcutData.tracks[0].segments.push(segment);
+                        });
+                        
+                        // Add effect tracks if needed
+                        if (idMap.videoEffects.length > 0) {
+                            const effectTrack = {
+                                id: generateUUID(),
+                                type: "effect",
+                                segments: []
+                            };
+                            
+                            // Add effect segments
+                            idMap.videoEffects.forEach((effectId, index) => {
+                                const startTime = 0;
+                                for (let i = 0; i < index; i++) {
+                                    startTime += mediaItems[i].duration;
+                                }
+                                
+                                effectTrack.segments.push({
+                                    id: generateUUID(),
+                                    material_id: effectId,
+                                    target_timerange: {
+                                        start: startTime,
+                                        duration: mediaItems[index].duration
+                                    },
+                                    render_index: 11000,
+                                    track_render_index: 1,
+                                    visible: true,
+                                    volume: 1.0
+                                });
+                            });
+                            
+                            capcutData.tracks.push(effectTrack);
+                        }
+                        
+                        // Download the JSON file
+                        const jsonString = JSON.stringify(capcutData);
+                        const blob = new Blob([jsonString], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'draft_content_new.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        alert('File exported successfully! Import it to CapCut to use your template.');
+                    })
+                    .catch(error => {
+                        console.error('Error loading template:', error);
+                        alert('Error creating CapCut file. Please make sure draft_content_default.json exists.');
+                    });
             }
         });
     </script>
