@@ -223,28 +223,6 @@ function createThumbnail(file, originalPath) {
         const fileSize = document.createElement('p');
         fileSize.textContent = formatFileSize(file.size);
         
-        // Create file path input container
-        const pathContainer = document.createElement('div');
-        pathContainer.className = 'path-container';
-        
-        // Create path label
-        const pathLabel = document.createElement('label');
-        pathLabel.className = 'path-label';
-        pathLabel.textContent = 'File path:';
-        
-        // Create path input
-        const pathInput = document.createElement('input');
-        pathInput.type = 'text';
-        pathInput.className = 'path-input';
-        
-        // Use the previously formatted path - avoid duplicating the formatting code
-        pathInput.value = formattedPath;
-        pathInput.placeholder = 'Enter full file path (e.g., C://Users//Public//Pictures//file.jpg)';
-        
-        // Add all path elements
-        pathContainer.appendChild(pathLabel);
-        pathContainer.appendChild(pathInput);
-        
         // Create time duration input container
         const durationContainer = document.createElement('div');
         durationContainer.className = 'duration-container';
@@ -332,7 +310,6 @@ function createThumbnail(file, originalPath) {
         
         thumbnailInfo.appendChild(fileName);
         thumbnailInfo.appendChild(fileSize);
-        thumbnailInfo.appendChild(pathContainer);
         thumbnailInfo.appendChild(durationContainer);
         thumbnailInfo.appendChild(effectsContainer);
         
@@ -696,49 +673,17 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// CapCut effect and transition mappings
-const capcut = {
-    // Effects mapping (name -> effect_id)
-    effects: {
-        'None': null,
-        'Fade': '7399470719085595910',
-        'Zoom In': '7399470719085595911',
-        'Zoom Out': '7399470719085595912',
-        'Blur': '7399470719085595913',
-        'Black & White': '7399470719085595914',
-        'Sepia': '7399470719085595915',
-        'Brightness': '7399470719085595916',
-        'Contrast': '7399470719085595917',
-        'Saturation': '7399470719085595918',
-        'Hue Rotate': '7399470719085595919',
-        'Invert': '7399470719085595920'
-    },
-    
-    // Transitions mapping (name -> effect_id)
-    transitions: {
-        'Cut': null,
-        'Fade': '7291211157254181377',
-        'Dissolve': '7291211157254181378',
-        'Wipe Right': '7291211157254181379',
-        'Wipe Left': '7291211157254181380',
-        'Wipe Up': '7291211157254181381',
-        'Wipe Down': '7291211157254181382',
-        'Zoom In': '7291211157254181383',
-        'Zoom Out': '7291211157254181384'
-    },
-    
-    // Icon mapping for transitions
-    transitionIcons: {
-        'Cut': 'fas fa-cut',
-        'Fade': 'fas fa-adjust',
-        'Dissolve': 'fas fa-water',
-        'Wipe Right': 'fas fa-arrow-right',
-        'Wipe Left': 'fas fa-arrow-left',
-        'Wipe Up': 'fas fa-arrow-up',
-        'Wipe Down': 'fas fa-arrow-down',
-        'Zoom In': 'fas fa-search-plus',
-        'Zoom Out': 'fas fa-search-minus'
-    }
+// Transition icons mapping
+const transitionIcons = {
+    'Cut': 'fas fa-cut',
+    'Fade': 'fas fa-adjust',
+    'Dissolve': 'fas fa-water',
+    'Wipe Right': 'fas fa-arrow-right',
+    'Wipe Left': 'fas fa-arrow-left',
+    'Wipe Up': 'fas fa-arrow-up',
+    'Wipe Down': 'fas fa-arrow-down',
+    'Zoom In': 'fas fa-search-plus',
+    'Zoom Out': 'fas fa-search-minus'
 };
 
 // Generate a random UUID for CapCut JSON
@@ -783,14 +728,9 @@ function exportToCapcut() {
                 const duration = parseInt(item.querySelector('.duration-input').value) * 1000000; // Convert to microseconds
                 const effectName = item.querySelector('.selected-effect').textContent;
                 
-                // Get the file path directly from the path input field
-                const pathInput = item.querySelector('.path-input');
+                // Get the file path from stored data attribute
                 let filePath = '';
-                
-                if (pathInput && pathInput.value && pathInput.value.trim() !== '') {
-                    // Use the real file path provided by Electron or path input
-                    filePath = pathInput.value.trim();
-                } else if (item.dataset.originalPath) {
+                if (item.dataset.originalPath) {
                     // Use the path stored in the data attribute
                     filePath = item.dataset.originalPath;
                 } else {
@@ -837,11 +777,31 @@ function exportToCapcut() {
                 });
             });
             
-            // Add media items to the template
-            capcutData.mediaItems = mediaItems;
+            // Calculate total duration
+            let totalDuration = 0;
+            mediaItems.forEach(item => {
+                totalDuration += item.duration;
+            });
+            
+            // Update template data for new CapCut version
+            capcutData.duration = totalDuration;
             
             // Generate a random UUID for the template
-            capcutData.uuid = generateUUID();
+            capcutData.id = generateUUID();
+            
+            // Update the last_modified_platform and platform data with current version
+            capcutData.last_modified_platform = {
+                app_id: 359289,
+                app_source: "cc",
+                app_version: "5.8.0",
+                device_id: generateUUID().toLowerCase().replace(/-/g, ''),
+                hard_disk_id: generateUUID().toLowerCase().replace(/-/g, ''),
+                mac_address: generateUUID().toLowerCase().replace(/-/g, ''),
+                os: "windows",
+                os_version: "10.0.19045"
+            };
+            
+            capcutData.platform = {...capcutData.last_modified_platform};
             
             // Reset sections that will be populated
             capcutData.materials.videos = [];
@@ -850,6 +810,10 @@ function exportToCapcut() {
             capcutData.materials.speeds = [];
             capcutData.materials.placeholder_infos = [];
             capcutData.materials.vocal_separations = [];
+            capcutData.materials.sound_channel_mappings = [];
+            capcutData.materials.canvases = []; 
+            
+            // Reset tracks with a new video track
             capcutData.tracks = [{
                 attribute: 0,
                 flag: 0,
@@ -860,13 +824,6 @@ function exportToCapcut() {
                 type: "video"
             }];
             
-            // Calculate total duration
-            let totalDuration = 0;
-            mediaItems.forEach(item => {
-                totalDuration += item.duration;
-            });
-            capcutData.duration = totalDuration;
-            
             // Track IDs to reference later
             const idMap = {
                 speeds: [],
@@ -875,42 +832,72 @@ function exportToCapcut() {
                 soundMappings: [],
                 vocalSeparations: [],
                 transitions: [],
-                videoEffects: []
+                videoEffects: [],
+                materialAnimations: []
             };
             
-            // Create default canvas
-            const canvasId = generateUUID();
-            capcutData.materials.canvases = [{
-                album_image: "",
-                blur: 0.0,
-                color: "",
-                id: canvasId,
-                image: "",
-                image_id: "",
-                image_name: "",
-                source_platform: 0,
-                team_id: "",
-                type: "canvas_color"
-            }];
-            idMap.canvases.push(canvasId);
+            // Create default canvas for each media item
+            mediaItems.forEach(() => {
+                const canvasId = generateUUID();
+                capcutData.materials.canvases.push({
+                    album_image: "",
+                    blur: 0.0,
+                    color: "",
+                    id: canvasId,
+                    image: "",
+                    image_id: "",
+                    image_name: "",
+                    source_platform: 0,
+                    team_id: "",
+                    type: "canvas_color"
+                });
+                idMap.canvases.push(canvasId);
+                
+                // Create material animation for each item (required for new CapCut version)
+                const materialAnimationId = generateUUID();
+                capcutData.materials.material_animations = capcutData.materials.material_animations || [];
+                capcutData.materials.material_animations.push({
+                    animations: [],
+                    id: materialAnimationId,
+                    multi_language_current: "none",
+                    type: "sticker_animation"
+                });
+                idMap.materialAnimations.push(materialAnimationId);
+            });
             
-            // Create transition elements first
+            // Create transition elements
             mediaItems.forEach((item, index) => {
                 if (item.transition && item.transition !== 'Cut' && index < mediaItems.length - 1) {
                     const transitionId = generateUUID();
-                    const transitionEffectId = capcut.transitions[item.transition];
+                    // Use existing or updated transition effect IDs
+                    const transitionMap = {
+                        'Fade': '7384056244421530113',
+                        'Dissolve': '7384056244421530114',
+                        'Wipe Right': '7384056244421530115',
+                        'Wipe Left': '7384056244421530116',
+                        'Wipe Up': '7384056244421530117',
+                        'Wipe Down': '7384056244421530118',
+                        'Zoom In': '7384056244421530119',
+                        'Zoom Out': '7384056244421530120'
+                    };
+                    
+                    const transitionEffectId = transitionMap[item.transition] || null;
                     
                     if (transitionEffectId) {
                         capcutData.materials.transitions.push({
                             id: transitionId,
                             effect_id: transitionEffectId,
-                            duration: 866666, // Default duration (about 0.866 seconds)
+                            duration: 466666, // Default duration (about 0.466 seconds)
                             name: item.transition,
                             is_overlap: true,
                             path: "", // Will be configured by CapCut
                             category_id: "25835",
-                            category_name: "remen",
-                            type: "transition"
+                            category_name: "Đang thịnh hành",
+                            type: "transition",
+                            platform: "all",
+                            source_platform: 1,
+                            resource_id: transitionEffectId,
+                            request_id: generateUUID().replace(/-/g, '')
                         });
                         idMap.transitions.push(transitionId);
                     } else {
@@ -921,8 +908,9 @@ function exportToCapcut() {
                 }
             });
             
-            // Create speed element for each media and other supporting materials
+            // Create support materials for each media
             mediaItems.forEach((item, index) => {
+                // Create speed
                 const speedId = generateUUID();
                 capcutData.materials.speeds.push({
                     curve_speed: null,
@@ -971,7 +959,23 @@ function exportToCapcut() {
                 // Create video effect if needed
                 if (item.effect && item.effect !== 'None') {
                     const effectId = generateUUID();
-                    const effectEffectId = capcut.effects[item.effect];
+                    
+                    // Updated effect IDs for new CapCut version
+                    const effectMap = {
+                        'Fade': '7399467327726587141',
+                        'Zoom In': '7399465413527899398',
+                        'Zoom Out': '7399465413527899399',
+                        'Blur': '7399465413527899400',
+                        'Black & White': '7399465413527899401',
+                        'Sepia': '7399465413527899402',
+                        'Brightness': '7399465413527899403',
+                        'Contrast': '7399465413527899404',
+                        'Saturation': '7399465413527899405',
+                        'Hue Rotate': '7399465413527899406',
+                        'Invert': '7399465413527899407'
+                    };
+                    
+                    const effectEffectId = effectMap[item.effect] || null;
                     
                     if (effectEffectId) {
                         capcutData.materials.video_effects.push({
@@ -980,7 +984,7 @@ function exportToCapcut() {
                             name: item.effect,
                             type: "video_effect",
                             category_id: "27296",
-                            category_name: "hot2",
+                            category_name: "Đang thịnh hành",
                             adjust_params: [
                                 { name: "effects_adjust_color", default_value: 0.5, value: 0.5 },
                                 { name: "effects_adjust_sharpen", default_value: 0.25, value: 0.25 },
@@ -990,7 +994,25 @@ function exportToCapcut() {
                                 { name: "effects_adjust_speed", default_value: 0.33, value: 0.33 }
                             ],
                             render_index: 0,
-                            value: 1.0
+                            value: 1.0,
+                            path: "",
+                            platform: "all",
+                            source_platform: 1,
+                            resource_id: effectEffectId,
+                            request_id: generateUUID().replace(/-/g, ''),
+                            apply_target_type: 2,
+                            apply_time_range: null,
+                            common_keyframes: [],
+                            covering_relation_change: 0,
+                            disable_effect_faces: [],
+                            effect_mask: [],
+                            enable_mask: true,
+                            formula_id: "",
+                            item_effect_type: 0,
+                            algorithm_artifact_path: "",
+                            time_range: null,
+                            track_render_index: 0,
+                            version: ""
                         });
                         idMap.videoEffects.push(effectId);
                     } else {
@@ -1001,18 +1023,17 @@ function exportToCapcut() {
                 }
             });
             
-            // Add media items and create segments
+            // Add media items
             mediaItems.forEach((item, index) => {
                 const mediaId = generateUUID();
                 
-                // Default values
                 const mediaObject = {
                     id: mediaId,
                     type: item.isVideo ? "video" : "photo",
                     material_name: item.fileName,
-                    path: item.filePath, // Use the actual file path from the source
-                    width: 1280, // Default width
-                    height: 720, // Default height
+                    path: item.filePath,
+                    width: 1280,
+                    height: 720,
                     duration: item.isVideo ? item.duration : 10800000000, // Long duration for images
                     has_audio: item.isVideo,
                     has_sound_separated: false,
@@ -1029,7 +1050,86 @@ function exportToCapcut() {
                     crop_ratio: "free",
                     crop_scale: 1.0,
                     category_name: "local",
-                    check_flag: 62978047
+                    check_flag: 62978047,
+                    // New fields for CapCut 5.8.0
+                    aigc_history_id: "",
+                    aigc_item_id: "",
+                    aigc_type: "none",
+                    audio_fade: null,
+                    beauty_body_preset_id: "",
+                    beauty_face_preset_infos: [],
+                    cartoon_path: "",
+                    category_id: "",
+                    extra_type_option: 0,
+                    formula_id: "",
+                    freeze: null,
+                    intensifies_audio_path: "",
+                    intensifies_path: "",
+                    is_ai_generate_content: false,
+                    is_copyright: false,
+                    is_text_edit_overdub: false,
+                    is_unified_beauty_mode: false,
+                    live_photo_cover_path: "",
+                    live_photo_timestamp: -1,
+                    local_id: "",
+                    local_material_from: "",
+                    local_material_id: "",
+                    material_id: "",
+                    material_url: "",
+                    matting: {
+                        custom_matting_id: "",
+                        enable_matting_stroke: false,
+                        expansion: 0,
+                        feather: 0,
+                        flag: 0,
+                        has_use_quick_brush: false,
+                        has_use_quick_eraser: false,
+                        interactiveTime: [],
+                        path: "",
+                        reverse: false,
+                        strokes: []
+                    },
+                    media_path: "",
+                    multi_camera_info: null,
+                    object_locked: null,
+                    origin_material_id: "",
+                    picture_from: "none",
+                    picture_set_category_id: "",
+                    picture_set_category_name: "",
+                    request_id: "",
+                    reverse_intensifies_path: "",
+                    reverse_path: "",
+                    smart_match_info: null,
+                    smart_motion: null,
+                    source: 0,
+                    source_platform: 0,
+                    stable: {
+                        matrix_path: "",
+                        stable_level: 0,
+                        time_range: {
+                            duration: 0,
+                            start: 0
+                        }
+                    },
+                    team_id: "",
+                    video_algorithm: {
+                        ai_background_configs: [],
+                        ai_expression_driven: null,
+                        ai_motion_driven: null,
+                        aigc_generate: null,
+                        algorithms: [],
+                        complement_frame_config: null,
+                        deflicker: null,
+                        gameplay_configs: [],
+                        motion_blur_config: null,
+                        mouth_shape_driver: null,
+                        noise_reduction: null,
+                        path: "",
+                        quality_enhance: null,
+                        smart_complement_frame: null,
+                        super_resolution: null,
+                        time_range: null
+                    }
                 };
                 
                 capcutData.materials.videos.push(mediaObject);
@@ -1044,17 +1144,18 @@ function exportToCapcut() {
                 const extraRefs = [
                     idMap.speeds[index],
                     idMap.placeholders[index],
-                    idMap.canvases[0],
+                    idMap.canvases[index],
+                    idMap.materialAnimations[index],
                     idMap.soundMappings[index],
                     idMap.vocalSeparations[index]
                 ];
                 
                 // Add transition if it exists
-                if (idMap.transitions[index]) {
-                    extraRefs.push(idMap.transitions[index]);
+                if (index > 0 && idMap.transitions[index - 1]) {
+                    extraRefs.push(idMap.transitions[index - 1]);
                 }
                 
-                // Create segment
+                // Create segment with updated structure for CapCut 5.8.0
                 const segmentId = generateUUID();
                 const segment = {
                     id: segmentId,
@@ -1091,6 +1192,54 @@ function exportToCapcut() {
                             x: 0.0,
                             y: 0.0
                         }
+                    },
+                    // New fields for CapCut 5.8.0
+                    caption_info: null,
+                    cartoon: false,
+                    color_correct_alg_result: "",
+                    common_keyframes: [],
+                    desc: "",
+                    digital_human_template_group_id: "",
+                    enable_adjust_mask: false,
+                    enable_color_correct_adjust: false,
+                    enable_color_match_adjust: false,
+                    enable_hsl: false,
+                    enable_smart_color_adjust: false,
+                    group_id: "",
+                    hdr_settings: {
+                        intensity: 1.0,
+                        mode: 1,
+                        nits: 1000
+                    },
+                    intensifies_audio: false,
+                    is_loop: false,
+                    is_placeholder: false,
+                    is_tone_modify: false,
+                    keyframe_refs: [],
+                    last_nonzero_volume: 1.0,
+                    lyric_keyframes: null,
+                    raw_segment_id: "",
+                    render_index: 0,
+                    render_timerange: {
+                        duration: 0,
+                        start: 0
+                    },
+                    responsive_layout: {
+                        enable: false,
+                        horizontal_pos_layout: 0,
+                        size_layout: 0,
+                        target_follow: "",
+                        vertical_pos_layout: 0
+                    },
+                    reverse: false,
+                    state: 0,
+                    template_id: "",
+                    template_scene: "default",
+                    track_attribute: 0,
+                    track_render_index: 0,
+                    uniform_scale: {
+                        on: true,
+                        value: 1.0
                     }
                 };
                 
@@ -1110,7 +1259,7 @@ function exportToCapcut() {
                     segments: []
                 };
                 
-                // Add effect segments
+                // Add effect segments with updated structure for CapCut 5.8.0
                 mediaItems.forEach((item, index) => {
                     if (idMap.videoEffects[index]) {
                         let startTime = 0;
@@ -1128,7 +1277,55 @@ function exportToCapcut() {
                             render_index: 11000,
                             track_render_index: 1,
                             visible: true,
-                            volume: 1.0
+                            volume: 1.0,
+                            // New fields for CapCut 5.8.0
+                            caption_info: null,
+                            cartoon: false,
+                            clip: null,
+                            color_correct_alg_result: "",
+                            common_keyframes: [],
+                            desc: "",
+                            digital_human_template_group_id: "",
+                            enable_adjust: false,
+                            enable_adjust_mask: false,
+                            enable_color_correct_adjust: false,
+                            enable_color_curves: true,
+                            enable_color_match_adjust: false,
+                            enable_color_wheels: true,
+                            enable_hsl: false,
+                            enable_lut: false,
+                            enable_smart_color_adjust: false,
+                            enable_video_mask: true,
+                            extra_material_refs: [],
+                            group_id: "",
+                            hdr_settings: null,
+                            intensifies_audio: false,
+                            is_loop: false,
+                            is_placeholder: false,
+                            is_tone_modify: false,
+                            keyframe_refs: [],
+                            last_nonzero_volume: 1.0,
+                            lyric_keyframes: null,
+                            raw_segment_id: "",
+                            render_timerange: {
+                                duration: 0,
+                                start: 0
+                            },
+                            responsive_layout: {
+                                enable: false,
+                                horizontal_pos_layout: 0,
+                                size_layout: 0,
+                                target_follow: "",
+                                vertical_pos_layout: 0
+                            },
+                            reverse: false,
+                            source_timerange: null,
+                            speed: 1.0,
+                            state: 0,
+                            template_id: "",
+                            template_scene: "default",
+                            track_attribute: 0,
+                            uniform_scale: null
                         });
                     }
                 });
@@ -1137,6 +1334,10 @@ function exportToCapcut() {
                     capcutData.tracks.push(effectTrack);
                 }
             }
+            
+            // Update version and new fields
+            capcutData.new_version = "131.0.0";
+            capcutData.version = 360000;
             
             // Download the JSON file
             const jsonString = JSON.stringify(capcutData);
@@ -1249,26 +1450,6 @@ function createElectronThumbnail(fileDetail) {
     const fileSize = document.createElement('p');
     fileSize.textContent = formatFileSize(fileDetail.size);
     
-    // Create file path input container
-    const pathContainer = document.createElement('div');
-    pathContainer.className = 'path-container';
-    
-    // Create path label
-    const pathLabel = document.createElement('label');
-    pathLabel.className = 'path-label';
-    pathLabel.textContent = 'File path:';
-    
-    // Create path input
-    const pathInput = document.createElement('input');
-    pathInput.type = 'text';
-    pathInput.className = 'path-input';
-    pathInput.value = realPath;
-    pathInput.placeholder = 'File path';
-    
-    // Add all path elements
-    pathContainer.appendChild(pathLabel);
-    pathContainer.appendChild(pathInput);
-    
     // Create time duration input container
     const durationContainer = document.createElement('div');
     durationContainer.className = 'duration-container';
@@ -1356,7 +1537,6 @@ function createElectronThumbnail(fileDetail) {
     
     thumbnailInfo.appendChild(fileName);
     thumbnailInfo.appendChild(fileSize);
-    thumbnailInfo.appendChild(pathContainer);
     thumbnailInfo.appendChild(durationContainer);
     thumbnailInfo.appendChild(effectsContainer);
     

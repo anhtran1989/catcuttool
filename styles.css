@@ -237,37 +237,6 @@ p {
     margin-left: 8px;
 }
 
-/* File path input styles */
-.path-container {
-    display: flex;
-    align-items: center;
-    margin-top: 8px;
-    padding: 5px 0;
-    border-top: 1px solid #eee;
-}
-
-.path-label {
-    font-size: 0.9rem;
-    color: #555;
-    margin-right: 8px;
-    min-width: 65px;
-}
-
-.path-input {
-    flex: 1;
-    padding: 4px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    color: #333;
-}
-
-.path-input:focus {
-    border-color: #4a90e2;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-}
-
 /* Total duration counter styles */
 .total-duration-container {
     margin: 10px 0 20px;
