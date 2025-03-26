@@ -581,52 +581,41 @@ function createGlobalEffectsDropdown() {
     dropdown.id = 'global-effects-dropdown';
     dropdown.className = 'effects-dropdown';
     
-    // Define effect options
+    // Define effect options - chỉ sử dụng những effect thực sự tồn tại trong file JSON
     const effectOptions = [
         { name: 'None', icon: 'fas fa-ban' },
-        { name: 'Fade', icon: 'fas fa-adjust' },
-        { name: 'Zoom In', icon: 'fas fa-search-plus' },
-        { name: 'Zoom Out', icon: 'fas fa-search-minus' },
-        { name: 'Blur', icon: 'fas fa-water' },
-        { name: 'Black & White', icon: 'fas fa-tint' },
-        { name: 'Sepia', icon: 'fas fa-image' },
-        { name: 'Brightness', icon: 'fas fa-sun' },
-        { name: 'Contrast', icon: 'fas fa-adjust' },
-        { name: 'Saturation', icon: 'fas fa-palette' },
-        { name: 'Hue Rotate', icon: 'fas fa-sync' },
-        { name: 'Invert', icon: 'fas fa-exchange-alt' },
-        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
-        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
-        { name: 'Lắc lư', icon: 'fas fa-random' },
-        { name: 'Màn hình 3D', icon: 'fas fa-cube' },
-        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
-        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
-        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
-        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
-        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
-        { name: 'Mở ngược', icon: 'fas fa-undo' },
-        { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
-        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
-        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
-        { name: 'Phim', icon: 'fas fa-film' },
-        { name: 'Điểm lục giác', icon: 'fas fa-stop' },
-        { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
-        { name: 'Bụi rơi', icon: 'fas fa-feather' },
-        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
-        { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
-        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
-        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
-        { name: 'Lũ quét qua', icon: 'fas fa-water' },
-        { name: 'S-Movement', icon: 'fas fa-wave-square' },
-        { name: 'Cười lên', icon: 'fas fa-smile' },
-        { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
-        { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
-        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
-        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
-        { name: 'Lấp lánh 2', icon: 'fas fa-star' },
-        { name: 'Trục trặc pixel', icon: 'fas fa-th' },
-        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
-        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
+        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt', effect_id: '7395465413527899398' },
+        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb', effect_id: '7399465788387773701' },
+        { name: 'Lắc lư', icon: 'fas fa-random', effect_id: '7399467327726587141' },
+        { name: 'Màn hình 3D', icon: 'fas fa-cube', effect_id: '7436469103449084432' },
+        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video', effect_id: '7399472023874948357' },
+        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h', effect_id: '7442287977864106497' },
+        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart', effect_id: '7399470509722815750' },
+        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt', effect_id: '7462247315059789117' },
+        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye', effect_id: '7399471976714128645' },
+        { name: 'Mở ngược', icon: 'fas fa-undo', effect_id: '7399471215905082630' },
+        { name: 'Tuyết vàng', icon: 'fas fa-snowflake', effect_id: '7445221319781650945' },
+        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat', effect_id: '7448891008441405953' },
+        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt', effect_id: '7399464712909507846' },
+        { name: 'Phim', icon: 'fas fa-film', effect_id: '7399471460445621509' },
+        { name: 'Điểm lục giác', icon: 'fas fa-stop', effect_id: '7399466433782058245' },
+        { name: 'Lăng kính đá quý', icon: 'fas fa-gem', effect_id: '7446312093990523408' },
+        { name: 'Bụi rơi', icon: 'fas fa-feather', effect_id: '7456798559417930257' },
+        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb', effect_id: '7399470385282026758' },
+        { name: 'Đèn nháy', icon: 'fas fa-lightbulb', effect_id: '7463254687957912893' },
+        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs', effect_id: '7399467027066375429' },
+        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman', effect_id: '7450046927875346960' },
+        { name: 'Lũ quét qua', icon: 'fas fa-water', effect_id: '7395468013832523014' },
+        { name: 'S-Movement', icon: 'fas fa-wave-square', effect_id: '7399471490363608325' },
+        { name: 'Cười lên', icon: 'fas fa-smile', effect_id: '7442284470150894081' },
+        { name: 'Chớp mắt mở', icon: 'fas fa-eye', effect_id: '7395467471026785541' },
+        { name: 'Đèn flash chéo', icon: 'fas fa-bolt', effect_id: '7399471479596895494' },
+        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun', effect_id: '7399466235026509061' },
+        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower', effect_id: '7395471053717277957' },
+        { name: 'Lấp lánh 2', icon: 'fas fa-star', effect_id: '7399466236188380421' },
+        { name: 'Trục trặc pixel', icon: 'fas fa-th', effect_id: '7399464859097730309' },
+        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic', effect_id: '7395468812021157126' },
+        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand', effect_id: '7395473374673259782' }
     ];
     
     // Add effect options to the dropdown
@@ -636,6 +625,7 @@ function createGlobalEffectsDropdown() {
         effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
         effectOption.dataset.name = option.name;
         effectOption.dataset.icon = option.icon;
+        effectOption.dataset.effectId = option.effect_id || '';
         effectOption.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -645,6 +635,7 @@ function createGlobalEffectsDropdown() {
                 const optionName = this.dataset.name;
                 const iconClass = this.dataset.icon;
                 currentSelectedEffect.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+                currentSelectedEffect.dataset.effectId = this.dataset.effectId || '';
                 
                 // Close the dropdown
                 hideEffectsDropdown();
@@ -724,12 +715,19 @@ function showEffectsDropdown(button) {
     
     // Update the selected state in dropdown
     const currentEffectName = selectedEffect.textContent.trim().replace(/^\S+\s+/, '');
+    const currentEffectId = selectedEffect.dataset.effectId || '';
     console.log('Current effect name:', currentEffectName);
     
     const options = globalEffectsDropdown.querySelectorAll('.effect-option');
     options.forEach(option => {
         const optionName = option.dataset.name;
-        option.classList.toggle('selected', optionName === currentEffectName);
+        const optionEffectId = option.dataset.effectId || '';
+        
+        // Mark as selected if name matches or if effect_id matches (when available)
+        const isSelected = optionName === currentEffectName || 
+                          (currentEffectId && optionEffectId === currentEffectId);
+        
+        option.classList.toggle('selected', isSelected);
     });
     
     // Position and show the dropdown
@@ -828,6 +826,9 @@ function selectEffect(option, selectedElement) {
     // Update the display with icon
     const iconClass = option.querySelector('i').className;
     selectedElement.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+    
+    // Lưu trữ effect ID và các thuộc tính khác
+    selectedElement.dataset.effectId = option.dataset.effectId || '';
     
     // Highlight selected option for visual feedback
     const allOptions = option.parentNode.querySelectorAll('.effect-option');
@@ -1081,17 +1082,38 @@ const capcut = {
     // Effects mapping (name -> effect_id)
     effects: {
         'None': null,
-        'Fade': '7399470719085595910',
-        'Zoom In': '7399470719085595911',
-        'Zoom Out': '7399470719085595912',
-        'Blur': '7399470719085595913',
-        'Black & White': '7399470719085595914',
-        'Sepia': '7399470719085595915',
-        'Brightness': '7399470719085595916',
-        'Contrast': '7399470719085595917',
-        'Saturation': '7399470719085595918',
-        'Hue Rotate': '7399470719085595919',
-        'Invert': '7399470719085595920'
+        'Lật Zoom': '7395465413527899398',
+        'Làm mờ bùng nổ': '7399465788387773701',
+        'Lắc lư': '7399467327726587141',
+        'Màn hình 3D': '7436469103449084432',
+        'Chuyển động máy ảnh': '7399472023874948357',
+        'Cuộn ngang': '7442287977864106497',
+        'Tình yêu mờ nhạt': '7399470509722815750',
+        'Nét truyện tranh': '7462247315059789117',
+        'Theo dõi bắn': '7399471976714128645',
+        'Mở ngược': '7399471215905082630',
+        'Tuyết vàng': '7445221319781650945',
+        'Trái tim bung nở': '7448891008441405953',
+        'Lóe sáng chớp nảy': '7399464712909507846',
+        'Phim': '7399471460445621509',
+        'Điểm lục giác': '7399466433782058245',
+        'Lăng kính đá quý': '7446312093990523408',
+        'Bụi rơi': '7456798559417930257',
+        'Đèn nhấp nháy theo nhịp': '7399470385282026758',
+        'Đèn nháy': '7463254687957912893',
+        'Bám sát đối tượng 2': '7399467027066375429',
+        'Vở kịch Giáng Sinh': '7450046927875346960',
+        'Lũ quét qua': '7395468013832523014',
+        'S-Movement': '7399471490363608325',
+        'Cười lên': '7442284470150894081',
+        'Chớp mắt mở': '7395467471026785541',
+        'Đèn flash chéo': '7399471479596895494',
+        'Tia sáng kéo dài': '7399466235026509061',
+        'Sóng xung kích': '7395471053717277957',
+        'Lấp lánh 2': '7399466236188380421',
+        'Trục trặc pixel': '7399464859097730309',
+        'Làm mờ ảo diệu': '7395468812021157126',
+        'Phóng to phơi sáng': '7395473374673259782'
     },
     
     // Icon mapping for transitions
@@ -1147,13 +1169,16 @@ function exportToCapcut() {
                 const fileName = item.querySelector('.thumbnail-info p:first-child').textContent;
                 const duration = parseInt(item.querySelector('.duration-input').value) * 1000000; // Convert to microseconds
                 
-                // Get the effect name
+                // Get the effect details
                 const effectElement = item.querySelector('.selected-effect');
-                // Extract effect name from the element
+                // Extract effect name and ID from the element
                 let effectName = 'None';
+                let effectId = null;
                 if (effectElement) {
                     // Remove the icon part and get just the name
                     effectName = effectElement.textContent.trim().replace(/^\S+\s+/, '');
+                    // Get effect ID directly from the element's dataset
+                    effectId = effectElement.dataset.effectId || null;
                 }
                 
                 // Get the file path directly from the path input field
@@ -1219,7 +1244,8 @@ function exportToCapcut() {
                     isVideo: !!video,
                     filePath: filePath,
                     duration: duration,
-                    effect: effectName,
+                    effectName: effectName,
+                    effectId: effectId,
                     transition: transition
                 });
             });
@@ -1361,33 +1387,28 @@ function exportToCapcut() {
                 idMap.vocalSeparations.push(vocalSeparationId);
                 
                 // Create video effect if needed
-                if (item.effect && item.effect !== 'None') {
+                if (item.effectName && item.effectName !== 'None' && item.effectId) {
                     const effectId = generateUUID();
-                    const effectEffectId = capcut.effects[item.effect];
                     
-                    if (effectEffectId) {
-                        capcutData.materials.video_effects.push({
-                            id: effectId,
-                            effect_id: effectEffectId,
-                            name: item.effect,
-                            type: "video_effect",
-                            category_id: "27296",
-                            category_name: "hot2",
-                            adjust_params: [
-                                { name: "effects_adjust_color", default_value: 0.5, value: 0.5 },
-                                { name: "effects_adjust_sharpen", default_value: 0.25, value: 0.25 },
-                                { name: "effects_adjust_luminance", default_value: 1.0, value: 1.0 },
-                                { name: "effects_adjust_background_animation", default_value: 0.5, value: 0.5 },
-                                { name: "effects_adjust_intensity", default_value: 0.6, value: 0.6 },
-                                { name: "effects_adjust_speed", default_value: 0.33, value: 0.33 }
-                            ],
-                            render_index: 0,
-                            value: 1.0
-                        });
-                        idMap.videoEffects.push(effectId);
-                    } else {
-                        idMap.videoEffects.push(null);
-                    }
+                    capcutData.materials.video_effects.push({
+                        id: effectId,
+                        effect_id: item.effectId,
+                        name: item.effectName,
+                        type: "video_effect",
+                        category_id: "27296",
+                        category_name: "hot2",
+                        adjust_params: [
+                            { name: "effects_adjust_color", default_value: 0.5, value: 0.5 },
+                            { name: "effects_adjust_sharpen", default_value: 0.25, value: 0.25 },
+                            { name: "effects_adjust_luminance", default_value: 1.0, value: 1.0 },
+                            { name: "effects_adjust_background_animation", default_value: 0.5, value: 0.5 },
+                            { name: "effects_adjust_intensity", default_value: 0.6, value: 0.6 },
+                            { name: "effects_adjust_speed", default_value: 0.33, value: 0.33 }
+                        ],
+                        render_index: 0,
+                        value: 1.0
+                    });
+                    idMap.videoEffects.push(effectId);
                 } else {
                     idMap.videoEffects.push(null);
                 }
