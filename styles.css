@@ -437,59 +437,62 @@ p {
     color: #4a90e2;
 }
 
-.effects-dropdown {
+/* Effects dropdown styles */
+.effects-dropdown, #global-effects-dropdown {
     position: fixed;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.85);
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     z-index: 10000;
     display: none;
-    padding: 0;
+    padding: 12px 0;
     overflow-y: auto;
-    opacity: 0;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     transform: scale(0.95);
     transition: opacity 0.2s, transform 0.2s;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-}
-
-/* Scrollbar for Webkit browsers */
-.effects-dropdown::-webkit-scrollbar {
-    width: 6px;
-}
-
-.effects-dropdown::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.effects-dropdown::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 6px;
-    border: 2px solid transparent;
-}
-
-.effects-dropdown.show {
-    display: flex;
+    max-height: 80vh;
+    width: 250px !important;
     flex-direction: column;
+    opacity: 0;
+}
+
+#global-effects-dropdown.show {
+    display: flex !important;
     opacity: 1;
     transform: scale(1);
     overflow-y: auto;
 }
 
+/* Scrollbar for Webkit browsers */
+.effects-dropdown::-webkit-scrollbar, #global-effects-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.effects-dropdown::-webkit-scrollbar-track, #global-effects-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.effects-dropdown::-webkit-scrollbar-thumb, #global-effects-dropdown::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    border: 2px solid transparent;
+}
+
+/* Effect option styles */
 .effect-option {
     padding: 10px 15px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     transition: background-color 0.15s;
     color: white;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    user-select: none;
 }
 
 .effect-option:last-child {
@@ -512,6 +515,16 @@ p {
     flex-shrink: 0;
 }
 
+.effect-option.selected {
+    background-color: rgba(74, 144, 226, 0.4);
+    color: #fff;
+    font-weight: 500;
+}
+
+.effect-option.selected i {
+    color: #4a90e2;
+}
+
 .selected-effect {
     display: flex;
     align-items: center;
@@ -524,14 +537,4 @@ p {
 .selected-effect i {
     margin-right: 5px;
     font-size: 12px;
-}
-
-.effect-option.selected {
-    background-color: rgba(74, 144, 226, 0.4);
-    color: #fff;
-    font-weight: 500;
-}
-
-.effect-option.selected i {
-    color: #4a90e2;
 } 

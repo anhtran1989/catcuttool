@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize dropdown manager
     DropdownManager.init();
     
+    // Create global effects dropdown
+    createGlobalEffectsDropdown();
+    
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
     
@@ -258,76 +261,11 @@ function createThumbnail(file, originalPath) {
         selectedEffect.className = 'selected-effect';
         selectedEffect.innerHTML = '<i class="fas fa-ban"></i> None';
         
-        // Create effects dropdown
-        const effectsDropdown = document.createElement('div');
-        effectsDropdown.className = 'effects-dropdown';
-        
-        // Define effect options
-        const effectOptions = [
-            { name: 'None', icon: 'fas fa-ban' },
-            { name: 'Fade', icon: 'fas fa-adjust' },
-            { name: 'Zoom In', icon: 'fas fa-search-plus' },
-            { name: 'Zoom Out', icon: 'fas fa-search-minus' },
-            { name: 'Blur', icon: 'fas fa-water' },
-            { name: 'Black & White', icon: 'fas fa-tint' },
-            { name: 'Sepia', icon: 'fas fa-image' },
-            { name: 'Brightness', icon: 'fas fa-sun' },
-            { name: 'Contrast', icon: 'fas fa-adjust' },
-            { name: 'Saturation', icon: 'fas fa-palette' },
-            { name: 'Hue Rotate', icon: 'fas fa-sync' },
-            { name: 'Invert', icon: 'fas fa-exchange-alt' },
-            { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
-            { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
-            { name: 'Lắc lư', icon: 'fas fa-random' },
-            { name: 'Màn hình 3D', icon: 'fas fa-cube' },
-            { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
-            { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
-            { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
-            { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
-            { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
-            { name: 'Mở ngược', icon: 'fas fa-undo' },
-            { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
-            { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
-            { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
-            { name: 'Phim', icon: 'fas fa-film' },
-            { name: 'Điểm lục giác', icon: 'fas fa-stop' },
-            { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
-            { name: 'Bụi rơi', icon: 'fas fa-feather' },
-            { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
-            { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
-            { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
-            { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
-            { name: 'Lũ quét qua', icon: 'fas fa-water' },
-            { name: 'S-Movement', icon: 'fas fa-wave-square' },
-            { name: 'Cười lên', icon: 'fas fa-smile' },
-            { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
-            { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
-            { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
-            { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
-            { name: 'Lấp lánh 2', icon: 'fas fa-star' },
-            { name: 'Trục trặc pixel', icon: 'fas fa-th' },
-            { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
-            { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
-        ];
-        
-        // Add effect options to the dropdown
-        effectOptions.forEach(option => {
-            const effectOption = document.createElement('div');
-            effectOption.className = 'effect-option';
-            effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
-            effectOption.dataset.name = option.name; // Store the name for easier reference
-            effectOption.dataset.icon = option.icon; // Store the icon class
-            effectOption.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                selectEffect(this, selectedEffect);
-            };
-            effectsDropdown.appendChild(effectOption);
-        });
+        // We no longer need to create a dropdown for each thumbnail
+        // It will use the global dropdown
         
         effectsContainer.appendChild(effectsButton);
         effectsContainer.appendChild(selectedEffect);
-        effectsContainer.appendChild(effectsDropdown);
         
         thumbnailInfo.appendChild(fileName);
         thumbnailInfo.appendChild(fileSize);
@@ -545,172 +483,322 @@ const DropdownManager = {
     }
 };
 
+// Functions to help handle viewport visibility
+function isElementInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+}
+
+function positionDropdownInViewport(dropdown, thumbnailRect) {
+    // Đặt dropdown với kích thước bằng thumbnail
+    dropdown.style.width = thumbnailRect.width + 'px';
+    dropdown.style.height = thumbnailRect.height + 'px';
+    
+    // Kiểm tra xem thumbnail có nằm hoàn toàn trong viewport không
+    const isFullyVisible = 
+        thumbnailRect.top >= 0 &&
+        thumbnailRect.left >= 0 &&
+        thumbnailRect.bottom <= window.innerHeight &&
+        thumbnailRect.right <= window.innerWidth;
+    
+    if (isFullyVisible) {
+        // Nếu nằm trong viewport, đặt vị trí chính xác
+        dropdown.style.left = thumbnailRect.left + 'px';
+        dropdown.style.top = thumbnailRect.top + 'px';
+    } else {
+        // Nếu thumbnail nằm ngoài viewport hoặc chỉ hiển thị một phần
+        // Đảm bảo dropdown hiển thị trong vùng nhìn thấy được
+        
+        // Calculate best position
+        const left = Math.max(10, Math.min(thumbnailRect.left, window.innerWidth - thumbnailRect.width - 10));
+        const top = Math.max(10, Math.min(thumbnailRect.top, window.innerHeight - thumbnailRect.height - 10));
+        
+        dropdown.style.left = left + 'px';
+        dropdown.style.top = top + 'px';
+    }
+    
+    // Thêm xử lý cho màn hình nhỏ
+    if (window.innerWidth < 768) {
+        // Trên màn hình nhỏ, hiển thị dropdown to hơn để dễ chọn
+        dropdown.style.width = Math.min(thumbnailRect.width, window.innerWidth - 20) + 'px';
+        dropdown.style.maxHeight = Math.min(thumbnailRect.height, window.innerHeight - 20) + 'px';
+    }
+}
+
 // Function to create the effects dropdown overlay
 function createEffectsOverlay(thumbnailItem, dropdown) {
+    // Đảm bảo đóng tất cả các dropdown khác trước
+    document.querySelectorAll('.effects-dropdown.show').forEach(item => {
+        if (item !== dropdown) {
+            item.classList.remove('show');
+        }
+    });
+    
+    // Reset style trước khi áp dụng mới để tránh xung đột
+    dropdown.style.position = '';
+    dropdown.style.left = '';
+    dropdown.style.top = '';
+    dropdown.style.width = '';
+    dropdown.style.height = '';
+    dropdown.style.maxHeight = '';
+    dropdown.style.display = '';
+    dropdown.style.flexDirection = '';
+    dropdown.style.justifyContent = '';
+    dropdown.style.alignItems = '';
+    dropdown.style.overflowY = '';
+    
     // Get dimensions of the thumbnail
     const thumbnailRect = thumbnailItem.getBoundingClientRect();
     
     // Style the dropdown
     dropdown.style.position = 'fixed';
-    dropdown.style.left = thumbnailRect.left + 'px';
-    dropdown.style.top = thumbnailRect.top + 'px';
-    dropdown.style.width = thumbnailRect.width + 'px';
-    dropdown.style.height = thumbnailRect.height + 'px';
-    dropdown.style.maxHeight = 'none';
     dropdown.style.zIndex = '10000';
-    dropdown.style.display = 'flex'; // Use flex for better layout
+    dropdown.style.display = 'flex';
     dropdown.style.flexDirection = 'column';
     dropdown.style.justifyContent = 'flex-start';
     dropdown.style.alignItems = 'stretch';
     dropdown.style.overflowY = 'auto';
     
-    // Check if we need to adjust for scroll if many effects
-    if (dropdown.scrollHeight > thumbnailRect.height) {
-        // Set a slightly smaller height to show scrollbar
-        dropdown.style.paddingRight = '5px';
+    // Đặt vị trí phù hợp với viewport
+    positionDropdownInViewport(dropdown, thumbnailRect);
+    
+    // Kiểm tra xem dropdown có quá nhiều nội dung không
+    if (dropdown.scrollHeight > window.innerHeight * 0.8) {
+        dropdown.style.maxHeight = (window.innerHeight * 0.8) + 'px';
     }
     
     return thumbnailRect;
 }
 
-// Function to toggle effects dropdown
-function toggleEffectsDropdown(button) {
-    // Get the dropdown element
-    const dropdown = button.parentNode.querySelector('.effects-dropdown');
-    const thumbnailItem = button.closest('.thumbnail-item');
-    
-    // If dropdown is already open and we click on the same button, close it
-    if (dropdown.classList.contains('show')) {
-        dropdown.classList.remove('show');
-        return;
+// Global dropdown for effects
+let globalEffectsDropdown = null;
+let currentThumbnailItem = null;
+let currentEffectsButton = null;
+let currentSelectedEffect = null;
+
+// Function to create a single global effects dropdown
+function createGlobalEffectsDropdown() {
+    // Remove any existing global dropdown
+    if (document.getElementById('global-effects-dropdown')) {
+        document.getElementById('global-effects-dropdown').remove();
     }
     
-    // Close any existing dropdowns
-    document.querySelectorAll('.effects-dropdown.show, .transitions-dropdown.show').forEach(item => {
-        item.classList.remove('show');
+    // Create the dropdown
+    const dropdown = document.createElement('div');
+    dropdown.id = 'global-effects-dropdown';
+    dropdown.className = 'effects-dropdown';
+    
+    // Define effect options
+    const effectOptions = [
+        { name: 'None', icon: 'fas fa-ban' },
+        { name: 'Fade', icon: 'fas fa-adjust' },
+        { name: 'Zoom In', icon: 'fas fa-search-plus' },
+        { name: 'Zoom Out', icon: 'fas fa-search-minus' },
+        { name: 'Blur', icon: 'fas fa-water' },
+        { name: 'Black & White', icon: 'fas fa-tint' },
+        { name: 'Sepia', icon: 'fas fa-image' },
+        { name: 'Brightness', icon: 'fas fa-sun' },
+        { name: 'Contrast', icon: 'fas fa-adjust' },
+        { name: 'Saturation', icon: 'fas fa-palette' },
+        { name: 'Hue Rotate', icon: 'fas fa-sync' },
+        { name: 'Invert', icon: 'fas fa-exchange-alt' },
+        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
+        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
+        { name: 'Lắc lư', icon: 'fas fa-random' },
+        { name: 'Màn hình 3D', icon: 'fas fa-cube' },
+        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
+        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
+        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
+        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
+        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
+        { name: 'Mở ngược', icon: 'fas fa-undo' },
+        { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
+        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
+        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
+        { name: 'Phim', icon: 'fas fa-film' },
+        { name: 'Điểm lục giác', icon: 'fas fa-stop' },
+        { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
+        { name: 'Bụi rơi', icon: 'fas fa-feather' },
+        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
+        { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
+        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
+        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
+        { name: 'Lũ quét qua', icon: 'fas fa-water' },
+        { name: 'S-Movement', icon: 'fas fa-wave-square' },
+        { name: 'Cười lên', icon: 'fas fa-smile' },
+        { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
+        { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
+        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
+        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
+        { name: 'Lấp lánh 2', icon: 'fas fa-star' },
+        { name: 'Trục trặc pixel', icon: 'fas fa-th' },
+        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
+        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
+    ];
+    
+    // Add effect options to the dropdown
+    effectOptions.forEach(option => {
+        const effectOption = document.createElement('div');
+        effectOption.className = 'effect-option';
+        effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+        effectOption.dataset.name = option.name;
+        effectOption.dataset.icon = option.icon;
+        effectOption.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (currentSelectedEffect) {
+                // Update the selected effect display
+                const optionName = this.dataset.name;
+                const iconClass = this.dataset.icon;
+                currentSelectedEffect.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+                
+                // Close the dropdown
+                hideEffectsDropdown();
+            }
+        };
+        dropdown.appendChild(effectOption);
     });
     
-    // Set up the dropdown overlay
-    const thumbnailRect = createEffectsOverlay(thumbnailItem, dropdown);
+    // Add the dropdown to the document body
+    document.body.appendChild(dropdown);
     
-    // Show the dropdown
-    dropdown.classList.add('show');
+    // Store the dropdown for later use
+    globalEffectsDropdown = dropdown;
     
-    // Add event listener to close when clicking outside
-    setTimeout(() => {
-        const closeDropdownHandler = (e) => {
-            // Close if clicked outside the dropdown and not on the button
-            if (!dropdown.contains(e.target) && e.target !== button) {
-                dropdown.classList.remove('show');
-                document.removeEventListener('click', closeDropdownHandler);
-                window.removeEventListener('scroll', repositionDropdown);
+    // Add global click listener to hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (globalEffectsDropdown && globalEffectsDropdown.classList.contains('show')) {
+            // If click is outside the dropdown and not on the current effects button
+            if (!globalEffectsDropdown.contains(e.target) && 
+                (!currentEffectsButton || !currentEffectsButton.contains(e.target))) {
+                hideEffectsDropdown();
             }
-        };
-        
-        document.addEventListener('click', closeDropdownHandler);
-        
-        // Reposition dropdown on scroll
-        const repositionDropdown = () => {
-            if (!dropdown.classList.contains('show')) {
-                window.removeEventListener('scroll', repositionDropdown);
-                return;
+        }
+    });
+    
+    // Add scroll listener to reposition or hide dropdown
+    window.addEventListener('scroll', function() {
+        if (globalEffectsDropdown && globalEffectsDropdown.classList.contains('show')) {
+            if (currentThumbnailItem && currentEffectsButton) {
+                const thumbnailRect = currentThumbnailItem.getBoundingClientRect();
+                
+                // If thumbnail is no longer visible, hide the dropdown
+                if (thumbnailRect.bottom < 0 || thumbnailRect.top > window.innerHeight ||
+                    thumbnailRect.right < 0 || thumbnailRect.left > window.innerWidth) {
+                    hideEffectsDropdown();
+                } else {
+                    // Update position
+                    positionEffectsDropdown(currentThumbnailItem);
+                }
             }
-            
-            // Update position based on current thumbnail position
-            const updatedRect = thumbnailItem.getBoundingClientRect();
-            dropdown.style.left = updatedRect.left + 'px';
-            dropdown.style.top = updatedRect.top + 'px';
-        };
-        
-        window.addEventListener('scroll', repositionDropdown, { passive: true });
-        
-        // Handle window resize
-        const handleResize = () => {
-            if (dropdown.classList.contains('show')) {
-                createEffectsOverlay(thumbnailItem, dropdown);
-            } else {
-                window.removeEventListener('resize', handleResize);
+        }
+    });
+    
+    // Add resize listener
+    window.addEventListener('resize', function() {
+        if (globalEffectsDropdown && globalEffectsDropdown.classList.contains('show')) {
+            if (currentThumbnailItem) {
+                positionEffectsDropdown(currentThumbnailItem);
             }
-        };
-        
-        window.addEventListener('resize', handleResize, { passive: true });
-    }, 10);
+        }
+    });
+    
+    return dropdown;
 }
 
-// Function to toggle transitions dropdown
-function toggleTransitionsDropdown(button) {
-    // Get the dropdown element
-    const dropdown = button.parentNode.querySelector('.transitions-dropdown');
+// Function to show the effects dropdown for a specific thumbnail
+function showEffectsDropdown(button) {
+    console.log('Showing effects dropdown for button:', button);
     
-    // If dropdown is already open and we click on the same button, close it
-    if (dropdown.classList.contains('show')) {
-        dropdown.classList.remove('show');
-        return;
+    // Get the thumbnail item
+    const thumbnailItem = button.closest('.thumbnail-item');
+    const selectedEffect = button.nextElementSibling;
+    
+    console.log('Thumbnail item:', thumbnailItem);
+    console.log('Selected effect:', selectedEffect);
+    
+    // Update global references
+    currentThumbnailItem = thumbnailItem;
+    currentEffectsButton = button;
+    currentSelectedEffect = selectedEffect;
+    
+    // Make sure we have the global dropdown
+    if (!globalEffectsDropdown) {
+        console.log('Creating global effects dropdown');
+        globalEffectsDropdown = createGlobalEffectsDropdown();
     }
     
-    // Close any existing dropdowns
-    document.querySelectorAll('.effects-dropdown.show, .transitions-dropdown.show').forEach(item => {
-        item.classList.remove('show');
+    // Update the selected state in dropdown
+    const currentEffectName = selectedEffect.textContent.trim().replace(/^\S+\s+/, '');
+    console.log('Current effect name:', currentEffectName);
+    
+    const options = globalEffectsDropdown.querySelectorAll('.effect-option');
+    options.forEach(option => {
+        const optionName = option.dataset.name;
+        option.classList.toggle('selected', optionName === currentEffectName);
     });
     
-    // Calculate position function
-    const transitionsPositionCalculator = (trigger, dropdown) => {
-        const rect = trigger.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // Calculate optimal position
-        const left = Math.min(Math.max(10, rect.left - 75 + rect.width/2), viewportWidth - 160) + 'px';
-        const top = (rect.bottom + 5) + 'px';
-        const maxHeight = Math.min(300, viewportHeight - rect.bottom - 20) + 'px';
-        
-        return {
-            position: 'fixed',
-            left,
-            top,
-            maxHeight,
-            width: '150px',
-            zIndex: '10000'
-        };
-    };
+    // Position and show the dropdown
+    positionEffectsDropdown(thumbnailItem);
+    globalEffectsDropdown.classList.add('show');
+    console.log('Dropdown shown');
+}
+
+// Function to hide the effects dropdown
+function hideEffectsDropdown() {
+    if (globalEffectsDropdown) {
+        globalEffectsDropdown.classList.remove('show');
+    }
     
-    // Position the dropdown before showing it
-    const position = transitionsPositionCalculator(button, dropdown);
-    Object.keys(position).forEach(prop => {
-        dropdown.style[prop] = position[prop];
-    });
+    // Clear references
+    currentThumbnailItem = null;
+    currentEffectsButton = null;
+    currentSelectedEffect = null;
+}
+
+// Function to position the effects dropdown over a thumbnail
+function positionEffectsDropdown(thumbnailItem) {
+    if (!globalEffectsDropdown) return;
     
-    // Show the dropdown
-    dropdown.classList.add('show');
+    const thumbnailRect = thumbnailItem.getBoundingClientRect();
     
-    // Scroll handler to reposition dropdown as needed
-    const repositionDropdown = () => {
-        if (!dropdown.classList.contains('show')) {
-            window.removeEventListener('scroll', repositionDropdown);
-            return;
-        }
-        
-        const updatedPosition = transitionsPositionCalculator(button, dropdown);
-        Object.keys(updatedPosition).forEach(prop => {
-            dropdown.style[prop] = updatedPosition[prop];
+    // Style the dropdown
+    globalEffectsDropdown.style.position = 'fixed';
+    globalEffectsDropdown.style.zIndex = '10000';
+    globalEffectsDropdown.style.width = thumbnailRect.width + 'px';
+    globalEffectsDropdown.style.height = thumbnailRect.height + 'px';
+    globalEffectsDropdown.style.left = thumbnailRect.left + 'px';
+    globalEffectsDropdown.style.top = thumbnailRect.top + 'px';
+    globalEffectsDropdown.style.maxHeight = 'none';
+    
+    // If there's not enough space in the viewport, adjust max height
+    if (thumbnailRect.height > window.innerHeight * 0.8) {
+        globalEffectsDropdown.style.maxHeight = (window.innerHeight * 0.8) + 'px';
+    }
+}
+
+// Function to toggle effects dropdown
+function toggleEffectsDropdown(button) {
+    // Check if this button's dropdown is already shown
+    if (currentEffectsButton === button && globalEffectsDropdown && 
+        globalEffectsDropdown.classList.contains('show')) {
+        // If already open, close it
+        hideEffectsDropdown();
+    } else {
+        // Close transitions dropdowns
+        document.querySelectorAll('.transitions-dropdown.show').forEach(item => {
+            item.classList.remove('show');
         });
-    };
-    
-    // Add event listener for scrolling
-    window.addEventListener('scroll', repositionDropdown, { passive: true });
-    
-    // Add event listener to close when clicking outside
-    setTimeout(() => {
-        const closeDropdownHandler = (e) => {
-            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
-                dropdown.classList.remove('show');
-                document.removeEventListener('click', closeDropdownHandler);
-                window.removeEventListener('scroll', repositionDropdown);
-            }
-        };
         
-        document.addEventListener('click', closeDropdownHandler);
-    }, 10);
+        // Show this dropdown
+        showEffectsDropdown(button);
+    }
 }
 
 // Function to select a transition
@@ -748,6 +836,17 @@ function selectEffect(option, selectedElement) {
         const dropdown = option.closest('.effects-dropdown');
         if (dropdown) {
             dropdown.classList.remove('show');
+            
+            // Cleanup event handlers
+            if (typeof cleanup === 'function') {
+                cleanup();
+            } else if (window.currentDropdownHandlers) {
+                const { closeHandler, scrollHandler, resizeHandler } = window.currentDropdownHandlers;
+                document.removeEventListener('click', closeHandler);
+                window.removeEventListener('scroll', scrollHandler);
+                window.removeEventListener('resize', resizeHandler);
+                window.currentDropdownHandlers = null;
+            }
         }
     }, 150);
 }
@@ -1591,76 +1690,11 @@ function createElectronThumbnail(fileDetail) {
     selectedEffect.className = 'selected-effect';
     selectedEffect.innerHTML = '<i class="fas fa-ban"></i> None';
     
-    // Create effects dropdown
-    const effectsDropdown = document.createElement('div');
-    effectsDropdown.className = 'effects-dropdown';
-    
-    // Define effect options
-    const effectOptions = [
-        { name: 'None', icon: 'fas fa-ban' },
-        { name: 'Fade', icon: 'fas fa-adjust' },
-        { name: 'Zoom In', icon: 'fas fa-search-plus' },
-        { name: 'Zoom Out', icon: 'fas fa-search-minus' },
-        { name: 'Blur', icon: 'fas fa-water' },
-        { name: 'Black & White', icon: 'fas fa-tint' },
-        { name: 'Sepia', icon: 'fas fa-image' },
-        { name: 'Brightness', icon: 'fas fa-sun' },
-        { name: 'Contrast', icon: 'fas fa-adjust' },
-        { name: 'Saturation', icon: 'fas fa-palette' },
-        { name: 'Hue Rotate', icon: 'fas fa-sync' },
-        { name: 'Invert', icon: 'fas fa-exchange-alt' },
-        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt' },
-        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb' },
-        { name: 'Lắc lư', icon: 'fas fa-random' },
-        { name: 'Màn hình 3D', icon: 'fas fa-cube' },
-        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video' },
-        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h' },
-        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart' },
-        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt' },
-        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye' },
-        { name: 'Mở ngược', icon: 'fas fa-undo' },
-        { name: 'Tuyết vàng', icon: 'fas fa-snowflake' },
-        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat' },
-        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt' },
-        { name: 'Phim', icon: 'fas fa-film' },
-        { name: 'Điểm lục giác', icon: 'fas fa-stop' },
-        { name: 'Lăng kính đá quý', icon: 'fas fa-gem' },
-        { name: 'Bụi rơi', icon: 'fas fa-feather' },
-        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb' },
-        { name: 'Đèn nháy', icon: 'fas fa-lightbulb' },
-        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs' },
-        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman' },
-        { name: 'Lũ quét qua', icon: 'fas fa-water' },
-        { name: 'S-Movement', icon: 'fas fa-wave-square' },
-        { name: 'Cười lên', icon: 'fas fa-smile' },
-        { name: 'Chớp mắt mở', icon: 'fas fa-eye' },
-        { name: 'Đèn flash chéo', icon: 'fas fa-bolt' },
-        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun' },
-        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower' },
-        { name: 'Lấp lánh 2', icon: 'fas fa-star' },
-        { name: 'Trục trặc pixel', icon: 'fas fa-th' },
-        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic' },
-        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand' }
-    ];
-    
-    // Add effect options to the dropdown
-    effectOptions.forEach(option => {
-        const effectOption = document.createElement('div');
-        effectOption.className = 'effect-option';
-        effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
-        effectOption.dataset.name = option.name; // Store the name for easier reference
-        effectOption.dataset.icon = option.icon; // Store the icon class
-        effectOption.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            selectEffect(this, selectedEffect);
-        };
-        effectsDropdown.appendChild(effectOption);
-    });
+    // We no longer need to create a dropdown for each thumbnail
+    // It will use the global dropdown
     
     effectsContainer.appendChild(effectsButton);
     effectsContainer.appendChild(selectedEffect);
-    effectsContainer.appendChild(effectsDropdown);
     
     thumbnailInfo.appendChild(fileName);
     thumbnailInfo.appendChild(fileSize);
