@@ -147,12 +147,17 @@ p {
 }
 
 .thumbnail-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
 }
 
 .thumbnail-item {
+    flex: 0 0 200px;
+    width: 200px;
+    margin-bottom: 15px;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -196,6 +201,63 @@ p {
     text-overflow: ellipsis;
 }
 
+/* Duration input styles */
+.duration-container {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 5px 0;
+    border-top: 1px solid #eee;
+}
+
+.duration-label {
+    font-size: 0.9rem;
+    color: #555;
+    margin-right: 8px;
+}
+
+.duration-input {
+    width: 60px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.duration-input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.duration-unit {
+    font-size: 0.9rem;
+    color: #555;
+    margin-left: 8px;
+}
+
+/* Total duration counter styles */
+.total-duration-container {
+    margin: 10px 0 20px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.total-duration-label {
+    font-size: 1rem;
+    color: #555;
+    font-weight: 500;
+}
+
+.total-duration-value {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 600;
+}
+
 .thumbnail-index {
     position: absolute;
     top: 5px;
@@ -211,4 +273,171 @@ p {
     font-size: 12px;
     font-weight: bold;
     z-index: 10;
+}
+
+/* Transitions list between thumbnails */
+.transitions-container {
+    flex: 0 0 60px;
+    margin: 0 -5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 10px 0;
+}
+
+.transition-button {
+    width: 40px;
+    height: 40px;
+    background-color: #f0f0f0;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-bottom: 5px;
+    transition: all 0.2s ease;
+}
+
+.transition-button:hover {
+    background-color: #e8f4ff;
+    border-color: #4a90e2;
+}
+
+.transition-button i {
+    color: #666;
+    font-size: 18px;
+}
+
+.transition-button:hover i {
+    color: #4a90e2;
+}
+
+.transitions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    min-width: 150px;
+    display: none;
+    padding: 10px 0;
+}
+
+.transitions-dropdown.show {
+    display: block;
+}
+
+.transition-option {
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.transition-option:hover {
+    background-color: #f5f5f5;
+}
+
+.transition-option i {
+    margin-right: 10px;
+    color: #666;
+    width: 20px;
+    text-align: center;
+}
+
+.selected-transition {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 5px;
+}
+
+.selected-transition i {
+    margin-right: 5px;
+    font-size: 12px;
+}
+
+/* Effects selection for individual thumbnails */
+.effects-container {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.effects-label {
+    font-size: 0.9rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.effects-label i {
+    margin-right: 5px;
+    color: #666;
+}
+
+.effects-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    min-width: 200px;
+    display: none;
+    padding: 10px;
+}
+
+.effects-dropdown.show {
+    display: block;
+}
+
+.effects-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    text-align: center;
+}
+
+.effects-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+}
+
+.effect-option {
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.effect-option:hover {
+    background-color: #f5f5f5;
+}
+
+.effect-option.selected {
+    background-color: #e8f4ff;
+    color: #4a90e2;
+}
+
+.selected-effect {
+    font-size: 0.85rem;
+    color: #4a90e2;
+    margin-top: 5px;
+    font-style: italic;
 } 

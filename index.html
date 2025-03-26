@@ -74,6 +74,31 @@
             // Set the default tab
             document.getElementById('template-tab').style.display = 'block';
             
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                // Close transition dropdowns
+                document.querySelectorAll('.transitions-dropdown.show').forEach(dropdown => {
+                    // Check if click is outside the dropdown and its button
+                    const parentContainer = dropdown.closest('.transitions-container');
+                    const transitionButton = parentContainer.querySelector('.transition-button');
+                    
+                    if (!dropdown.contains(e.target) && !transitionButton.contains(e.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+                
+                // Close effects dropdowns
+                document.querySelectorAll('.effects-dropdown.show').forEach(dropdown => {
+                    // Check if click is outside the dropdown and its label
+                    const effectsContainer = dropdown.closest('.effects-container');
+                    const effectsLabel = effectsContainer.querySelector('.effects-label');
+                    
+                    if (!dropdown.contains(e.target) && !effectsLabel.contains(e.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+            });
+            
             // File upload functionality
             const uploadArea = document.querySelector('.upload-area');
             const fileInput = document.getElementById('file-upload');
@@ -185,18 +210,114 @@
                     const fileSize = document.createElement('p');
                     fileSize.textContent = formatFileSize(file.size);
                     
+                    // Create time duration input container
+                    const durationContainer = document.createElement('div');
+                    durationContainer.className = 'duration-container';
+                    
+                    // Create duration label
+                    const durationLabel = document.createElement('label');
+                    durationLabel.className = 'duration-label';
+                    durationLabel.textContent = 'Time:';
+                    
+                    // Create duration input
+                    const durationInput = document.createElement('input');
+                    durationInput.type = 'number';
+                    durationInput.className = 'duration-input';
+                    durationInput.value = 5; // Default 5 seconds
+                    durationInput.min = 1;
+                    durationInput.max = 60;
+                    durationInput.step = 1;
+                    
+                    // Add event listener to update total duration when changed
+                    durationInput.addEventListener('change', function() {
+                        updateTotalDuration();
+                    });
+                    
+                    // Create duration unit label
+                    const durationUnit = document.createElement('span');
+                    durationUnit.className = 'duration-unit';
+                    durationUnit.textContent = 'seconds';
+                    
+                    // Add all duration elements
+                    durationContainer.appendChild(durationLabel);
+                    durationContainer.appendChild(durationInput);
+                    durationContainer.appendChild(durationUnit);
+                    
+                    // Create effects container
+                    const effectsContainer = document.createElement('div');
+                    effectsContainer.className = 'effects-container';
+                    
+                    // Create effects label
+                    const effectsLabel = document.createElement('div');
+                    effectsLabel.className = 'effects-label';
+                    effectsLabel.innerHTML = '<i class="fas fa-magic"></i> Effects: <span class="selected-effect">None</span>';
+                    effectsLabel.onclick = function(e) {
+                        e.stopPropagation();
+                        toggleEffectsDropdown(this);
+                    };
+                    
+                    // Create effects dropdown
+                    const effectsDropdown = document.createElement('div');
+                    effectsDropdown.className = 'effects-dropdown';
+                    
+                    // Add effects title
+                    const effectsTitle = document.createElement('div');
+                    effectsTitle.className = 'effects-title';
+                    effectsTitle.textContent = 'Select Effect';
+                    effectsDropdown.appendChild(effectsTitle);
+                    
+                    // Add effects list
+                    const effectsList = document.createElement('div');
+                    effectsList.className = 'effects-list';
+                    
+                    // Define effects options
+                    const effectOptions = [
+                        'None', 'Fade', 'Zoom In', 'Zoom Out', 
+                        'Blur', 'Black & White', 'Sepia', 'Brightness',
+                        'Contrast', 'Saturation', 'Hue Rotate', 'Invert'
+                    ];
+                    
+                    // Add effect options to the list
+                    effectOptions.forEach(effect => {
+                        const option = document.createElement('div');
+                        option.className = 'effect-option';
+                        if (effect === 'None') option.classList.add('selected');
+                        option.textContent = effect;
+                        option.onclick = function(e) {
+                            e.stopPropagation();
+                            selectEffect(this, effectsLabel);
+                            effectsDropdown.classList.remove('show');
+                        };
+                        effectsList.appendChild(option);
+                    });
+                    
+                    effectsDropdown.appendChild(effectsList);
+                    effectsContainer.appendChild(effectsLabel);
+                    effectsContainer.appendChild(effectsDropdown);
+                    
                     thumbnailInfo.appendChild(fileName);
                     thumbnailInfo.appendChild(fileSize);
+                    thumbnailInfo.appendChild(durationContainer);
+                    thumbnailInfo.appendChild(effectsContainer);
                     
                     thumbnailItem.appendChild(thumbnailIndex);
                     thumbnailItem.appendChild(thumbnail);
                     thumbnailItem.appendChild(thumbnailInfo);
+                    
+                    // If there's already at least one item in the list, add transition element before this one
+                    if (thumbnailList.children.length > 0) {
+                        const transitionsContainer = createTransitionsElement();
+                        thumbnailList.appendChild(transitionsContainer);
+                    }
                     
                     thumbnailList.appendChild(thumbnailItem);
                     console.log('Thumbnail added to list');
                     
                     // Add drag event listeners
                     setupDragListeners(thumbnailItem);
+                    
+                    // Update the total duration
+                    updateTotalDuration();
                 };
                 
                 reader.onerror = function(error) {
@@ -209,6 +330,113 @@
                 } catch (error) {
                     console.error('Exception while reading file:', error);
                 }
+            }
+            
+            // Function to create transitions element
+            function createTransitionsElement() {
+                const transitionsContainer = document.createElement('div');
+                transitionsContainer.className = 'transitions-container';
+                
+                // Create transition button
+                const transitionButton = document.createElement('div');
+                transitionButton.className = 'transition-button';
+                transitionButton.innerHTML = '<i class="fas fa-exchange-alt"></i>';
+                transitionButton.onclick = function(e) {
+                    e.stopPropagation();
+                    toggleTransitionsDropdown(this);
+                };
+                
+                // Create selected transition display
+                const selectedTransition = document.createElement('div');
+                selectedTransition.className = 'selected-transition';
+                selectedTransition.innerHTML = '<i class="fas fa-cut"></i> Cut';
+                
+                // Create transitions dropdown
+                const transitionsDropdown = document.createElement('div');
+                transitionsDropdown.className = 'transitions-dropdown';
+                
+                // Define transition options
+                const transitionOptions = [
+                    { name: 'Cut', icon: 'fas fa-cut' },
+                    { name: 'Fade', icon: 'fas fa-adjust' },
+                    { name: 'Dissolve', icon: 'fas fa-water' },
+                    { name: 'Wipe Right', icon: 'fas fa-arrow-right' },
+                    { name: 'Wipe Left', icon: 'fas fa-arrow-left' },
+                    { name: 'Wipe Up', icon: 'fas fa-arrow-up' },
+                    { name: 'Wipe Down', icon: 'fas fa-arrow-down' },
+                    { name: 'Zoom In', icon: 'fas fa-search-plus' },
+                    { name: 'Zoom Out', icon: 'fas fa-search-minus' }
+                ];
+                
+                // Add transition options to the dropdown
+                transitionOptions.forEach(option => {
+                    const transitionOption = document.createElement('div');
+                    transitionOption.className = 'transition-option';
+                    transitionOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+                    transitionOption.onclick = function(e) {
+                        e.stopPropagation();
+                        selectTransition(this, selectedTransition);
+                        transitionsDropdown.classList.remove('show');
+                    };
+                    transitionsDropdown.appendChild(transitionOption);
+                });
+                
+                transitionsContainer.appendChild(transitionButton);
+                transitionsContainer.appendChild(selectedTransition);
+                transitionsContainer.appendChild(transitionsDropdown);
+                
+                return transitionsContainer;
+            }
+            
+            // Function to toggle transitions dropdown
+            function toggleTransitionsDropdown(button) {
+                const dropdown = button.parentNode.querySelector('.transitions-dropdown');
+                dropdown.classList.toggle('show');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.transitions-dropdown.show').forEach(item => {
+                    if (item !== dropdown) {
+                        item.classList.remove('show');
+                    }
+                });
+                
+                document.querySelectorAll('.effects-dropdown.show').forEach(item => {
+                    item.classList.remove('show');
+                });
+            }
+            
+            // Function to select a transition
+            function selectTransition(option, selectedElement) {
+                selectedElement.innerHTML = option.innerHTML;
+            }
+            
+            // Function to toggle effects dropdown
+            function toggleEffectsDropdown(label) {
+                const dropdown = label.nextElementSibling;
+                dropdown.classList.toggle('show');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.effects-dropdown.show').forEach(item => {
+                    if (item !== dropdown) {
+                        item.classList.remove('show');
+                    }
+                });
+                
+                document.querySelectorAll('.transitions-dropdown.show').forEach(item => {
+                    item.classList.remove('show');
+                });
+            }
+            
+            // Function to select an effect
+            function selectEffect(option, labelElement) {
+                const effectName = option.textContent;
+                labelElement.querySelector('.selected-effect').textContent = effectName;
+                
+                // Mark this option as selected
+                option.parentNode.querySelectorAll('.effect-option').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                option.classList.add('selected');
             }
             
             // Function to setup drag listeners for thumbnail items
@@ -254,23 +482,72 @@
                 
                 // Don't do anything if dropping the same item we're dragging
                 if (draggedItem !== this) {
-                    // Get the position of the dragged item and the drop target
-                    const items = Array.from(thumbnailList.children);
-                    const draggedIndex = items.indexOf(draggedItem);
-                    const dropIndex = items.indexOf(this);
-                    
-                    // Reposition the dragged item
-                    if (draggedIndex < dropIndex) {
-                        thumbnailList.insertBefore(draggedItem, this.nextSibling);
-                    } else {
-                        thumbnailList.insertBefore(draggedItem, this);
+                    // Only handle drops on thumbnail items, not transitions
+                    if (this.classList.contains('thumbnail-item') && draggedItem.classList.contains('thumbnail-item')) {
+                        // Get the position of the dragged item and the drop target
+                        const items = Array.from(thumbnailList.children).filter(item => 
+                            item.classList.contains('thumbnail-item')
+                        );
+                        const draggedIndex = items.indexOf(draggedItem);
+                        const dropIndex = items.indexOf(this);
+                        
+                        // Find the actual indices in the parent container
+                        const allItems = Array.from(thumbnailList.children);
+                        const draggedItemIndex = allItems.indexOf(draggedItem);
+                        const dropItemIndex = allItems.indexOf(this);
+                        
+                        if (draggedIndex < dropIndex) {
+                            // Moving forward - need to account for transitions
+                            // Insert after the next transition (which is right after the drop target)
+                            if (dropItemIndex + 1 < allItems.length && 
+                                allItems[dropItemIndex + 1].classList.contains('transitions-container')) {
+                                thumbnailList.insertBefore(draggedItem, allItems[dropItemIndex + 2]);
+                            } else {
+                                thumbnailList.insertBefore(draggedItem, this.nextSibling);
+                            }
+                        } else {
+                            // Moving backward
+                            thumbnailList.insertBefore(draggedItem, this);
+                        }
+                        
+                        // Reposition transitions
+                        reorganizeTransitions();
+                        
+                        // Update all index numbers
+                        updateIndices();
                     }
-                    
-                    // Update all index numbers
-                    updateIndices();
                 }
                 
                 return false;
+            }
+            
+            // Function to reorganize transitions
+            function reorganizeTransitions() {
+                // Remove all existing transitions
+                document.querySelectorAll('.transitions-container').forEach(item => {
+                    item.remove();
+                });
+                
+                // Add transitions between thumbnail items
+                const thumbnailItems = Array.from(thumbnailList.children).filter(item => 
+                    item.classList.contains('thumbnail-item')
+                );
+                
+                // Add transitions between items (except after the last one)
+                for (let i = 0; i < thumbnailItems.length - 1; i++) {
+                    const currentItem = thumbnailItems[i];
+                    const nextItem = thumbnailItems[i + 1];
+                    
+                    // Create a new transition element
+                    const transitionsContainer = createTransitionsElement();
+                    
+                    // Find the actual next item in the parent container
+                    const allItems = Array.from(thumbnailList.children);
+                    const currentItemIndex = allItems.indexOf(currentItem);
+                    
+                    // Insert after the current item
+                    thumbnailList.insertBefore(transitionsContainer, allItems[currentItemIndex + 1]);
+                }
             }
             
             function handleDragEnd(e) {
@@ -292,6 +569,56 @@
                     const indexElement = item.querySelector('.thumbnail-index');
                     indexElement.textContent = index + 1;
                 });
+
+                // Also update total duration when reordering
+                updateTotalDuration();
+            }
+            
+            // Function to add a total duration counter to thumbnail container
+            function addTotalDurationCounter() {
+                // Check if duration counter already exists
+                if (!document.getElementById('total-duration-container')) {
+                    const thumbnailContainer = document.querySelector('.thumbnail-container');
+                    
+                    const totalDurationContainer = document.createElement('div');
+                    totalDurationContainer.id = 'total-duration-container';
+                    totalDurationContainer.className = 'total-duration-container';
+                    
+                    const totalDurationLabel = document.createElement('span');
+                    totalDurationLabel.className = 'total-duration-label';
+                    totalDurationLabel.textContent = 'Total Duration: ';
+                    
+                    const totalDurationValue = document.createElement('span');
+                    totalDurationValue.id = 'total-duration-value';
+                    totalDurationValue.className = 'total-duration-value';
+                    totalDurationValue.textContent = '0 seconds';
+                    
+                    totalDurationContainer.appendChild(totalDurationLabel);
+                    totalDurationContainer.appendChild(totalDurationValue);
+                    
+                    // Insert after the "Uploaded Files" heading
+                    const heading = thumbnailContainer.querySelector('h2');
+                    heading.parentNode.insertBefore(totalDurationContainer, heading.nextSibling);
+                }
+            }
+            
+            // Function to update total duration
+            function updateTotalDuration() {
+                // Make sure duration counter exists
+                addTotalDurationCounter();
+                
+                // Calculate total duration
+                let totalDuration = 0;
+                const durationInputs = thumbnailList.querySelectorAll('.duration-input');
+                durationInputs.forEach(input => {
+                    totalDuration += parseInt(input.value) || 0;
+                });
+                
+                // Update the displayed value
+                const totalDurationValue = document.getElementById('total-duration-value');
+                if (totalDurationValue) {
+                    totalDurationValue.textContent = totalDuration + ' seconds';
+                }
             }
             
             // Function to format file size
