@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create global effects dropdown
     createGlobalEffectsDropdown();
     
+    // Create global transitions dropdown
+    createGlobalTransitionsDropdown();
+    
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
     
@@ -324,35 +327,20 @@ function createTransitionsElement() {
     selectedTransition.className = 'selected-transition';
     selectedTransition.innerHTML = '<i class="fas fa-cut"></i> Cut';
     
-    // Create transitions dropdown
+    // Khởi tạo tất cả các thuộc tính mặc định cho transition
+    selectedTransition.dataset.effectId = '';
+    selectedTransition.dataset.isOverlap = 'false';
+    selectedTransition.dataset.duration = '0';
+    selectedTransition.dataset.categoryId = '';
+    selectedTransition.dataset.categoryName = '';
+    selectedTransition.dataset.path = '';
+    selectedTransition.dataset.platform = '';
+    selectedTransition.dataset.resourceId = '';
+    selectedTransition.dataset.sourcePlatform = '0';
+    
+    // Create transitions dropdown (we'll use the global one instead)
     const transitionsDropdown = document.createElement('div');
     transitionsDropdown.className = 'transitions-dropdown';
-    
-    // Define transition options
-    const transitionOptions = [
-        { name: 'Cut', icon: 'fas fa-cut' },
-        { name: 'Fade', icon: 'fas fa-adjust' },
-        { name: 'Dissolve', icon: 'fas fa-water' },
-        { name: 'Wipe Right', icon: 'fas fa-arrow-right' },
-        { name: 'Wipe Left', icon: 'fas fa-arrow-left' },
-        { name: 'Wipe Up', icon: 'fas fa-arrow-up' },
-        { name: 'Wipe Down', icon: 'fas fa-arrow-down' },
-        { name: 'Zoom In', icon: 'fas fa-search-plus' },
-        { name: 'Zoom Out', icon: 'fas fa-search-minus' }
-    ];
-    
-    // Add transition options to the dropdown
-    transitionOptions.forEach(option => {
-        const transitionOption = document.createElement('div');
-        transitionOption.className = 'transition-option';
-        transitionOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
-        transitionOption.onclick = function(e) {
-            e.stopPropagation();
-            selectTransition(this, selectedTransition);
-            transitionsDropdown.classList.remove('show');
-        };
-        transitionsDropdown.appendChild(transitionOption);
-    });
     
     transitionsContainer.appendChild(transitionButton);
     transitionsContainer.appendChild(selectedTransition);
@@ -803,17 +791,33 @@ function toggleEffectsDropdown(button) {
 
 // Function to select a transition
 function selectTransition(option, selectedElement) {
-    selectedElement.innerHTML = option.innerHTML;
+    // Keep track of which option was clicked
+    const optionName = option.textContent.trim().replace(/^\S+\s+/, '');
     
-    // Ensure the dropdown is closed
-    const dropdown = option.closest('.transitions-dropdown');
-    if (dropdown) {
-        dropdown.classList.remove('show');
-        
-        // Remove any event listeners attached to this dropdown
-        window.removeEventListener('scroll', option.repositionDropdown);
-        document.removeEventListener('click', option.closeDropdownHandler);
-    }
+    // Update the display with icon
+    const iconClass = option.querySelector('i').className;
+    selectedElement.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+    
+    // Cập nhật tất cả thông tin transition vào selected element
+    selectedElement.dataset.effectId = option.dataset.effectId || '';
+    selectedElement.dataset.isOverlap = option.dataset.isOverlap || 'false';
+    selectedElement.dataset.duration = option.dataset.duration || '0';
+    selectedElement.dataset.categoryId = option.dataset.categoryId || '';
+    selectedElement.dataset.categoryName = option.dataset.categoryName || '';
+    selectedElement.dataset.path = option.dataset.path || '';
+    selectedElement.dataset.platform = option.dataset.platform || '';
+    selectedElement.dataset.resourceId = option.dataset.resourceId || '';
+    selectedElement.dataset.sourcePlatform = option.dataset.sourcePlatform || '0';
+    
+    // Highlight selected option for visual feedback
+    const allOptions = option.parentNode.querySelectorAll('.effect-option');
+    allOptions.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+    
+    // Wait a moment before closing the dropdown for better visual feedback
+    setTimeout(() => {
+        hideTransitionsDropdown();
+    }, 150);
 }
 
 // Function to select an effect
@@ -1090,30 +1094,15 @@ const capcut = {
         'Invert': '7399470719085595920'
     },
     
-    // Transitions mapping (name -> effect_id)
-    transitions: {
-        'Cut': null,
-        'Fade': '7291211157254181377',
-        'Dissolve': '7291211157254181378',
-        'Wipe Right': '7291211157254181379',
-        'Wipe Left': '7291211157254181380',
-        'Wipe Up': '7291211157254181381',
-        'Wipe Down': '7291211157254181382',
-        'Zoom In': '7291211157254181383',
-        'Zoom Out': '7291211157254181384'
-    },
-    
     // Icon mapping for transitions
     transitionIcons: {
         'Cut': 'fas fa-cut',
-        'Fade': 'fas fa-adjust',
-        'Dissolve': 'fas fa-water',
-        'Wipe Right': 'fas fa-arrow-right',
-        'Wipe Left': 'fas fa-arrow-left',
-        'Wipe Up': 'fas fa-arrow-up',
-        'Wipe Down': 'fas fa-arrow-down',
-        'Zoom In': 'fas fa-search-plus',
-        'Zoom Out': 'fas fa-search-minus'
+        'Giảm dần zoom': 'fas fa-search-minus',
+        'Tín hiệu trục trặc 2': 'fas fa-bolt',
+        'Ba lát': 'fas fa-th',
+        'Lấp lánh': 'fas fa-star',
+        'Thổi ra': 'fas fa-expand-arrows-alt',
+        'Trượt xuống': 'fas fa-arrow-down'
     }
 };
 
@@ -1202,12 +1191,26 @@ function exportToCapcut() {
                 }
                 
                 // Get transition (if not the last item)
-                let transitionName = null;
+                let transition = null;
                 if (index < thumbnails.length - 1) {
                     const transitionElement = transitionElements[index];
                     if (transitionElement) {
-                        const transitionText = transitionElement.querySelector('.selected-transition').textContent.trim();
-                        transitionName = transitionText.split(' ').slice(1).join(' '); // Remove the icon part
+                        const selectedTransitionElement = transitionElement.querySelector('.selected-transition');
+                        if (selectedTransitionElement) {
+                            // Lấy đầy đủ thông tin về transition
+                            transition = {
+                                name: selectedTransitionElement.textContent.trim().replace(/^\S+\s+/, ''),
+                                effect_id: selectedTransitionElement.dataset.effectId || null,
+                                is_overlap: selectedTransitionElement.dataset.isOverlap === 'true',
+                                duration: parseInt(selectedTransitionElement.dataset.duration) || 0,
+                                category_id: selectedTransitionElement.dataset.categoryId || "",
+                                category_name: selectedTransitionElement.dataset.categoryName || "",
+                                path: selectedTransitionElement.dataset.path || "",
+                                platform: selectedTransitionElement.dataset.platform || "",
+                                resource_id: selectedTransitionElement.dataset.resourceId || "",
+                                source_platform: parseInt(selectedTransitionElement.dataset.sourcePlatform) || 0
+                            };
+                        }
                     }
                 }
                 
@@ -1217,7 +1220,7 @@ function exportToCapcut() {
                     filePath: filePath,
                     duration: duration,
                     effect: effectName,
-                    transition: transitionName
+                    transition: transition
                 });
             });
             
@@ -1280,20 +1283,25 @@ function exportToCapcut() {
             
             // Create transition elements first
             mediaItems.forEach((item, index) => {
-                if (item.transition && item.transition !== 'Cut' && index < mediaItems.length - 1) {
+                if (item.transition && item.transition.name !== 'Cut' && index < mediaItems.length - 1) {
                     const transitionId = generateUUID();
-                    const transitionEffectId = capcut.transitions[item.transition];
                     
-                    if (transitionEffectId) {
+                    // Sử dụng tất cả thông tin transition đã lưu trữ
+                    const transition = item.transition;
+                    
+                    if (transition && transition.effect_id) {
                         capcutData.materials.transitions.push({
                             id: transitionId,
-                            effect_id: transitionEffectId,
-                            duration: 866666, // Default duration (about 0.866 seconds)
-                            name: item.transition,
-                            is_overlap: true,
-                            path: "", // Will be configured by CapCut
-                            category_id: "25835",
-                            category_name: "remen",
+                            effect_id: transition.effect_id,
+                            duration: transition.duration,
+                            name: transition.name,
+                            is_overlap: transition.is_overlap,
+                            path: transition.path,
+                            platform: transition.platform,
+                            category_id: transition.category_id,
+                            category_name: transition.category_name,
+                            resource_id: transition.resource_id,
+                            source_platform: transition.source_platform,
                             type: "transition"
                         });
                         idMap.transitions.push(transitionId);
@@ -1720,4 +1728,315 @@ function createElectronThumbnail(fileDetail) {
     
     // Update the total duration
     updateTotalDuration();
+}
+
+// Global variables for transitions dropdown
+let globalTransitionsDropdown = null;
+let currentTransitionButton = null;
+let currentSelectedTransition = null;
+let currentTransitionThumbnailItem = null;
+
+// Function to create a single global transitions dropdown
+function createGlobalTransitionsDropdown() {
+    // Remove any existing global dropdown
+    if (document.getElementById('global-transitions-dropdown')) {
+        document.getElementById('global-transitions-dropdown').remove();
+    }
+    
+    // Create the dropdown
+    const dropdown = document.createElement('div');
+    dropdown.id = 'global-transitions-dropdown';
+    dropdown.className = 'transitions-dropdown effects-dropdown'; // Using effects-dropdown style
+    
+    // Define transition options with full details from draft_content_transition.json
+    const transitionOptions = [
+        { 
+            name: 'Cut', 
+            icon: 'fas fa-cut', 
+            effect_id: null,
+            is_overlap: false,
+            duration: 0,
+            category_id: "",
+            category_name: "",
+            path: "",
+            platform: "",
+            resource_id: "",
+            source_platform: 0
+        },
+        { 
+            name: 'Giảm dần zoom', 
+            icon: 'fas fa-search-minus', 
+            effect_id: '7262258307128103425',
+            is_overlap: true,
+            duration: 800000,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7262258307128103425/e4cafc076ecab223a39a26fe6f05b6db",
+            platform: "all",
+            resource_id: "7262258307128103425",
+            source_platform: 1
+        },
+        { 
+            name: 'Tín hiệu trục trặc 2', 
+            icon: 'fas fa-bolt', 
+            effect_id: '7343854374147330562',
+            is_overlap: false,
+            duration: 666666,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7343854374147330562/bc6d04c47df8aa910544fdf657419ab7",
+            platform: "all",
+            resource_id: "7343854374147330562",
+            source_platform: 1
+        },
+        { 
+            name: 'Ba lát', 
+            icon: 'fas fa-th', 
+            effect_id: '7252631917437129218',
+            is_overlap: true,
+            duration: 800000,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7252631917437129218/e47aeeef97032d11bf767bd290881da4",
+            platform: "all",
+            resource_id: "7252631917437129218",
+            source_platform: 1
+        },
+        { 
+            name: 'Lấp lánh', 
+            icon: 'fas fa-star', 
+            effect_id: '7361758943661527569',
+            is_overlap: true,
+            duration: 933333,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7361758943661527569/da913924bc6975821de103b371d540ff",
+            platform: "all",
+            resource_id: "7361758943661527569",
+            source_platform: 1
+        },
+        { 
+            name: 'Thổi ra', 
+            icon: 'fas fa-expand-arrows-alt', 
+            effect_id: '7362947185249358353',
+            is_overlap: true,
+            duration: 800000,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7362947185249358353/9d6a02b47846369cec6d19a35826570d",
+            platform: "all",
+            resource_id: "7362947185249358353",
+            source_platform: 1
+        },
+        { 
+            name: 'Trượt xuống', 
+            icon: 'fas fa-arrow-down', 
+            effect_id: '7309454269982183938',
+            is_overlap: true,
+            duration: 533333,
+            category_id: "25835",
+            category_name: "Đang thịnh hành",
+            path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7309454269982183938/9c54ccb7b27ab98f7c3bb03a5d4acc4b",
+            platform: "all",
+            resource_id: "7309454269982183938",
+            source_platform: 1
+        }
+    ];
+    
+    // Add transition options to the dropdown
+    transitionOptions.forEach(option => {
+        const transitionOption = document.createElement('div');
+        transitionOption.className = 'effect-option'; // Using effect-option style
+        transitionOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+        
+        // Lưu trữ đầy đủ thông tin cho mỗi transition
+        transitionOption.dataset.name = option.name;
+        transitionOption.dataset.icon = option.icon;
+        transitionOption.dataset.effectId = option.effect_id || '';
+        transitionOption.dataset.isOverlap = option.is_overlap;
+        transitionOption.dataset.duration = option.duration;
+        transitionOption.dataset.categoryId = option.category_id;
+        transitionOption.dataset.categoryName = option.category_name;
+        transitionOption.dataset.path = option.path;
+        transitionOption.dataset.platform = option.platform;
+        transitionOption.dataset.resourceId = option.resource_id;
+        transitionOption.dataset.sourcePlatform = option.source_platform;
+        
+        transitionOption.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (currentSelectedTransition) {
+                // Update the selected transition display
+                const optionName = this.dataset.name;
+                const iconClass = this.dataset.icon;
+                currentSelectedTransition.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
+                
+                // Lưu tất cả thông tin transition vào selected element
+                currentSelectedTransition.dataset.effectId = this.dataset.effectId;
+                currentSelectedTransition.dataset.isOverlap = this.dataset.isOverlap;
+                currentSelectedTransition.dataset.duration = this.dataset.duration;
+                currentSelectedTransition.dataset.categoryId = this.dataset.categoryId;
+                currentSelectedTransition.dataset.categoryName = this.dataset.categoryName;
+                currentSelectedTransition.dataset.path = this.dataset.path;
+                currentSelectedTransition.dataset.platform = this.dataset.platform;
+                currentSelectedTransition.dataset.resourceId = this.dataset.resourceId;
+                currentSelectedTransition.dataset.sourcePlatform = this.dataset.sourcePlatform;
+                
+                // Close the dropdown
+                hideTransitionsDropdown();
+            }
+        };
+        dropdown.appendChild(transitionOption);
+    });
+    
+    // Add the dropdown to the document body
+    document.body.appendChild(dropdown);
+    
+    // Store the dropdown for later use
+    globalTransitionsDropdown = dropdown;
+    
+    // Add global click listener to hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (globalTransitionsDropdown && globalTransitionsDropdown.classList.contains('show')) {
+            // If click is outside the dropdown and not on the current transitions button
+            if (!globalTransitionsDropdown.contains(e.target) && 
+                (!currentTransitionButton || !currentTransitionButton.contains(e.target))) {
+                hideTransitionsDropdown();
+            }
+        }
+    });
+    
+    // Add scroll listener to reposition or hide dropdown
+    window.addEventListener('scroll', function() {
+        if (globalTransitionsDropdown && globalTransitionsDropdown.classList.contains('show')) {
+            if (currentTransitionThumbnailItem && currentTransitionButton) {
+                const thumbnailRect = currentTransitionThumbnailItem.getBoundingClientRect();
+                
+                // If thumbnail is no longer visible, hide the dropdown
+                if (thumbnailRect.bottom < 0 || thumbnailRect.top > window.innerHeight ||
+                    thumbnailRect.right < 0 || thumbnailRect.left > window.innerWidth) {
+                    hideTransitionsDropdown();
+                } else {
+                    // Update position
+                    positionTransitionsDropdown(currentTransitionThumbnailItem);
+                }
+            }
+        }
+    });
+    
+    // Add resize listener
+    window.addEventListener('resize', function() {
+        if (globalTransitionsDropdown && globalTransitionsDropdown.classList.contains('show')) {
+            if (currentTransitionThumbnailItem) {
+                positionTransitionsDropdown(currentTransitionThumbnailItem);
+            }
+        }
+    });
+    
+    return dropdown;
+}
+
+// Function to show the transitions dropdown for a specific transition
+function showTransitionsDropdown(button) {
+    // Get the transition container
+    const transitionsContainer = button.closest('.transitions-container');
+    const selectedTransition = transitionsContainer.querySelector('.selected-transition');
+    const thumbnailItem = transitionsContainer.parentElement;
+    
+    // Update global references
+    currentTransitionThumbnailItem = thumbnailItem;
+    currentTransitionButton = button;
+    currentSelectedTransition = selectedTransition;
+    
+    // Make sure we have the global dropdown
+    if (!globalTransitionsDropdown) {
+        globalTransitionsDropdown = createGlobalTransitionsDropdown();
+    }
+    
+    // Update the selected state in dropdown
+    const currentTransitionName = selectedTransition.textContent.trim().replace(/^\S+\s+/, '');
+    const currentEffectId = selectedTransition.dataset.effectId || '';
+    
+    const options = globalTransitionsDropdown.querySelectorAll('.effect-option');
+    options.forEach(option => {
+        const optionName = option.dataset.name;
+        const optionEffectId = option.dataset.effectId || '';
+        
+        // Mark as selected if name matches or if effect_id matches (when available)
+        const isSelected = optionName === currentTransitionName || 
+                          (currentEffectId && optionEffectId === currentEffectId);
+        
+        option.classList.toggle('selected', isSelected);
+    });
+    
+    // Position and show the dropdown
+    positionTransitionsDropdown(transitionsContainer);
+    globalTransitionsDropdown.classList.add('show');
+}
+
+// Function to hide the transitions dropdown
+function hideTransitionsDropdown() {
+    if (globalTransitionsDropdown) {
+        globalTransitionsDropdown.classList.remove('show');
+    }
+    
+    // Clear references
+    currentTransitionThumbnailItem = null;
+    currentTransitionButton = null;
+    currentSelectedTransition = null;
+}
+
+// Function to position the transitions dropdown over a transition container
+function positionTransitionsDropdown(transitionsContainer) {
+    if (!globalTransitionsDropdown) return;
+    
+    const containerRect = transitionsContainer.getBoundingClientRect();
+    
+    // Style the dropdown
+    globalTransitionsDropdown.style.position = 'fixed';
+    globalTransitionsDropdown.style.zIndex = '10000';
+    globalTransitionsDropdown.style.width = '250px';
+    globalTransitionsDropdown.style.maxHeight = '350px';
+    
+    // Position to the right of the transition container
+    globalTransitionsDropdown.style.left = (containerRect.right + 10) + 'px';
+    globalTransitionsDropdown.style.top = containerRect.top + 'px';
+    
+    // Check if dropdown would go off-screen to the right
+    const dropdownRect = globalTransitionsDropdown.getBoundingClientRect();
+    if (dropdownRect.right > window.innerWidth) {
+        // Position to the left of the transition container
+        globalTransitionsDropdown.style.left = (containerRect.left - dropdownRect.width - 10) + 'px';
+    }
+    
+    // Check if dropdown would go off-screen at the bottom
+    if (dropdownRect.bottom > window.innerHeight) {
+        globalTransitionsDropdown.style.top = (window.innerHeight - dropdownRect.height - 10) + 'px';
+    }
+}
+
+// Function to toggle transitions dropdown
+function toggleTransitionsDropdown(button) {
+    // Check if this button's dropdown is already shown
+    if (currentTransitionButton === button && globalTransitionsDropdown && 
+        globalTransitionsDropdown.classList.contains('show')) {
+        // If already open, close it
+        hideTransitionsDropdown();
+    } else {
+        // Close effects dropdowns
+        document.querySelectorAll('.effects-dropdown.show').forEach(item => {
+            if (item.id !== 'global-transitions-dropdown') {
+                item.classList.remove('show');
+            }
+        });
+        
+        // Hide effects dropdown if it's open
+        if (globalEffectsDropdown && globalEffectsDropdown.classList.contains('show')) {
+            hideEffectsDropdown();
+        }
+        
+        // Show this dropdown
+        showTransitionsDropdown(button);
+    }
 }

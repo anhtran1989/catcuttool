@@ -438,7 +438,7 @@ p {
 }
 
 /* Effects dropdown styles */
-.effects-dropdown, #global-effects-dropdown {
+.effects-dropdown, #global-effects-dropdown, #global-transitions-dropdown {
     position: fixed;
     background-color: rgba(0, 0, 0, 0.85);
     border-radius: 8px;
@@ -459,7 +459,7 @@ p {
     opacity: 0;
 }
 
-#global-effects-dropdown.show {
+#global-effects-dropdown.show, #global-transitions-dropdown.show {
     display: flex !important;
     opacity: 1;
     transform: scale(1);
@@ -467,15 +467,15 @@ p {
 }
 
 /* Scrollbar for Webkit browsers */
-.effects-dropdown::-webkit-scrollbar, #global-effects-dropdown::-webkit-scrollbar {
+.effects-dropdown::-webkit-scrollbar, #global-effects-dropdown::-webkit-scrollbar, #global-transitions-dropdown::-webkit-scrollbar {
     width: 6px;
 }
 
-.effects-dropdown::-webkit-scrollbar-track, #global-effects-dropdown::-webkit-scrollbar-track {
+.effects-dropdown::-webkit-scrollbar-track, #global-effects-dropdown::-webkit-scrollbar-track, #global-transitions-dropdown::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.effects-dropdown::-webkit-scrollbar-thumb, #global-effects-dropdown::-webkit-scrollbar-thumb {
+.effects-dropdown::-webkit-scrollbar-thumb, #global-effects-dropdown::-webkit-scrollbar-thumb, #global-transitions-dropdown::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     border: 2px solid transparent;
