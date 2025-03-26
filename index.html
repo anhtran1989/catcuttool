@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CapCut Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="logo.png" alt="CapCut Logo" class="logo">
+            <span class="brand-text">CapCut Tool</span>
+        </div>
+        <div class="nav-items">
+            <a href="#" class="nav-item">Capcut Template</a>
+            <a href="#" class="nav-item">Capcut Custom</a>
+        </div>
+    </nav>
+    <div class="content">
+        <div class="tab-content" id="template-tab">
+            <h1>Capcut Template</h1>
+            
+            <div class="upload-container">
+                <div class="upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & Drop your images or videos here</p>
+                    <p>or</p>
+                    <label for="file-upload" class="upload-button">Browse Files</label>
+                    <input type="file" id="file-upload" accept="image/*,video/*" multiple hidden>
+                </div>
+            </div>
+            
+            <div class="thumbnail-container">
+                <h2>Uploaded Files</h2>
+                <div class="thumbnail-list" id="thumbnail-list">
+                    <!-- Thumbnails will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="custom-tab" style="display: none;">
+            <h1>Capcut Custom</h1>
+            <p>Your video editing companion</p>
+        </div>
+    </div>
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded and parsed');
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            navItems.forEach((item, index) => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(tab => {
+                        tab.style.display = 'none';
+                    });
+                    
+                    // Show the corresponding tab content
+                    if (index === 0) {
+                        document.getElementById('template-tab').style.display = 'block';
+                    } else if (index === 1) {
+                        document.getElementById('custom-tab').style.display = 'block';
+                    }
+                });
+            });
+            
+            // Set the default tab
+            document.getElementById('template-tab').style.display = 'block';
+            
+            // File upload functionality
+            const uploadArea = document.querySelector('.upload-area');
+            const fileInput = document.getElementById('file-upload');
+            const thumbnailList = document.getElementById('thumbnail-list');
+            
+            // Handle click on upload area
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // Handle drag and drop
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.add('active');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('active');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                console.log('File drop event triggered');
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('active');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    console.log('Files dropped: ' + files.length);
+                    handleFiles(files);
+                }
+            });
+            
+            // Handle file selection
+            fileInput.addEventListener('change', function(e) {
+                console.log('File input change event triggered');
+                const files = this.files;
+                if (files.length > 0) {
+                    console.log('Files selected: ' + files.length);
+                    handleFiles(files);
+                }
+            });
+            
+            // Function to handle files
+            function handleFiles(files) {
+                if (files && files.length > 0) {
+                    console.log('Processing ' + files.length + ' files');
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        
+                        // Check if the file is an image or video
+                        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+                            console.log('Creating thumbnail for: ' + file.name);
+                            createThumbnail(file);
+                        } else {
+                            console.log('Unsupported file type: ' + file.type);
+                        }
+                    }
+                    
+                    // Reset the file input to allow uploading the same file again
+                    fileInput.value = '';
+                } else {
+                    console.log('No files to process');
+                }
+            }
+            
+            // Function to create thumbnail
+            function createThumbnail(file) {
+                console.log('Starting thumbnail creation for: ' + file.name);
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    console.log('FileReader loaded successfully');
+                    
+                    const thumbnailItem = document.createElement('div');
+                    thumbnailItem.className = 'thumbnail-item';
+                    thumbnailItem.draggable = true;
+                    
+                    // Add index number
+                    const thumbnailIndex = document.createElement('div');
+                    thumbnailIndex.className = 'thumbnail-index';
+                    thumbnailIndex.textContent = thumbnailList.children.length + 1;
+                    
+                    let thumbnail;
+                    
+                    if (file.type.startsWith('image/')) {
+                        console.log('Creating image thumbnail');
+                        thumbnail = document.createElement('img');
+                        thumbnail.src = e.target.result;
+                    } else if (file.type.startsWith('video/')) {
+                        console.log('Creating video thumbnail');
+                        thumbnail = document.createElement('video');
+                        thumbnail.src = e.target.result;
+                        // Add poster image for video if you have one
+                        thumbnail.setAttribute('controls', 'true');
+                    }
+                    
+                    const thumbnailInfo = document.createElement('div');
+                    thumbnailInfo.className = 'thumbnail-info';
+                    
+                    const fileName = document.createElement('p');
+                    fileName.textContent = file.name;
+                    
+                    const fileSize = document.createElement('p');
+                    fileSize.textContent = formatFileSize(file.size);
+                    
+                    thumbnailInfo.appendChild(fileName);
+                    thumbnailInfo.appendChild(fileSize);
+                    
+                    thumbnailItem.appendChild(thumbnailIndex);
+                    thumbnailItem.appendChild(thumbnail);
+                    thumbnailItem.appendChild(thumbnailInfo);
+                    
+                    thumbnailList.appendChild(thumbnailItem);
+                    console.log('Thumbnail added to list');
+                    
+                    // Add drag event listeners
+                    setupDragListeners(thumbnailItem);
+                };
+                
+                reader.onerror = function(error) {
+                    console.error('Error reading file:', error);
+                };
+                
+                try {
+                    reader.readAsDataURL(file);
+                    console.log('Started reading file as data URL');
+                } catch (error) {
+                    console.error('Exception while reading file:', error);
+                }
+            }
+            
+            // Function to setup drag listeners for thumbnail items
+            function setupDragListeners(item) {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('dragleave', handleDragLeave);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            }
+            
+            let draggedItem = null;
+            
+            function handleDragStart(e) {
+                draggedItem = this;
+                // Set opacity to indicate dragging
+                setTimeout(() => {
+                    this.style.opacity = '0.4';
+                }, 0);
+                
+                // Required for Firefox
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.innerHTML);
+            }
+            
+            function handleDragOver(e) {
+                e.preventDefault();
+                // Allow drop
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+                return false;
+            }
+            
+            function handleDragLeave(e) {
+                this.classList.remove('drag-over');
+            }
+            
+            function handleDrop(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                this.classList.remove('drag-over');
+                
+                // Don't do anything if dropping the same item we're dragging
+                if (draggedItem !== this) {
+                    // Get the position of the dragged item and the drop target
+                    const items = Array.from(thumbnailList.children);
+                    const draggedIndex = items.indexOf(draggedItem);
+                    const dropIndex = items.indexOf(this);
+                    
+                    // Reposition the dragged item
+                    if (draggedIndex < dropIndex) {
+                        thumbnailList.insertBefore(draggedItem, this.nextSibling);
+                    } else {
+                        thumbnailList.insertBefore(draggedItem, this);
+                    }
+                    
+                    // Update all index numbers
+                    updateIndices();
+                }
+                
+                return false;
+            }
+            
+            function handleDragEnd(e) {
+                // Reset opacity of dragged item
+                this.style.opacity = '1';
+                
+                // Remove drag-over class from all items
+                document.querySelectorAll('.thumbnail-item').forEach(item => {
+                    item.classList.remove('drag-over');
+                });
+                
+                draggedItem = null;
+            }
+            
+            // Function to update all index numbers
+            function updateIndices() {
+                const items = thumbnailList.querySelectorAll('.thumbnail-item');
+                items.forEach((item, index) => {
+                    const indexElement = item.querySelector('.thumbnail-index');
+                    indexElement.textContent = index + 1;
+                });
+            }
+            
+            // Function to format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html> 
