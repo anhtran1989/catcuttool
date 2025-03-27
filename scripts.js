@@ -5,6 +5,12 @@ let currentProject = {
     path: ''
 };
 
+// Global variable to store templates
+let templates = [];
+
+// Create a placeholder image data URL for templates without images
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22180%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%20180%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_189be7daa7f%20text%20%7B%20fill%3A%23999%3Bfont-weight%3Anormal%3Bfont-family%3AArial%2C%20Helvetica%2C%20Open%20Sans%2C%20sans-serif%2C%20monospace%3Bfont-size%3A15pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_189be7daa7f%22%3E%3Crect%20width%3D%22300%22%20height%3D%22180%22%20fill%3D%22%23373940%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22110.5%22%20y%3D%2297.5%22%3ECapCut%20Template%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
     
@@ -12,15 +18,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const projectNameInput = document.getElementById('project-name');
     const defaultPathInput = document.getElementById('default-path');
     const targetPathInput = document.getElementById('target-path');
+    const templatePathInput = document.getElementById('template-path');
     const createProjectButton = document.getElementById('create-project-button');
     const browseDefaultPathButton = document.getElementById('browse-default-path');
     const browseTargetPathButton = document.getElementById('browse-target-path');
+    const browseTemplatePathButton = document.getElementById('browse-template-path');
     
     // Settings popup functionality
     const settingsButton = document.getElementById('settings-button');
     const settingsPopup = document.getElementById('settings-popup');
     const closeSettingsButton = document.getElementById('close-settings');
     const saveSettingsButton = document.getElementById('save-settings');
+    
+    // Template tab elements
+    const templateSearch = document.getElementById('template-search');
+    const templateCategory = document.getElementById('template-category');
+    const templateGrid = document.getElementById('template-grid');
+    const refreshTemplatesButton = document.getElementById('refresh-templates');
+    const importTemplateButton = document.getElementById('import-template');
     
     // Settings popup event listeners
     settingsButton.addEventListener('click', function(e) {
@@ -44,16 +59,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Save settings logic
         const defaultPath = defaultPathInput.value;
         const targetPath = targetPathInput.value;
+        const templatePath = templatePathInput.value;
         
         // Validate paths
-        if (!defaultPath || !targetPath) {
-            showNotification('Please set both default and target paths', 'error');
+        if (!defaultPath || !targetPath || !templatePath) {
+            showNotification('Please set all path settings', 'error');
             return;
         }
         
         // Save to localStorage for persistence
         localStorage.setItem('defaultPath', defaultPath);
         localStorage.setItem('targetPath', targetPath);
+        localStorage.setItem('templatePath', templatePath);
         
         showNotification('Settings saved successfully', 'success');
         settingsPopup.style.display = 'none';
@@ -63,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadSavedSettings() {
         const savedDefaultPath = localStorage.getItem('defaultPath');
         const savedTargetPath = localStorage.getItem('targetPath');
+        const savedTemplatePath = localStorage.getItem('templatePath');
         
         if (savedDefaultPath) {
             defaultPathInput.value = savedDefaultPath;
@@ -70,6 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (savedTargetPath) {
             targetPathInput.value = savedTargetPath;
+        }
+        
+        if (savedTemplatePath) {
+            templatePathInput.value = savedTemplatePath;
         }
     }
     
@@ -133,6 +155,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Function to browse for folders - template path
+    browseTemplatePathButton.addEventListener('click', function() {
+        if (window.electron) {
+            window.electron.send('select-folder', { inputId: 'template-path' });
+        } else {
+            alert('This feature requires Electron to work with the file system.');
+        }
+    });
+    
     // Listen for folder selection results
     if (window.electron) {
         window.electron.receive('folder-selected', function(data) {
@@ -144,6 +175,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('defaultPath', path);
             } else if (inputId === 'target-path') {
                 localStorage.setItem('targetPath', path);
+            } else if (inputId === 'template-path') {
+                localStorage.setItem('templatePath', path);
+                // Refresh templates if the template path was updated
+                loadTemplates();
             }
         });
         
@@ -197,6 +232,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('template-tab').style.display = 'block';
             } else if (index === 1) {
                 document.getElementById('custom-tab').style.display = 'block';
+                // Load templates when switching to the template tab
+                loadTemplates();
             }
         });
     });
@@ -282,6 +319,43 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFiles(files);
         }
     });
+    
+    // Template functionality
+    if (refreshTemplatesButton) {
+        refreshTemplatesButton.addEventListener('click', function() {
+            loadTemplates();
+        });
+    }
+    
+    if (importTemplateButton) {
+        importTemplateButton.addEventListener('click', function() {
+            if (templateGrid.querySelector('.template-item.selected')) {
+                const selectedTemplate = templateGrid.querySelector('.template-item.selected');
+                const templatePath = selectedTemplate.getAttribute('data-path');
+                const templateName = selectedTemplate.getAttribute('data-name');
+                importTemplate(templatePath, templateName);
+            } else {
+                showNotification('Please select a template first', 'error');
+            }
+        });
+    }
+    
+    if (templateSearch) {
+        templateSearch.addEventListener('input', function() {
+            filterTemplates();
+        });
+    }
+    
+    if (templateCategory) {
+        templateCategory.addEventListener('change', function() {
+            filterTemplates();
+        });
+    }
+    
+    // Load templates initially
+    if (document.getElementById('custom-tab').style.display === 'block') {
+        loadTemplates();
+    }
 });
 
 // Function to handle files
@@ -2505,4 +2579,191 @@ function showNotification(message, type = 'info') {
             document.body.removeChild(notification);
         }
     }, 5000);
+}
+
+// Template-related functions
+function loadTemplates() {
+    // Clear existing templates
+    templates = [];
+    templateGrid.innerHTML = '';
+    
+    // Show loading state
+    templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading templates...</p></div>';
+    
+    const templatePath = localStorage.getItem('templatePath') || templatePathInput.value;
+    
+    if (!templatePath) {
+        templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-exclamation-circle"></i><p>Please set the template path in settings first</p></div>';
+        return;
+    }
+    
+    if (window.electron) {
+        window.electron.send('load-templates', { templatePath });
+    } else {
+        // For browser testing, use mock data
+        setTimeout(() => {
+            const mockTemplates = [
+                { 
+                    name: 'Summer Vibes', 
+                    path: 'C:\\Template Capcut\\Summer Vibes', 
+                    category: 'trending', 
+                    coverImage: PLACEHOLDER_IMAGE // Using placeholder in browser mode
+                },
+                { 
+                    name: 'Epic Intro', 
+                    path: 'C:\\Template Capcut\\Epic Intro', 
+                    category: 'new', 
+                    coverImage: PLACEHOLDER_IMAGE
+                },
+                { 
+                    name: 'Travel Montage', 
+                    path: 'C:\\Template Capcut\\Travel Montage', 
+                    category: 'trending', 
+                    coverImage: PLACEHOLDER_IMAGE
+                },
+                { 
+                    name: 'Smooth Transitions', 
+                    path: 'C:\\Template Capcut\\Smooth Transitions', 
+                    category: 'new', 
+                    coverImage: PLACEHOLDER_IMAGE
+                }
+            ];
+            
+            templates = mockTemplates;
+            renderTemplates(mockTemplates);
+        }, 1000);
+    }
+    
+    // Add listener for template data (when using Electron)
+    if (window.electron) {
+        window.electron.receive('templates-loaded', function(data) {
+            const { success, templates: loadedTemplates, message } = data;
+            
+            if (success) {
+                templates = loadedTemplates;
+                renderTemplates(loadedTemplates);
+            } else {
+                templateGrid.innerHTML = `<div class="template-empty"><i class="fas fa-exclamation-circle"></i><p>${message || 'Failed to load templates'}</p></div>`;
+                showNotification(message || 'Failed to load templates', 'error');
+            }
+        });
+    }
+}
+
+function renderTemplates(templatesList) {
+    if (!templatesList || templatesList.length === 0) {
+        templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-folder-open"></i><p>No templates found. Add some templates to the template folder.</p></div>';
+        return;
+    }
+    
+    // Clear the grid
+    templateGrid.innerHTML = '';
+    
+    // Render each template
+    templatesList.forEach(template => {
+        const templateItem = document.createElement('div');
+        templateItem.className = 'template-item';
+        templateItem.setAttribute('data-name', template.name);
+        templateItem.setAttribute('data-path', template.path);
+        templateItem.setAttribute('data-category', template.category || 'other');
+        
+        // For browser testing or if path is unavailable, use a placeholder
+        let imageSrc;
+        
+        // In Electron context, we need to convert the file path to a loadable URL
+        if (window.electron && template.coverImage) {
+            // Convert the file path to a protocol that Electron can load
+            imageSrc = `file:///${template.coverImage.replace(/\\/g, '/')}`;
+        } else {
+            // Use placeholder in browser context or if no image
+            imageSrc = template.coverImage || PLACEHOLDER_IMAGE;
+        }
+        
+        // Create template structure
+        templateItem.innerHTML = `
+            <div class="template-preview">
+                <img src="${imageSrc}" alt="${template.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+            </div>
+            <div class="template-info">
+                <h3>${template.name}</h3>
+                <p class="template-category">${template.category || 'Other'}</p>
+            </div>
+        `;
+        
+        // Add click event to select template
+        templateItem.addEventListener('click', function() {
+            // Remove selected class from all items
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked item
+            this.classList.add('selected');
+        });
+        
+        // Add double click event to import template
+        templateItem.addEventListener('dblclick', function() {
+            const templatePath = this.getAttribute('data-path');
+            const templateName = this.getAttribute('data-name');
+            importTemplate(templatePath, templateName);
+        });
+        
+        // Add to the grid
+        templateGrid.appendChild(templateItem);
+    });
+}
+
+function filterTemplates() {
+    const searchTerm = templateSearch.value.toLowerCase();
+    const category = templateCategory.value;
+    
+    // Filter templates based on search term and category
+    const filteredTemplates = templates.filter(template => {
+        const nameMatch = template.name.toLowerCase().includes(searchTerm);
+        const categoryMatch = category === 'all' || template.category === category;
+        return nameMatch && categoryMatch;
+    });
+    
+    // Render filtered templates
+    renderTemplates(filteredTemplates);
+}
+
+function importTemplate(templatePath, templateName) {
+    if (!templatePath || !templateName) {
+        showNotification('Invalid template information', 'error');
+        return;
+    }
+    
+    const targetPath = localStorage.getItem('targetPath') || targetPathInput.value;
+    
+    if (!targetPath) {
+        showNotification('Please set the target path in settings first', 'error');
+        return;
+    }
+    
+    if (window.electron) {
+        window.electron.send('import-template', {
+            templatePath,
+            templateName,
+            targetPath
+        });
+    } else {
+        // For browser testing
+        setTimeout(() => {
+            showNotification(`Template "${templateName}" imported successfully (demo mode)`, 'success');
+        }, 1000);
+    }
+    
+    // Add listener for import result (when using Electron)
+    if (window.electron) {
+        window.electron.receive('template-imported', function(data) {
+            const { success, message } = data;
+            
+            if (success) {
+                showNotification(message || `Template "${templateName}" imported successfully`, 'success');
+            } else {
+                showNotification(message || 'Failed to import template', 'error');
+            }
+        });
+    }
 }

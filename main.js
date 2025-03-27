@@ -226,4 +226,135 @@ function getFileType(filePath) {
     return 'video/' + ext.substring(1);
   }
   return 'application/octet-stream';
-} 
+}
+
+// Handle template loading
+ipcMain.on('load-templates', async (event, data) => {
+  try {
+    const { templatePath } = data;
+    
+    // Check if template path exists
+    if (!fs.existsSync(templatePath)) {
+      mainWindow.webContents.send('templates-loaded', {
+        success: false,
+        message: `Template folder not found: ${templatePath}`
+      });
+      return;
+    }
+    
+    // Get all folders in the template directory
+    const folders = fs.readdirSync(templatePath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    
+    // Process each folder to find templates
+    const templates = [];
+    
+    for (const folder of folders) {
+      const folderPath = path.join(templatePath, folder);
+      
+      // Use draft_cover.jpg as the template cover image
+      const coverImagePath = path.join(folderPath, 'draft_cover.jpg');
+      
+      // Skip templates without draft_cover.jpg
+      if (!fs.existsSync(coverImagePath)) {
+        console.log(`Skipping template "${folder}" - missing draft_cover.jpg`);
+        continue;
+      }
+      
+      // Determine category (just a simple example, can be enhanced)
+      const category = getTemplateCategory(folder);
+      
+      templates.push({
+        name: folder,
+        path: folderPath,
+        coverImage: coverImagePath,
+        category: category
+      });
+    }
+    
+    mainWindow.webContents.send('templates-loaded', {
+      success: true,
+      templates: templates,
+      message: `Found ${templates.length} templates`
+    });
+    
+  } catch (error) {
+    console.error('Error loading templates:', error);
+    mainWindow.webContents.send('templates-loaded', {
+      success: false,
+      message: `Error loading templates: ${error.message}`
+    });
+  }
+});
+
+// Helper function to categorize templates (can be enhanced with more sophisticated logic)
+function getTemplateCategory(templateName) {
+  const lowerName = templateName.toLowerCase();
+  
+  // Simple categorization based on keywords
+  if (lowerName.includes('new') || 
+      lowerName.includes('latest') || 
+      lowerName.includes('2023') ||
+      lowerName.includes('2024')) {
+    return 'new';
+  } else if (lowerName.includes('trend') || 
+             lowerName.includes('popular') || 
+             lowerName.includes('viral')) {
+    return 'trending';
+  }
+  
+  // If no specific category is detected, default to 'other'
+  return 'other';
+}
+
+// Handle template import
+ipcMain.on('import-template', async (event, data) => {
+  try {
+    const { templatePath, templateName, targetPath } = data;
+    
+    // Check if template path exists
+    if (!fs.existsSync(templatePath)) {
+      mainWindow.webContents.send('template-imported', {
+        success: false,
+        message: `Template folder not found: ${templatePath}`
+      });
+      return;
+    }
+    
+    // Check if target directory exists
+    if (!fs.existsSync(targetPath)) {
+      try {
+        fs.mkdirSync(targetPath, { recursive: true });
+      } catch (err) {
+        mainWindow.webContents.send('template-imported', {
+          success: false,
+          message: `Failed to create target directory: ${err.message}`
+        });
+        return;
+      }
+    }
+    
+    // Create a unique project name to avoid conflicts
+    const timestamp = new Date().getTime();
+    const importedProjectName = `${templateName}_${timestamp}`;
+    const projectDir = path.join(targetPath, importedProjectName);
+    
+    // Create project directory
+    fs.mkdirSync(projectDir, { recursive: true });
+    
+    // Copy all files from template to new project folder
+    copyFolderRecursiveSync(templatePath, projectDir);
+    
+    mainWindow.webContents.send('template-imported', {
+      success: true,
+      message: `Template "${templateName}" imported successfully as "${importedProjectName}"`
+    });
+  } catch (error) {
+    console.error('Error importing template:', error);
+    mainWindow.webContents.send('template-imported', {
+      success: false,
+      message: `Error importing template: ${error.message}`
+    });
+  }
+}); 

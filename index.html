@@ -38,6 +38,11 @@
                     <input type="text" id="target-path" value="C:\Users\Admin\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft" readonly>
                     <button id="browse-target-path" class="browse-button"><i class="fas fa-folder-open"></i></button>
                 </div>
+                <div class="form-group">
+                    <label for="template-path">Template Setting Path:</label>
+                    <input type="text" id="template-path" value="C:\Template Capcut" readonly>
+                    <button id="browse-template-path" class="browse-button"><i class="fas fa-folder-open"></i></button>
+                </div>
                 <button id="save-settings" class="save-button">Save Settings</button>
             </div>
         </div>
@@ -82,7 +87,46 @@
 
         <div class="tab-content" id="custom-tab" style="display: none;">
             <h1>Capcut Template</h1>
-            <p>Your video editing companion</p>
+            
+            <div class="template-container">
+                <div class="template-filters">
+                    <div class="search-bar">
+                        <input type="text" id="template-search" placeholder="Search templates...">
+                        <button id="search-button"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="filter-options">
+                        <select id="template-category">
+                            <option value="all">All Categories</option>
+                            <option value="trending">Trending</option>
+                            <option value="new">New</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="template-grid" id="template-grid">
+                    <!-- Templates will be dynamically loaded here -->
+                    <!-- Template structure:
+                    <div class="template-item">
+                        <div class="template-preview">
+                            <img src="path/to/draft_cover.jpg" alt="Template Name">
+                        </div>
+                        <div class="template-info">
+                            <h3>Template Name</h3>
+                            <p class="template-category">Category</p>
+                        </div>
+                    </div>
+                    -->
+                </div>
+                
+                <div class="template-actions">
+                    <button id="refresh-templates" class="refresh-button">
+                        <i class="fas fa-sync-alt"></i> Refresh Templates
+                    </button>
+                    <button id="import-template" class="import-button">
+                        <i class="fas fa-file-import"></i> Import Template
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <script src="scripts.js"></script>
