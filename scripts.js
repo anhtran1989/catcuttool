@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('This feature requires Electron to work with the file system. Running in browser mode for demo purposes.');
             // Mock success for browser testing
             showNotification('Project created successfully!', 'success');
+            projectNameInput.value = '';
+            // Reset all content in browser mode as well, skip additional notification
+            resetContent(true);
         }
     });
     
@@ -81,6 +84,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (success) {
                 showNotification(message, 'success');
                 projectNameInput.value = ''; // Clear the project name after successful creation
+                
+                // Reset all content when project is created successfully
+                // Skip additional notification since we already show success message
+                resetContent(true);
             } else {
                 showNotification(message, 'error');
             }
@@ -128,6 +135,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set the default tab
     document.getElementById('template-tab').style.display = 'block';
+    
+    // Add reset button functionality
+    const resetButton = document.getElementById('reset-button');
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            // Show confirmation dialog
+            if (confirm('Are you sure you want to reset all content? This will clear all uploaded files and settings.')) {
+                resetContent();
+            }
+        });
+    }
     
     // File upload functionality
     const uploadArea = document.querySelector('.upload-area');
@@ -2325,6 +2343,57 @@ function toggleTransitionsDropdown(button) {
         
         // Show this dropdown
         showTransitionsDropdown(button);
+    }
+}
+
+// Function to reset all content (thumbnails, transitions, effects)
+function resetContent(skipNotification = false) {
+    // Clear the thumbnail list
+    const thumbnailList = document.getElementById('thumbnail-list');
+    if (thumbnailList) {
+        thumbnailList.innerHTML = '';
+    }
+    
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    // Reset the total duration counter
+    const totalDurationValue = document.getElementById('total-duration-value');
+    if (totalDurationValue) {
+        totalDurationValue.textContent = '0 seconds';
+    }
+    
+    // Reset upload area appearance
+    const uploadArea = document.querySelector('.upload-area');
+    if (uploadArea) {
+        // Remove any active states or custom classes
+        uploadArea.classList.remove('active');
+    }
+    
+    // Hide any open dropdowns
+    if (globalEffectsDropdown && globalEffectsDropdown.classList.contains('show')) {
+        hideEffectsDropdown();
+    }
+    
+    if (globalTransitionsDropdown && globalTransitionsDropdown.classList.contains('show')) {
+        hideTransitionsDropdown();
+    }
+    
+    // Hide export button or disable it
+    const exportButton = document.getElementById('export-button');
+    if (exportButton) {
+        exportButton.disabled = false;
+        exportButton.style.opacity = '1';
+    }
+    
+    console.log('All content has been reset');
+    
+    // Show a small confirmation message if not skipped
+    if (!skipNotification) {
+        showNotification('Content has been reset. You can add new files.', 'info');
     }
 }
 
