@@ -1,4 +1,10 @@
 // Tab switching functionality
+// Global variable to store current project
+let currentProject = {
+    name: '',
+    path: ''
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
     
@@ -20,6 +26,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const defaultPath = defaultPathInput.value;
         const targetPath = targetPathInput.value;
+        
+        // Save the current project info
+        currentProject.name = projectName;
+        
+        // Use proper path separator based on platform
+        if (window.electron && window.electron.getPlatform() === 'win32') {
+            // For Windows, use backslash separator
+            currentProject.path = targetPath + '\\' + projectName;
+        } else {
+            // For other platforms, use forward slash
+            currentProject.path = targetPath + '/' + projectName;
+        }
+        
+        console.log('Project created - Name:', currentProject.name, 'Path:', currentProject.path);
         
         // Check if the paths exist
         if (window.electron) {
@@ -61,6 +81,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (success) {
                 showNotification(message, 'success');
                 projectNameInput.value = ''; // Clear the project name after successful creation
+            } else {
+                showNotification(message, 'error');
+            }
+        });
+        
+        window.electron.receive('save-file-result', function(data) {
+            const { success, message } = data;
+            if (success) {
+                showNotification(message, 'success');
             } else {
                 showNotification(message, 'error');
             }
@@ -1651,20 +1680,44 @@ function exportToCapcut() {
                         }
                     }
                     
-                    // Download the JSON file
+                    // Download the JSON file or save it to the project folder
                     const jsonString = JSON.stringify(capcutData);
-                    const blob = new Blob([jsonString], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
                     
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'draft_content_new.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    console.log('Current project state when exporting:', JSON.stringify(currentProject));
                     
-                    alert('File exported successfully! Import it to CapCut to use your template.');
+                    if (window.electron && currentProject.name) {
+                        // In Electron mode, save the file to the project folder
+                        console.log('Exporting to project folder:', currentProject.path);
+                        
+                        // Ensure path is properly formatted
+                        let projectPath = currentProject.path;
+                        // Remove double backslashes and use single backslashes for Windows paths
+                        if (window.electron.getPlatform() === 'win32') {
+                            projectPath = projectPath.replace(/\\\\/g, '\\');
+                        }
+                        
+                        window.electron.send('save-project-file', {
+                            projectPath: projectPath,
+                            fileName: 'draft_content.json',
+                            content: jsonString
+                        });
+                        // Show immediate notification (will be updated when we get response from main process)
+                        showNotification('Exporting to project folder...', 'info');
+                    } else {
+                        // In browser mode, download the file
+                        const blob = new Blob([jsonString], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'draft_content.json'; // Changed to match requested filename
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        alert('File exported successfully! Import it to CapCut to use your template.');
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading default template:', error);

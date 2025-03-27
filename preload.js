@@ -12,14 +12,14 @@ contextBridge.exposeInMainWorld('electron', {
   // IPC communication methods
   send: (channel, data) => {
     // Whitelist channels
-    const validChannels = ['select-folder', 'create-project'];
+    const validChannels = ['select-folder', 'create-project', 'save-project-file'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
   },
   receive: (channel, func) => {
     // Whitelist channels
-    const validChannels = ['folder-selected', 'project-created'];
+    const validChannels = ['folder-selected', 'project-created', 'save-file-result'];
     if (validChannels.includes(channel)) {
       // Remove any existing listeners
       ipcRenderer.removeAllListeners(channel);

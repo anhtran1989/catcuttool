@@ -165,6 +165,55 @@ function copyFolderRecursiveSync(source, target) {
   });
 }
 
+// Handle saving project files
+ipcMain.on('save-project-file', (event, data) => {
+  try {
+    const { projectPath, fileName, content } = data;
+    console.log('Saving project file - Path:', projectPath, 'Filename:', fileName);
+    
+    // Normalize the path to ensure it's valid for the current OS
+    const normalizedPath = path.normalize(projectPath);
+    console.log('Normalized path:', normalizedPath);
+    
+    // Check if project path exists
+    if (!fs.existsSync(normalizedPath)) {
+      console.error('Project folder does not exist:', normalizedPath);
+      
+      // Try to create the directory if it doesn't exist
+      try {
+        fs.mkdirSync(normalizedPath, { recursive: true });
+        console.log('Created directory:', normalizedPath);
+      } catch (dirError) {
+        console.error('Failed to create directory:', dirError);
+        mainWindow.webContents.send('save-file-result', {
+          success: false,
+          message: `Failed to create project directory: ${dirError.message}`
+        });
+        return;
+      }
+    }
+    
+    // Create the full file path
+    const filePath = path.join(normalizedPath, fileName);
+    console.log('Full file path:', filePath);
+    
+    // Write the content to the file
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log('File saved successfully');
+    
+    mainWindow.webContents.send('save-file-result', {
+      success: true,
+      message: `File saved successfully to: ${filePath}`
+    });
+  } catch (error) {
+    console.error('Error saving project file:', error);
+    mainWindow.webContents.send('save-file-result', {
+      success: false,
+      message: `Error saving file: ${error.message}`
+    });
+  }
+});
+
 // Determine file type based on extension
 function getFileType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
