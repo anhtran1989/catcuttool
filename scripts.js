@@ -16,6 +16,66 @@ document.addEventListener('DOMContentLoaded', function() {
     const browseDefaultPathButton = document.getElementById('browse-default-path');
     const browseTargetPathButton = document.getElementById('browse-target-path');
     
+    // Settings popup functionality
+    const settingsButton = document.getElementById('settings-button');
+    const settingsPopup = document.getElementById('settings-popup');
+    const closeSettingsButton = document.getElementById('close-settings');
+    const saveSettingsButton = document.getElementById('save-settings');
+    
+    // Settings popup event listeners
+    settingsButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        settingsPopup.style.display = 'flex';
+    });
+    
+    closeSettingsButton.addEventListener('click', function() {
+        settingsPopup.style.display = 'none';
+    });
+    
+    // Close popup when clicking outside of it
+    window.addEventListener('click', function(e) {
+        if (e.target === settingsPopup) {
+            settingsPopup.style.display = 'none';
+        }
+    });
+    
+    // Save settings button
+    saveSettingsButton.addEventListener('click', function() {
+        // Save settings logic
+        const defaultPath = defaultPathInput.value;
+        const targetPath = targetPathInput.value;
+        
+        // Validate paths
+        if (!defaultPath || !targetPath) {
+            showNotification('Please set both default and target paths', 'error');
+            return;
+        }
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('defaultPath', defaultPath);
+        localStorage.setItem('targetPath', targetPath);
+        
+        showNotification('Settings saved successfully', 'success');
+        settingsPopup.style.display = 'none';
+    });
+    
+    // Load saved settings from localStorage
+    function loadSavedSettings() {
+        const savedDefaultPath = localStorage.getItem('defaultPath');
+        const savedTargetPath = localStorage.getItem('targetPath');
+        
+        if (savedDefaultPath) {
+            defaultPathInput.value = savedDefaultPath;
+        }
+        
+        if (savedTargetPath) {
+            targetPathInput.value = savedTargetPath;
+        }
+    }
+    
+    // Load saved settings on page load
+    loadSavedSettings();
+    
     // Function to handle project creation
     createProjectButton.addEventListener('click', function() {
         const projectName = projectNameInput.value.trim();
@@ -24,8 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const defaultPath = defaultPathInput.value;
-        const targetPath = targetPathInput.value;
+        // Get paths from local storage to ensure we use the latest saved values
+        const defaultPath = localStorage.getItem('defaultPath') || defaultPathInput.value;
+        const targetPath = localStorage.getItem('targetPath') || targetPathInput.value;
         
         // Save the current project info
         currentProject.name = projectName;
@@ -77,6 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
         window.electron.receive('folder-selected', function(data) {
             const { path, inputId } = data;
             document.getElementById(inputId).value = path;
+            
+            // Also update localStorage when selecting folder
+            if (inputId === 'default-path') {
+                localStorage.setItem('defaultPath', path);
+            } else if (inputId === 'target-path') {
+                localStorage.setItem('targetPath', path);
+            }
         });
         
         window.electron.receive('project-created', function(data) {
@@ -2401,11 +2469,15 @@ function resetContent(skipNotification = false) {
 function createCapcutProject(projectName, defaultPath, targetPath) {
     console.log(`Creating project: ${projectName}, from: ${defaultPath}, to: ${targetPath}`);
     
+    // Always get the latest paths from localStorage if available
+    const latestDefaultPath = localStorage.getItem('defaultPath') || defaultPath;
+    const latestTargetPath = localStorage.getItem('targetPath') || targetPath;
+    
     // Send request to Electron to create the project
     window.electron.send('create-project', {
         projectName: projectName,
-        defaultPath: defaultPath,
-        targetPath: targetPath
+        defaultPath: latestDefaultPath,
+        targetPath: latestTargetPath
     });
 }
 
