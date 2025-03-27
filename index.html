@@ -91,39 +91,24 @@
             <div class="template-container">
                 <div class="template-filters">
                     <div class="search-bar">
-                        <input type="text" id="template-search" placeholder="Search templates...">
+                        <input type="text" id="template-search" placeholder="Tìm kiếm mẫu...">
                         <button id="search-button"><i class="fas fa-search"></i></button>
-                    </div>
-                    <div class="filter-options">
-                        <select id="template-category">
-                            <option value="all">All Categories</option>
-                            <option value="trending">Trending</option>
-                            <option value="new">New</option>
-                        </select>
                     </div>
                 </div>
                 
                 <div class="template-grid" id="template-grid">
                     <!-- Templates will be dynamically loaded here -->
-                    <!-- Template structure:
-                    <div class="template-item">
-                        <div class="template-preview">
-                            <img src="path/to/draft_cover.jpg" alt="Template Name">
-                        </div>
-                        <div class="template-info">
-                            <h3>Template Name</h3>
-                            <p class="template-category">Category</p>
-                        </div>
-                    </div>
-                    -->
                 </div>
                 
                 <div class="template-actions">
                     <button id="refresh-templates" class="refresh-button">
-                        <i class="fas fa-sync-alt"></i> Refresh Templates
+                        <i class="fas fa-sync-alt"></i> Làm mới mẫu
+                    </button>
+                    <button id="open-template-folder" class="folder-button">
+                        <i class="fas fa-folder-open"></i> Mở thư mục mẫu
                     </button>
                     <button id="import-template" class="import-button">
-                        <i class="fas fa-file-import"></i> Import Template
+                        <i class="fas fa-file-import"></i> Nhập mẫu
                     </button>
                 </div>
             </div>

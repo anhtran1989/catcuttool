@@ -32,10 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Template tab elements
     const templateSearch = document.getElementById('template-search');
-    const templateCategory = document.getElementById('template-category');
     const templateGrid = document.getElementById('template-grid');
     const refreshTemplatesButton = document.getElementById('refresh-templates');
     const importTemplateButton = document.getElementById('import-template');
+    const openTemplateFolderButton = document.getElementById('open-template-folder');
     
     // Settings popup event listeners
     settingsButton.addEventListener('click', function(e) {
@@ -335,19 +335,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 const templateName = selectedTemplate.getAttribute('data-name');
                 importTemplate(templatePath, templateName);
             } else {
-                showNotification('Please select a template first', 'error');
+                showNotification('Vui lòng chọn một mẫu trước', 'error');
+            }
+        });
+    }
+    
+    if (openTemplateFolderButton) {
+        openTemplateFolderButton.addEventListener('click', function() {
+            const templatePath = localStorage.getItem('templatePath') || templatePathInput.value;
+            if (templatePath) {
+                openTemplateFolder(templatePath);
+            } else {
+                showNotification('Vui lòng thiết lập đường dẫn mẫu trong cài đặt trước', 'error');
             }
         });
     }
     
     if (templateSearch) {
         templateSearch.addEventListener('input', function() {
-            filterTemplates();
-        });
-    }
-    
-    if (templateCategory) {
-        templateCategory.addEventListener('change', function() {
             filterTemplates();
         });
     }
@@ -2583,17 +2588,34 @@ function showNotification(message, type = 'info') {
 
 // Template-related functions
 function loadTemplates() {
+    // Remove any previous status message
+    const existingStatus = document.querySelector('.template-status');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+    
     // Clear existing templates
     templates = [];
     templateGrid.innerHTML = '';
     
     // Show loading state
-    templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading templates...</p></div>';
+    templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-spinner fa-spin"></i><p>Đang tải mẫu...</p></div>';
     
     const templatePath = localStorage.getItem('templatePath') || templatePathInput.value;
     
     if (!templatePath) {
-        templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-exclamation-circle"></i><p>Please set the template path in settings first</p></div>';
+        templateGrid.innerHTML = '<div class="template-empty">' +
+            '<i class="fas fa-exclamation-circle"></i>' +
+            '<p>Vui lòng thiết lập đường dẫn mẫu trong cài đặt trước</p>' +
+            '<button id="open-settings-from-empty" class="settings-button">Mở cài đặt</button>' +
+            '</div>';
+            
+        const openSettingsButton = document.getElementById('open-settings-from-empty');
+        if (openSettingsButton) {
+            openSettingsButton.addEventListener('click', function() {
+                settingsPopup.style.display = 'flex';
+            });
+        }
         return;
     }
     
@@ -2633,8 +2655,8 @@ function loadTemplates() {
             renderTemplates(mockTemplates);
         }, 1000);
     }
-    
-    // Add listener for template data (when using Electron)
+
+    // Add listener for template data
     if (window.electron) {
         window.electron.receive('templates-loaded', function(data) {
             const { success, templates: loadedTemplates, message } = data;
@@ -2643,8 +2665,35 @@ function loadTemplates() {
                 templates = loadedTemplates;
                 renderTemplates(loadedTemplates);
             } else {
-                templateGrid.innerHTML = `<div class="template-empty"><i class="fas fa-exclamation-circle"></i><p>${message || 'Failed to load templates'}</p></div>`;
-                showNotification(message || 'Failed to load templates', 'error');
+                templateGrid.innerHTML = `<div class="template-empty">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${message || 'Không thể tải mẫu'}</p>
+                    <button id="create-template-folder" class="folder-button">
+                        <i class="fas fa-folder-plus"></i> Tạo thư mục mẫu
+                    </button>
+                </div>`;
+                
+                const createTemplateFolderButton = document.getElementById('create-template-folder');
+                if (createTemplateFolderButton) {
+                    createTemplateFolderButton.addEventListener('click', function() {
+                        openTemplateFolder(templatePath);
+                    });
+                }
+                
+                showNotification(message || 'Không thể tải mẫu', 'error');
+            }
+        });
+        
+        // Add listener for folder open result
+        window.electron.receive('folder-open-result', function(data) {
+            const { success, message } = data;
+            showNotification(message, success ? 'success' : 'error');
+            
+            // Reload templates after opening folder
+            if (success) {
+                setTimeout(() => {
+                    loadTemplates();
+                }, 1000);
             }
         });
     }
@@ -2652,20 +2701,19 @@ function loadTemplates() {
 
 function renderTemplates(templatesList) {
     if (!templatesList || templatesList.length === 0) {
-        templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-folder-open"></i><p>No templates found. Add some templates to the template folder.</p></div>';
+        templateGrid.innerHTML = '<div class="template-empty"><i class="fas fa-folder-open"></i><p>Không tìm thấy mẫu nào. Hãy thêm mẫu vào thư mục mẫu.</p></div>';
         return;
     }
     
     // Clear the grid
     templateGrid.innerHTML = '';
     
-    // Render each template
+    // Render each template as a list item
     templatesList.forEach(template => {
         const templateItem = document.createElement('div');
         templateItem.className = 'template-item';
         templateItem.setAttribute('data-name', template.name);
         templateItem.setAttribute('data-path', template.path);
-        templateItem.setAttribute('data-category', template.category || 'other');
         
         // For browser testing or if path is unavailable, use a placeholder
         let imageSrc;
@@ -2679,14 +2727,13 @@ function renderTemplates(templatesList) {
             imageSrc = template.coverImage || PLACEHOLDER_IMAGE;
         }
         
-        // Create template structure
+        // Create template structure - simplified version
         templateItem.innerHTML = `
             <div class="template-preview">
                 <img src="${imageSrc}" alt="${template.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'">
             </div>
             <div class="template-info">
                 <h3>${template.name}</h3>
-                <p class="template-category">${template.category || 'Other'}</p>
             </div>
         `;
         
@@ -2711,17 +2758,20 @@ function renderTemplates(templatesList) {
         // Add to the grid
         templateGrid.appendChild(templateItem);
     });
+    
+    // Add notice showing number of templates
+    const statusElement = document.createElement('div');
+    statusElement.className = 'template-status';
+    statusElement.innerHTML = `<p>Đã tìm thấy ${templatesList.length} mẫu</p>`;
+    templateGrid.insertAdjacentElement('afterend', statusElement);
 }
 
 function filterTemplates() {
     const searchTerm = templateSearch.value.toLowerCase();
-    const category = templateCategory.value;
     
-    // Filter templates based on search term and category
+    // Filter templates based on search term only
     const filteredTemplates = templates.filter(template => {
-        const nameMatch = template.name.toLowerCase().includes(searchTerm);
-        const categoryMatch = category === 'all' || template.category === category;
-        return nameMatch && categoryMatch;
+        return template.name.toLowerCase().includes(searchTerm);
     });
     
     // Render filtered templates
@@ -2765,5 +2815,14 @@ function importTemplate(templatePath, templateName) {
                 showNotification(message || 'Failed to import template', 'error');
             }
         });
+    }
+}
+
+function openTemplateFolder(templatePath) {
+    if (window.electron) {
+        window.electron.send('open-template-folder', { templatePath });
+    } else {
+        // For browser testing
+        alert(`Browser mode: Would open folder at: ${templatePath}`);
     }
 }
