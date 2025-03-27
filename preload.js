@@ -9,5 +9,22 @@ contextBridge.exposeInMainWorld('electron', {
   // Get app path
   getPlatform: () => process.platform,
   
-  // Add any other necessary methods here
+  // IPC communication methods
+  send: (channel, data) => {
+    // Whitelist channels
+    const validChannels = ['select-folder', 'create-project'];
+    if (validChannels.includes(channel)) {
+      ipcRenderer.send(channel, data);
+    }
+  },
+  receive: (channel, func) => {
+    // Whitelist channels
+    const validChannels = ['folder-selected', 'project-created'];
+    if (validChannels.includes(channel)) {
+      // Remove any existing listeners
+      ipcRenderer.removeAllListeners(channel);
+      // Add new listener
+      ipcRenderer.on(channel, (event, ...args) => func(...args));
+    }
+  }
 }); 

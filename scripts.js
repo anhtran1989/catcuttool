@@ -2,6 +2,71 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
     
+    // Project creation functionality
+    const projectNameInput = document.getElementById('project-name');
+    const defaultPathInput = document.getElementById('default-path');
+    const targetPathInput = document.getElementById('target-path');
+    const createProjectButton = document.getElementById('create-project-button');
+    const browseDefaultPathButton = document.getElementById('browse-default-path');
+    const browseTargetPathButton = document.getElementById('browse-target-path');
+    
+    // Function to handle project creation
+    createProjectButton.addEventListener('click', function() {
+        const projectName = projectNameInput.value.trim();
+        if (!projectName) {
+            alert('Please enter a project name');
+            return;
+        }
+        
+        const defaultPath = defaultPathInput.value;
+        const targetPath = targetPathInput.value;
+        
+        // Check if the paths exist
+        if (window.electron) {
+            createCapcutProject(projectName, defaultPath, targetPath);
+        } else {
+            alert('This feature requires Electron to work with the file system. Running in browser mode for demo purposes.');
+            // Mock success for browser testing
+            showNotification('Project created successfully!', 'success');
+        }
+    });
+    
+    // Function to browse for folders - default path
+    browseDefaultPathButton.addEventListener('click', function() {
+        if (window.electron) {
+            window.electron.send('select-folder', { inputId: 'default-path' });
+        } else {
+            alert('This feature requires Electron to work with the file system.');
+        }
+    });
+    
+    // Function to browse for folders - target path
+    browseTargetPathButton.addEventListener('click', function() {
+        if (window.electron) {
+            window.electron.send('select-folder', { inputId: 'target-path' });
+        } else {
+            alert('This feature requires Electron to work with the file system.');
+        }
+    });
+    
+    // Listen for folder selection results
+    if (window.electron) {
+        window.electron.receive('folder-selected', function(data) {
+            const { path, inputId } = data;
+            document.getElementById(inputId).value = path;
+        });
+        
+        window.electron.receive('project-created', function(data) {
+            const { success, message } = data;
+            if (success) {
+                showNotification(message, 'success');
+                projectNameInput.value = ''; // Clear the project name after successful creation
+            } else {
+                showNotification(message, 'error');
+            }
+        });
+    }
+    
     // Initialize dropdown manager
     DropdownManager.init();
     
@@ -2100,4 +2165,42 @@ function toggleTransitionsDropdown(button) {
         // Show this dropdown
         showTransitionsDropdown(button);
     }
+}
+
+// Function to create CapCut project - clones the default folder to target location
+function createCapcutProject(projectName, defaultPath, targetPath) {
+    console.log(`Creating project: ${projectName}, from: ${defaultPath}, to: ${targetPath}`);
+    
+    // Send request to Electron to create the project
+    window.electron.send('create-project', {
+        projectName: projectName,
+        defaultPath: defaultPath,
+        targetPath: targetPath
+    });
+}
+
+// Function to show notification
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    // Add close button
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', function() {
+        document.body.removeChild(notification);
+    });
+    
+    notification.appendChild(closeBtn);
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            document.body.removeChild(notification);
+        }
+    }, 5000);
 }
