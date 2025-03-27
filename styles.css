@@ -660,4 +660,32 @@ p {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* Effects duration input styles */
+.effect-duration-container {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 5px 0;
+    border-top: 1px dashed #eaeaea;
+    width: 100%;
+}
+
+.effect-duration-input {
+    width: 50px;
+    height: 24px;
+    padding: 2px 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 0 5px;
+    font-size: 0.8rem;
+    text-align: center;
+    background-color: #f9f9f9;
+}
+
+.effect-duration-input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 } 

@@ -678,38 +678,38 @@ function createGlobalEffectsDropdown() {
     // Define effect options - chỉ sử dụng những effect thực sự tồn tại trong file JSON
     const effectOptions = [
         { name: 'None', icon: 'fas fa-ban' },
-        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt', effect_id: '7395465413527899398' },
-        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb', effect_id: '7399465788387773701' },
-        { name: 'Lắc lư', icon: 'fas fa-random', effect_id: '7399467327726587141' },
-        { name: 'Màn hình 3D', icon: 'fas fa-cube', effect_id: '7436469103449084432' },
-        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video', effect_id: '7399472023874948357' },
-        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h', effect_id: '7442287977864106497' },
-        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart', effect_id: '7399470509722815750' },
-        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt', effect_id: '7462247315059789117' },
-        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye', effect_id: '7399471976714128645' },
-        { name: 'Mở ngược', icon: 'fas fa-undo', effect_id: '7399471215905082630' },
-        { name: 'Tuyết vàng', icon: 'fas fa-snowflake', effect_id: '7445221319781650945' },
-        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat', effect_id: '7448891008441405953' },
-        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt', effect_id: '7399464712909507846' },
-        { name: 'Phim', icon: 'fas fa-film', effect_id: '7399471460445621509' },
-        { name: 'Điểm lục giác', icon: 'fas fa-stop', effect_id: '7399466433782058245' },
-        { name: 'Lăng kính đá quý', icon: 'fas fa-gem', effect_id: '7446312093990523408' },
-        { name: 'Bụi rơi', icon: 'fas fa-feather', effect_id: '7456798559417930257' },
-        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb', effect_id: '7399470385282026758' },
-        { name: 'Đèn nháy', icon: 'fas fa-lightbulb', effect_id: '7463254687957912893' },
-        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs', effect_id: '7399467027066375429' },
-        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman', effect_id: '7450046927875346960' },
-        { name: 'Lũ quét qua', icon: 'fas fa-water', effect_id: '7395468013832523014' },
-        { name: 'S-Movement', icon: 'fas fa-wave-square', effect_id: '7399471490363608325' },
-        { name: 'Cười lên', icon: 'fas fa-smile', effect_id: '7442284470150894081' },
-        { name: 'Chớp mắt mở', icon: 'fas fa-eye', effect_id: '7395467471026785541' },
-        { name: 'Đèn flash chéo', icon: 'fas fa-bolt', effect_id: '7399471479596895494' },
-        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun', effect_id: '7399466235026509061' },
-        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower', effect_id: '7395471053717277957' },
-        { name: 'Lấp lánh 2', icon: 'fas fa-star', effect_id: '7399466236188380421' },
-        { name: 'Trục trặc pixel', icon: 'fas fa-th', effect_id: '7399464859097730309' },
-        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic', effect_id: '7395468812021157126' },
-        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand', effect_id: '7395473374673259782' }
+        { name: 'Lật Zoom', icon: 'fas fa-arrows-alt', effect_id: '7395465413527899398', duration: 3000000 },
+        { name: 'Làm mờ bùng nổ', icon: 'fas fa-bomb', effect_id: '7399465788387773701', duration: 3000000 },
+        { name: 'Lắc lư', icon: 'fas fa-random', effect_id: '7399467327726587141', duration: 3000000 },
+        { name: 'Màn hình 3D', icon: 'fas fa-cube', effect_id: '7436469103449084432', duration: 3000000 },
+        { name: 'Chuyển động máy ảnh', icon: 'fas fa-video', effect_id: '7399472023874948357', duration: 3000000 },
+        { name: 'Cuộn ngang', icon: 'fas fa-arrows-alt-h', effect_id: '7442287977864106497', duration: 3000000 },
+        { name: 'Tình yêu mờ nhạt', icon: 'fas fa-heart', effect_id: '7399470509722815750', duration: 3000000 },
+        { name: 'Nét truyện tranh', icon: 'fas fa-pencil-alt', effect_id: '7462247315059789117', duration: 3000000 },
+        { name: 'Theo dõi bắn', icon: 'fas fa-bullseye', effect_id: '7399471976714128645', duration: 3000000 },
+        { name: 'Mở ngược', icon: 'fas fa-undo', effect_id: '7399471215905082630', duration: 3000000 },
+        { name: 'Tuyết vàng', icon: 'fas fa-snowflake', effect_id: '7445221319781650945', duration: 3000000 },
+        { name: 'Trái tim bung nở', icon: 'fas fa-heartbeat', effect_id: '7448891008441405953', duration: 3000000 },
+        { name: 'Lóe sáng chớp nảy', icon: 'fas fa-bolt', effect_id: '7399464712909507846', duration: 3000000 },
+        { name: 'Phim', icon: 'fas fa-film', effect_id: '7399471460445621509', duration: 3000000 },
+        { name: 'Điểm lục giác', icon: 'fas fa-stop', effect_id: '7399466433782058245', duration: 3000000 },
+        { name: 'Lăng kính đá quý', icon: 'fas fa-gem', effect_id: '7446312093990523408', duration: 3000000 },
+        { name: 'Bụi rơi', icon: 'fas fa-feather', effect_id: '7456798559417930257', duration: 3000000 },
+        { name: 'Đèn nhấp nháy theo nhịp', icon: 'fas fa-lightbulb', effect_id: '7399470385282026758', duration: 3000000 },
+        { name: 'Đèn nháy', icon: 'fas fa-lightbulb', effect_id: '7463254687957912893', duration: 3000000 },
+        { name: 'Bám sát đối tượng 2', icon: 'fas fa-crosshairs', effect_id: '7399467027066375429', duration: 3000000 },
+        { name: 'Vở kịch Giáng Sinh', icon: 'fas fa-snowman', effect_id: '7450046927875346960', duration: 3000000 },
+        { name: 'Lũ quét qua', icon: 'fas fa-water', effect_id: '7395468013832523014', duration: 3000000 },
+        { name: 'S-Movement', icon: 'fas fa-wave-square', effect_id: '7399471490363608325', duration: 3000000 },
+        { name: 'Cười lên', icon: 'fas fa-smile', effect_id: '7442284470150894081', duration: 3000000 },
+        { name: 'Chớp mắt mở', icon: 'fas fa-eye', effect_id: '7395467471026785541', duration: 3000000 },
+        { name: 'Đèn flash chéo', icon: 'fas fa-bolt', effect_id: '7399471479596895494', duration: 3000000 },
+        { name: 'Tia sáng kéo dài', icon: 'fas fa-sun', effect_id: '7399466235026509061', duration: 3000000 },
+        { name: 'Sóng xung kích', icon: 'fas fa-broadcast-tower', effect_id: '7395471053717277957', duration: 3000000 },
+        { name: 'Lấp lánh 2', icon: 'fas fa-star', effect_id: '7399466236188380421', duration: 3000000 },
+        { name: 'Trục trặc pixel', icon: 'fas fa-th', effect_id: '7399464859097730309', duration: 3000000 },
+        { name: 'Làm mờ ảo diệu', icon: 'fas fa-magic', effect_id: '7395468812021157126', duration: 3000000 },
+        { name: 'Phóng to phơi sáng', icon: 'fas fa-expand', effect_id: '7395473374673259782', duration: 3000000 }
     ];
     
     // Add effect options to the dropdown
@@ -720,6 +720,7 @@ function createGlobalEffectsDropdown() {
         effectOption.dataset.name = option.name;
         effectOption.dataset.icon = option.icon;
         effectOption.dataset.effectId = option.effect_id || '';
+        effectOption.dataset.duration = option.duration || '0';
         effectOption.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -730,6 +731,14 @@ function createGlobalEffectsDropdown() {
                 const iconClass = this.dataset.icon;
                 currentSelectedEffect.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
                 currentSelectedEffect.dataset.effectId = this.dataset.effectId || '';
+                currentSelectedEffect.dataset.duration = this.dataset.duration || '3000000';
+                
+                // Show or hide effect duration input based on selection
+                if (optionName !== 'None') {
+                    showEffectDurationInput(currentSelectedEffect);
+                } else {
+                    hideEffectDurationInput(currentSelectedEffect);
+                }
                 
                 // Close the dropdown
                 hideEffectsDropdown();
@@ -823,6 +832,15 @@ function showEffectsDropdown(button) {
         
         option.classList.toggle('selected', isSelected);
     });
+    
+    // Show or hide duration input based on current effect
+    if (currentEffectName !== 'None') {
+        // If effect is selected, make sure duration input is shown
+        showEffectDurationInput(selectedEffect);
+    } else {
+        // If no effect (None) is selected, hide duration input
+        hideEffectDurationInput(selectedEffect);
+    }
     
     // Position and show the dropdown
     positionEffectsDropdown(thumbnailItem);
@@ -924,6 +942,16 @@ function selectEffect(option, selectedElement) {
     // Lưu trữ effect ID và các thuộc tính khác
     selectedElement.dataset.effectId = option.dataset.effectId || '';
     
+    // Default effect duration: 3 seconds in microseconds (3,000,000)
+    selectedElement.dataset.duration = '3000000';
+    
+    // Show effect duration input if not "None"
+    if (optionName !== 'None') {
+        showEffectDurationInput(selectedElement);
+    } else {
+        hideEffectDurationInput(selectedElement);
+    }
+    
     // Highlight selected option for visual feedback
     const allOptions = option.parentNode.querySelectorAll('.effect-option');
     allOptions.forEach(opt => opt.classList.remove('selected'));
@@ -948,6 +976,71 @@ function selectEffect(option, selectedElement) {
             }
         }
     }, 150);
+}
+
+// Function to display effect duration input
+function showEffectDurationInput(selectedElement) {
+    const thumbnailItem = selectedElement.closest('.thumbnail-item');
+    
+    // Check if duration input container already exists
+    let effectDurationContainer = thumbnailItem.querySelector('.effect-duration-container');
+    
+    if (!effectDurationContainer) {
+        // Create effect duration input container
+        effectDurationContainer = document.createElement('div');
+        effectDurationContainer.className = 'effect-duration-container';
+        
+        // Create duration label
+        const durationLabel = document.createElement('label');
+        durationLabel.className = 'duration-label';
+        durationLabel.textContent = 'Effect Duration:';
+        
+        // Create duration input
+        const durationInput = document.createElement('input');
+        durationInput.type = 'number';
+        durationInput.className = 'effect-duration-input';
+        durationInput.value = parseInt(selectedElement.dataset.duration || '3000000') / 1000000; // Convert from microseconds to seconds
+        durationInput.min = 0.5;
+        durationInput.max = 10;
+        durationInput.step = 0.1;
+        
+        // Add event listener to update effect duration when changed
+        durationInput.addEventListener('change', function() {
+            // Store duration in microseconds
+            selectedElement.dataset.duration = (parseFloat(this.value) * 1000000).toString();
+        });
+        
+        // Create duration unit label
+        const durationUnit = document.createElement('span');
+        durationUnit.className = 'duration-unit';
+        durationUnit.textContent = 'seconds';
+        
+        // Add all duration elements
+        effectDurationContainer.appendChild(durationLabel);
+        effectDurationContainer.appendChild(durationInput);
+        effectDurationContainer.appendChild(durationUnit);
+        
+        // Insert after the effects container
+        const effectsContainer = selectedElement.closest('.effects-container');
+        effectsContainer.parentNode.insertBefore(effectDurationContainer, effectsContainer.nextSibling);
+    } else {
+        // Update existing duration input
+        const durationInput = effectDurationContainer.querySelector('.effect-duration-input');
+        if (durationInput) {
+            durationInput.value = parseInt(selectedElement.dataset.duration || '3000000') / 1000000;
+        }
+        effectDurationContainer.style.display = 'flex';
+    }
+}
+
+// Function to hide effect duration input
+function hideEffectDurationInput(selectedElement) {
+    const thumbnailItem = selectedElement.closest('.thumbnail-item');
+    const effectDurationContainer = thumbnailItem.querySelector('.effect-duration-container');
+    
+    if (effectDurationContainer) {
+        effectDurationContainer.style.display = 'none';
+    }
 }
 
 // Function to setup drag listeners for thumbnail items
@@ -1660,12 +1753,27 @@ function exportToCapcut() {
                                     startTime += mediaItems[i].duration;
                                 }
                                 
+                                // Get the selected effect element to retrieve the custom duration
+                                const thumbnailItem = thumbnailItems[index];
+                                const selectedEffect = thumbnailItem.querySelector('.selected-effect');
+                                
+                                // Get the custom effect duration (if set) or use the media duration
+                                let effectDuration = item.duration;
+                                if (selectedEffect && selectedEffect.dataset.duration) {
+                                    // Get the effect duration from the dataset (in microseconds)
+                                    const customDuration = parseInt(selectedEffect.dataset.duration);
+                                    // Use custom duration if it's valid, otherwise fall back to media duration
+                                    if (!isNaN(customDuration) && customDuration > 0) {
+                                        effectDuration = customDuration;
+                                    }
+                                }
+                                
                                 effectTrack.segments.push({
                                     id: generateUUID(),
                                     material_id: idMap.videoEffects[index],
                                     target_timerange: {
                                         start: startTime,
-                                        duration: item.duration
+                                        duration: effectDuration
                                     },
                                     render_index: 11000 + index,
                                     track_render_index: 1,
