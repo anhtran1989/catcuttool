@@ -1,102 +1,160 @@
 /**
- * Preload Script - Cầu nối bảo mật giữa Main Process và Renderer Process
- * Giúp cho việc giao tiếp giữa các quá trình diễn ra an toàn thông qua contextBridge
+ * Preload Script - Bridge between Main Process and Renderer Process
  */
-const { contextBridge, ipcRenderer } = require("electron");
-const fs = require("fs");
-const path = require("path");
+
+// Thiết lập biến môi trường mặc định là browser mode
+const ENV = {
+  isElectron: false
+};
+
+// Thiết lập browser mode trước tiên
+setupBrowserMode();
+
+// Chỉ thực hiện kiểm tra và thiết lập Electron mode sau đó
+try {
+  // Chúng ta cần phải tránh bất kỳ import nào ở mức global scope
+  if (typeof window !== 'undefined') {
+    if (window.process && window.process.type === 'renderer') {
+      console.log("Detected real Electron environment!");
+      ENV.isElectron = true;
+      setupElectronMode();
+    } else {
+      console.log("Not running in real Electron - continuing with browser mode");
+    }
+  }
+} catch (error) {
+  console.log("Error checking environment:", error);
+}
 
 /**
- * Expose selected APIs to the renderer process
- * Cung cấp các API được kiểm soát cho quá trình Renderer thông qua đối tượng "electron"
- * Đảm bảo chỉ những tính năng cần thiết được phơi bày để đảm bảo an toàn
+ * Setup browser mode (mock) implementations
  */
-contextBridge.exposeInMainWorld("electron", {
-  readJsonFile: (filename) => {
-    try {
-      // Tìm file trong các thư mục có thể có
-      const possiblePaths = [
-        // Thử trong thư mục scripts (cùng cấp với export-manager.js)
-        path.join(__dirname, "renderer", "scripts", filename),
-        // Thử trong thư mục resources
-        path.join(__dirname, "renderer", "resources", filename),
-        // Thử trong thư mục renderer
-        path.join(__dirname, "renderer", filename),
-        // Thử trong thư mục gốc của ứng dụng
-        path.join(process.cwd(), filename),
-      ];
-
-      // Log các đường dẫn đang thử để debug
-      console.log("Possible paths for", filename, ":", possiblePaths);
-
-      // Kiểm tra từng đường dẫn có thể có
-      for (const filePath of possiblePaths) {
-        if (fs.existsSync(filePath)) {
-          console.log("Found file at:", filePath);
-          const data = fs.readFileSync(filePath, "utf8");
-          return JSON.parse(data);
-        }
+function setupBrowserMode() {
+  console.log("Setting up browser mode");
+  
+  // Create mock implementations
+  window.electron = {
+    readJsonFile: async (filename) => {
+      console.log("Browser mode: Mock readJsonFile for", filename);
+      return {
+        materials: {
+          videos: [],
+          transitions: [],
+          video_effects: [],
+          speeds: [],
+          placeholder_infos: [],
+          vocal_separations: [],
+        },
+        tracks: [],
+        duration: 0,
+        uuid: "demo-uuid",
+      };
+    },
+    selectFiles: async () => {
+      console.log("Browser mode: Mock selectFiles");
+      alert("File selection requires Electron. This is a demo in browser mode.");
+      return [];
+    },
+    getFileDetails: async (filePaths) => {
+      console.log("Browser mode: Mock getFileDetails for", filePaths);
+      return [];
+    },
+    getPlatform: () => {
+      console.log("Browser mode: Mock getPlatform");
+      return "browser";
+    },
+    send: (channel, data) => {
+      console.log("Browser mode: Mock send for channel", channel, "with data", data);
+    },
+    receive: (channel, func) => {
+      console.log("Browser mode: Mock receive for channel", channel);
+      // Đối với các channel phổ biến, thiết lập mock handlers
+      if (channel === "folder-selected") {
+        window.mockReceiveHandlers = window.mockReceiveHandlers || {};
+        window.mockReceiveHandlers[channel] = func;
       }
+    },
+  };
+  
+  console.log("Browser mode electron API initialized");
+}
 
-      throw new Error(
-        `File not found: ${filename}. Checked paths: ${possiblePaths.join(
-          ", "
-        )}`
-      );
-    } catch (error) {
-      console.error("Error reading JSON file:", error);
-      throw error;
-    }
-  },
-  /**
-   * File System Operations - Các API xử lý hệ thống tệp
-   */
-  // Hiển thị hộp thoại chọn nhiều tệp và trả về đường dẫn được chọn
-  selectFiles: () => ipcRenderer.invoke("select-files"),
-  // Lấy thông tin chi tiết (tên, kích thước, loại) của các tệp từ đường dẫn
-  getFileDetails: (filePaths) =>
-    ipcRenderer.invoke("get-file-details", filePaths),
+/**
+ * Setup Electron mode with real implementations
+ * This function is only called when we're definitely in Electron
+ */
+function setupElectronMode() {
+  try {
+    // Dynamically import Electron modules only when we're sure we're in Electron
+    const electronModule = require('electron');
+    const fsModule = require('fs');
+    const pathModule = require('path');
+    
+    const { contextBridge, ipcRenderer } = electronModule;
+    
+    contextBridge.exposeInMainWorld("electron", {
+      readJsonFile: (filename) => {
+        try {
+          const possiblePaths = [
+            pathModule.join(__dirname, "renderer", "scripts", filename),
+            pathModule.join(__dirname, "renderer", "resources", filename),
+            pathModule.join(__dirname, "renderer", filename),
+            pathModule.join(process.cwd(), filename),
+          ];
 
-  /**
-   * System Information - Thông tin hệ thống
-   */
-  // Trả về thông tin nền tảng hệ điều hành đang chạy
-  getPlatform: () => process.platform,
+          console.log("Possible paths for", filename, ":", possiblePaths);
 
-  /**
-   * IPC Communication Methods - Các phương thức giao tiếp giữa quá trình
-   */
-  // Gửi dữ liệu từ Renderer sang Main process qua một kênh cụ thể
-  send: (channel, data) => {
-    // Chỉ cho phép sử dụng các kênh giao tiếp được phép (whitelist)
-    const validChannels = [
-      "select-folder",
-      "create-project",
-      "save-project-file",
-      "load-templates",
-      "import-template",
-      "open-template-folder",
-    ];
-    if (validChannels.includes(channel)) {
-      ipcRenderer.send(channel, data);
-    }
-  },
-  // Nhận dữ liệu từ Main process gửi về Renderer process
-  receive: (channel, func) => {
-    // Chỉ lắng nghe các kênh giao tiếp được phép (whitelist)
-    const validChannels = [
-      "folder-selected",
-      "project-created",
-      "save-file-result",
-      "templates-loaded",
-      "template-imported",
-      "folder-open-result",
-    ];
-    if (validChannels.includes(channel)) {
-      // Xóa tất cả trình lắng nghe hiện có để tránh đăng ký nhiều lần
-      ipcRenderer.removeAllListeners(channel);
-      // Thêm trình lắng nghe mới với hàm callback được cung cấp
-      ipcRenderer.on(channel, (event, ...args) => func(...args));
-    }
-  },
-});
+          for (const filePath of possiblePaths) {
+            if (fsModule.existsSync(filePath)) {
+              console.log("Found file at:", filePath);
+              const data = fsModule.readFileSync(filePath, "utf8");
+              return JSON.parse(data);
+            }
+          }
+
+          throw new Error(
+            `File not found: ${filename}. Checked paths: ${possiblePaths.join(", ")}`
+          );
+        } catch (error) {
+          console.error("Error reading JSON file:", error);
+          throw error;
+        }
+      },
+      selectFiles: () => ipcRenderer.invoke("select-files"),
+      getFileDetails: (filePaths) => ipcRenderer.invoke("get-file-details", filePaths),
+      getPlatform: () => process.platform,
+      send: (channel, data) => {
+        const validChannels = [
+          "select-folder",
+          "create-project",
+          "save-project-file",
+          "load-templates",
+          "import-template",
+          "open-template-folder",
+        ];
+        if (validChannels.includes(channel)) {
+          ipcRenderer.send(channel, data);
+        }
+      },
+      receive: (channel, func) => {
+        const validChannels = [
+          "folder-selected",
+          "project-created",
+          "save-file-result",
+          "templates-loaded",
+          "template-imported",
+          "folder-open-result",
+        ];
+        if (validChannels.includes(channel)) {
+          ipcRenderer.removeAllListeners(channel);
+          ipcRenderer.on(channel, (event, ...args) => func(...args));
+        }
+      },
+    });
+    
+    console.log("Electron mode successfully initialized");
+  } catch (error) {
+    console.error("Failed to initialize Electron mode:", error);
+    // Browser mode is already set up, so no fallback needed
+  }
+}
