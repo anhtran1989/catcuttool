@@ -2,9 +2,11 @@
   "name": "capcut-tool",
   "version": "1.0.0",
   "description": "CapCut template tool with file system access",
-  "main": "main.js",
+  "main": "src/main/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder",
+    "pack": "electron-builder --dir"
   },
   "keywords": [
     "capcut",
@@ -14,6 +16,31 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.mainfunc.capcuttool",
+    "productName": "CapCut Tool",
+    "files": [
+      "src/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "src/renderer/assets/logo.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "src/renderer/assets/logo.png"
+    }
   }
-} 
+}
