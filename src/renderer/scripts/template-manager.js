@@ -238,6 +238,10 @@ const TemplateManager = (function () {
     const searchTerm = templateSearch ? templateSearch.value.toLowerCase() : '';
     const selectedCategory = categorySelect ? categorySelect.value.toLowerCase() : '';
     
+    // Remove any existing status messages
+    const existingStatuses = document.querySelectorAll(".template-status");
+    existingStatuses.forEach(status => status.remove());
+    
     // Reset to first page when filtering
     resetPagination();
     
@@ -265,11 +269,9 @@ const TemplateManager = (function () {
     const templateGrid = document.getElementById("template-grid");
     const templatePathInput = document.getElementById("template-path");
 
-    // Remove any previous status message
-    const existingStatus = document.querySelector(".template-status");
-    if (existingStatus) {
-      existingStatus.remove();
-    }
+    // Remove any previous status messages
+    const existingStatuses = document.querySelectorAll(".template-status");
+    existingStatuses.forEach(status => status.remove());
 
     // Remove any previous pagination controls
     const existingPagination = document.querySelector(".template-pagination");
@@ -365,11 +367,9 @@ const TemplateManager = (function () {
         existingPagination.remove();
       }
       
-      // Remove any existing status
-      const existingStatus = document.querySelector(".template-status");
-      if (existingStatus) {
-        existingStatus.remove();
-      }
+      // Remove any existing status messages
+      const existingStatuses = document.querySelectorAll(".template-status");
+      existingStatuses.forEach(status => status.remove());
       
       return;
     }
@@ -468,6 +468,10 @@ const TemplateManager = (function () {
     const statusElement = document.createElement("div");
     statusElement.className = "template-status";
     statusElement.innerHTML = `<p>Đã tìm thấy ${templatesList.length} mẫu</p>`;
+    
+    // Remove any existing status messages before adding the new one
+    const existingStatuses = document.querySelectorAll(".template-status");
+    existingStatuses.forEach(status => status.remove());
     
     // Insert status after pagination
     const paginationContainer = document.querySelector(".template-pagination");
