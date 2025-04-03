@@ -109,6 +109,8 @@ function setupElectronMode() {
       getFileDetails: (filePaths) =>
         ipcRenderer.invoke("get-file-details", filePaths),
       getPlatform: () => process.platform,
+      checkFileExists: (filePath, basePath) => 
+        ipcRenderer.invoke("check-file-exists", { filePath, basePath }),
       send: (channel, data) => {
         const validChannels = [
           "select-folder",
@@ -117,6 +119,8 @@ function setupElectronMode() {
           "load-templates",
           "import-template",
           "open-template-folder",
+          "load-template-video",
+          "get-template-media"
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
@@ -130,6 +134,8 @@ function setupElectronMode() {
           "templates-loaded",
           "template-imported",
           "folder-open-result",
+          "template-video-loaded",
+          "template-media-loaded"
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.removeAllListeners(channel);
