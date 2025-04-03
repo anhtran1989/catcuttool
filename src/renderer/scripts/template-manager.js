@@ -2,6 +2,11 @@
  * Template Manager - Handles template operations
  */
 const TemplateManager = (function () {
+  // State variables to track selected template and modified media
+  let templates = [];
+  let selectedTemplate = null;
+  let modifiedMediaFiles = new Map();
+
   /**
    * Initialize template manager
    */
@@ -538,6 +543,12 @@ const TemplateManager = (function () {
       return;
     }
     
+    // Save selected template info
+    selectedTemplate = {
+      path: templatePath,
+      originalMediaFiles: [...mediaFiles]
+    };
+    
     // Create a temporary container while processing files
     const tempContainer = document.createDocumentFragment();
     let loadedCount = 0;
@@ -556,6 +567,15 @@ const TemplateManager = (function () {
     mediaFiles.forEach(file => {
       const mediaItem = document.createElement("div");
       mediaItem.className = "template-media-item";
+      mediaItem.setAttribute("data-path", file.path);
+      mediaItem.setAttribute("data-name", file.name);
+      mediaItem.setAttribute("data-type", file.type);
+      
+      // Check if this file has been modified
+      const isModified = modifiedMediaFiles.has(file.path);
+      if (isModified) {
+        mediaItem.classList.add("modified");
+      }
       
       let mediaContent = "";
       let filePath = "";
@@ -585,11 +605,20 @@ const TemplateManager = (function () {
           mediaItem.setAttribute("data-type", fileType);
         }
         
+        // If this file was replaced, use the replacement URL
+        if (isModified) {
+          fileUrl = modifiedMediaFiles.get(file.path).previewUrl;
+        }
+        
         // Create appropriate media element based on type
         if (fileType === "image") {
           mediaContent = `
             <div class="media-preview">
               <img src="${fileUrl}" alt="${file.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'; console.error('Không thể tải hình ảnh:', '${fileUrl}');">
+            </div>
+            <div class="media-replace-overlay">
+              <i class="fas fa-upload"></i>
+              <span>Thay thế</span>
             </div>
           `;
         } else if (fileType === "video") {
@@ -600,17 +629,29 @@ const TemplateManager = (function () {
                 <i class="fas fa-play"></i>
               </div>
             </div>
+            <div class="media-replace-overlay">
+              <i class="fas fa-upload"></i>
+              <span>Thay thế</span>
+            </div>
           `;
         } else if (fileType === "audio") {
           mediaContent = `
             <div class="media-preview audio-preview">
               <i class="fas fa-music"></i>
             </div>
+            <div class="media-replace-overlay">
+              <i class="fas fa-upload"></i>
+              <span>Thay thế</span>
+            </div>
           `;
         } else {
           mediaContent = `
             <div class="media-preview file-preview">
               <i class="fas fa-file"></i>
+            </div>
+            <div class="media-replace-overlay">
+              <i class="fas fa-upload"></i>
+              <span>Thay thế</span>
             </div>
           `;
         }
@@ -621,39 +662,46 @@ const TemplateManager = (function () {
             <p title="${file.name}">${file.name}</p>
             ${file.duration ? `<p class="media-duration">${formatDuration(file.duration)}</p>` : ''}
             <p class="media-type">${getMediaTypeText(fileType)}</p>
+            ${isModified ? '<span class="media-modified-badge">Đã thay thế</span>' : ''}
           </div>
         `;
         
         // Add click event for videos to play/pause
         if (fileType === "video") {
-          mediaItem.addEventListener("click", function() {
-            const video = this.querySelector("video");
-            if (!video) return;
-            
-            const playButton = this.querySelector(".video-play-button");
-            
-            if (video.paused) {
-              // Try to play video, handle errors if any
-              try {
-                const playPromise = video.play();
-                
-                if (playPromise !== undefined) {
-                  playPromise.then(_ => {
-                    // Playback started successfully
-                    playButton.style.display = "none";
-                  }).catch(error => {
-                    console.error("Error playing video:", error);
-                    UIManager.showNotification("Không thể phát video này", "error");
-                  });
+          const videoPreview = mediaItem.querySelector(".video-preview");
+          if (videoPreview) {
+            videoPreview.addEventListener("click", function(e) {
+              // Prevent triggering the replacement overlay
+              e.stopPropagation();
+              
+              const video = this.querySelector("video");
+              if (!video) return;
+              
+              const playButton = this.querySelector(".video-play-button");
+              
+              if (video.paused) {
+                // Try to play video, handle errors if any
+                try {
+                  const playPromise = video.play();
+                  
+                  if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                      // Playback started successfully
+                      playButton.style.display = "none";
+                    }).catch(error => {
+                      console.error("Error playing video:", error);
+                      UIManager.showNotification("Không thể phát video này", "error");
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error when playing video:", error);
                 }
-              } catch (error) {
-                console.error("Error when playing video:", error);
+              } else {
+                video.pause();
+                playButton.style.display = "flex";
               }
-            } else {
-              video.pause();
-              playButton.style.display = "flex";
-            }
-          });
+            });
+          }
           
           // Show play button when video ends
           const video = mediaItem.querySelector("video");
@@ -673,6 +721,11 @@ const TemplateManager = (function () {
           }
         }
         
+        // Add click event for replacing media
+        mediaItem.addEventListener("click", function() {
+          replaceMedia(this, file);
+        });
+        
         // Add to fragment
         tempContainer.appendChild(mediaItem);
         
@@ -688,6 +741,9 @@ const TemplateManager = (function () {
           // Clear the container and add all items
           container.innerHTML = '';
           container.appendChild(tempContainer);
+          
+          // Add export button if not already present
+          addExportButton(container);
         }
       };
       
@@ -719,6 +775,300 @@ const TemplateManager = (function () {
       // Process the file with the generated URL
       processFile(fileUrl);
     });
+  }
+
+  /**
+   * Add export button to the media display
+   * @param {HTMLElement} container - The media container element
+   */
+  function addExportButton(container) {
+    // Check if export button already exists
+    if (document.getElementById('export-modified-template')) {
+      return;
+    }
+    
+    // Create export button container
+    const exportButtonContainer = document.createElement('div');
+    exportButtonContainer.className = 'template-export-actions';
+    
+    // Add export button
+    exportButtonContainer.innerHTML = `
+      <button id="export-modified-template" class="primary-button" ${modifiedMediaFiles.size === 0 ? 'disabled' : ''}>
+        <i class="fas fa-file-export"></i> Xuất template với file media đã thay thế
+      </button>
+    `;
+    
+    // Add to container's parent
+    container.parentNode.appendChild(exportButtonContainer);
+    
+    // Add event listener
+    document.getElementById('export-modified-template').addEventListener('click', function() {
+      if (modifiedMediaFiles.size === 0) {
+        UIManager.showNotification('Vui lòng thay thế ít nhất một file media trước', 'warning');
+        return;
+      }
+      
+      exportModifiedTemplate();
+    });
+  }
+  
+  /**
+   * Handle replacing a media file
+   * @param {HTMLElement} mediaItem - The media item element
+   * @param {Object} fileInfo - Original file information
+   */
+  function replaceMedia(mediaItem, fileInfo) {
+    // Create file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    
+    // Set accepted file types based on the original file type
+    const fileType = mediaItem.getAttribute('data-type');
+    if (fileType === 'image') {
+      fileInput.accept = 'image/*';
+    } else if (fileType === 'video') {
+      fileInput.accept = 'video/*';
+    } else if (fileType === 'audio') {
+      fileInput.accept = 'audio/*';
+    }
+    
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const selectedFile = e.target.files[0];
+        
+        // Check if file type matches the original
+        const selectedFileType = getFileTypeFromName(selectedFile.name);
+        if (selectedFileType !== fileType) {
+          UIManager.showNotification(`Vui lòng chọn file ${getMediaTypeText(fileType).toLowerCase()} để thay thế`, 'error');
+          return;
+        }
+        
+        // Show loading state
+        mediaItem.classList.add('loading');
+        mediaItem.innerHTML = `
+          <div class="media-loading-overlay">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Đang xử lý...</span>
+          </div>
+          ${mediaItem.innerHTML}
+        `;
+        
+        // Handle the file based on if we're in Electron or browser
+        if (window.electron) {
+          // In Electron, we need to copy the file to a temporary location
+          const originalPath = fileInfo.path;
+          
+          // Send the file to the main process
+          window.electron.send('prepare-replacement-media', {
+            originalPath,
+            newFilePath: selectedFile.path,
+            fileName: selectedFile.name,
+            fileType
+          });
+          
+          // Listen for the response
+          window.electron.receive('replacement-media-ready', function(data) {
+            const { success, tempFilePath, previewUrl, message } = data;
+            
+            if (success) {
+              // Add to modified media map
+              modifiedMediaFiles.set(originalPath, {
+                originalPath,
+                newFilePath: tempFilePath,
+                previewUrl,
+                fileType,
+                fileName: selectedFile.name
+              });
+              
+              // Update UI
+              updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+              
+              // Enable export button
+              const exportButton = document.getElementById('export-modified-template');
+              if (exportButton) {
+                exportButton.removeAttribute('disabled');
+              }
+              
+              UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công`, 'success');
+            } else {
+              // Remove loading state
+              const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+              if (loadingOverlay) {
+                loadingOverlay.remove();
+              }
+              mediaItem.classList.remove('loading');
+              
+              UIManager.showNotification(message || 'Không thể thay thế file', 'error');
+            }
+          });
+        } else {
+          // In browser, we can use FileReader for preview
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const previewUrl = e.target.result;
+            
+            // Add to modified media map
+            modifiedMediaFiles.set(fileInfo.path, {
+              originalPath: fileInfo.path,
+              newFilePath: null, // Browser mode doesn't have real file paths
+              previewUrl,
+              fileType,
+              fileName: selectedFile.name
+            });
+            
+            // Update UI
+            updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+            
+            // Enable export button
+            const exportButton = document.getElementById('export-modified-template');
+            if (exportButton) {
+              exportButton.removeAttribute('disabled');
+            }
+            
+            UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công (chế độ browser)`, 'success');
+          };
+          
+          reader.onerror = function() {
+            // Remove loading state
+            const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+            if (loadingOverlay) {
+              loadingOverlay.remove();
+            }
+            mediaItem.classList.remove('loading');
+            
+            UIManager.showNotification('Không thể đọc file', 'error');
+          };
+          
+          reader.readAsDataURL(selectedFile);
+        }
+      }
+    });
+    
+    // Trigger file selection dialog
+    fileInput.click();
+  }
+  
+  /**
+   * Update media item UI after replacement
+   * @param {HTMLElement} mediaItem - The media item element
+   * @param {Object} fileInfo - Original file information
+   * @param {string} previewUrl - URL for the new media preview
+   */
+  function updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl) {
+    // Remove loading state
+    const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+    if (loadingOverlay) {
+      loadingOverlay.remove();
+    }
+    mediaItem.classList.remove('loading');
+    
+    // Mark as modified
+    mediaItem.classList.add('modified');
+    
+    // Update preview based on file type
+    const fileType = mediaItem.getAttribute('data-type');
+    
+    if (fileType === 'image') {
+      const imgElement = mediaItem.querySelector('img');
+      if (imgElement) {
+        imgElement.src = previewUrl;
+      }
+    } else if (fileType === 'video') {
+      const videoElement = mediaItem.querySelector('video');
+      if (videoElement) {
+        videoElement.src = previewUrl;
+      }
+    }
+    
+    // Add modified badge if not already present
+    const infoContainer = mediaItem.querySelector('.media-info');
+    if (infoContainer && !infoContainer.querySelector('.media-modified-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'media-modified-badge';
+      badge.textContent = 'Đã thay thế';
+      infoContainer.appendChild(badge);
+    }
+  }
+  
+  /**
+   * Get file type from file name based on extension
+   * @param {string} fileName - Name of the file
+   * @returns {string} - File type (image, video, audio, or other)
+   */
+  function getFileTypeFromName(fileName) {
+    const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
+    
+    if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
+      return 'image';
+    } else if (['.mp4', '.webm', '.mov', '.avi'].includes(ext)) {
+      return 'video';
+    } else if (['.mp3', '.wav', '.ogg', '.aac'].includes(ext)) {
+      return 'audio';
+    } else {
+      return 'other';
+    }
+  }
+  
+  /**
+   * Export the modified template with replaced media files
+   */
+  function exportModifiedTemplate() {
+    if (!selectedTemplate || modifiedMediaFiles.size === 0) {
+      UIManager.showNotification('Không có file media nào được thay thế', 'warning');
+      return;
+    }
+    
+    // Show loading notification
+    UIManager.showNotification('Đang chuẩn bị xuất template...', 'info', 0);
+    
+    if (window.electron) {
+      // Send data to main process
+      window.electron.send('export-modified-template', {
+        templatePath: selectedTemplate.path,
+        modifiedFiles: Array.from(modifiedMediaFiles.values())
+      });
+      
+      // Listen for export result
+      window.electron.receive('template-export-result', function(data) {
+        const { success, message } = data;
+        
+        UIManager.dismissNotification();
+        
+        if (success) {
+          UIManager.showNotification(message || 'Template đã được xuất thành công với file media đã thay thế', 'success');
+          
+          // Reset modified files after successful export
+          modifiedMediaFiles.clear();
+          
+          // Disable export button
+          const exportButton = document.getElementById('export-modified-template');
+          if (exportButton) {
+            exportButton.setAttribute('disabled', 'disabled');
+          }
+          
+          // Reload the template to show updated content
+          loadTemplates();
+        } else {
+          UIManager.showNotification(message || 'Không thể xuất template', 'error');
+        }
+      });
+    } else {
+      // Browser mode - just simulate
+      setTimeout(() => {
+        UIManager.dismissNotification();
+        UIManager.showNotification('Template đã được xuất thành công với file media đã thay thế (chế độ browser)', 'success');
+        
+        // Reset modified files after successful export
+        modifiedMediaFiles.clear();
+        
+        // Disable export button
+        const exportButton = document.getElementById('export-modified-template');
+        if (exportButton) {
+          exportButton.setAttribute('disabled', 'disabled');
+        }
+      }, 2000);
+    }
   }
 
   /**
@@ -810,6 +1160,8 @@ const TemplateManager = (function () {
     importTemplate,
     openTemplateFolder,
     showTemplatePreviewPopup,
-    displayTemplateMedia
+    displayTemplateMedia,
+    replaceMedia,
+    exportModifiedTemplate
   };
 })();

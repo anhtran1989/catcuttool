@@ -120,7 +120,9 @@ function setupElectronMode() {
           "import-template",
           "open-template-folder",
           "load-template-video",
-          "get-template-media"
+          "get-template-media",
+          "prepare-replacement-media",
+          "export-modified-template"
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
@@ -135,7 +137,9 @@ function setupElectronMode() {
           "template-imported",
           "folder-open-result",
           "template-video-loaded",
-          "template-media-loaded"
+          "template-media-loaded",
+          "replacement-media-ready",
+          "template-export-result"
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.removeAllListeners(channel);

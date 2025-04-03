@@ -1,6 +1,7 @@
 const { ipcMain, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { app } = require("electron");
 
 let mainWindow;
 
@@ -34,6 +35,12 @@ function setupEventListeners() {
   
   // Xử lý kiểm tra sự tồn tại của file
   ipcMain.handle("check-file-exists", handleCheckFileExists);
+  
+  // Xử lý chuẩn bị file media thay thế
+  ipcMain.on("prepare-replacement-media", handlePrepareReplacementMedia);
+  
+  // Xử lý xuất template với file media đã thay thế
+  ipcMain.on("export-modified-template", handleExportModifiedTemplate);
 }
 
 /**
@@ -543,6 +550,185 @@ async function handleCheckFileExists(event, data) {
   }
 }
 
+/**
+ * Xử lý chuẩn bị file media thay thế
+ * @param {Event} event - Sự kiện IPC
+ * @param {Object} data - Dữ liệu từ renderer process
+ */
+async function handlePrepareReplacementMedia(event, data) {
+  try {
+    const { originalPath, newFilePath, fileName, fileType } = data;
+    
+    // Validate input
+    if (!originalPath || !newFilePath || !fileName || !fileType) {
+      mainWindow.webContents.send("replacement-media-ready", {
+        success: false,
+        message: "Thiếu thông tin cần thiết để thay thế file media"
+      });
+      return;
+    }
+    
+    // Create temp directory if it doesn't exist
+    const appDataPath = app.getPath("userData");
+    const tempMediaPath = path.join(appDataPath, "temp_media");
+    
+    if (!fs.existsSync(tempMediaPath)) {
+      fs.mkdirSync(tempMediaPath, { recursive: true });
+    }
+    
+    // Generate a unique filename for the temp file
+    const timestamp = new Date().getTime();
+    const tempFileName = `${path.parse(fileName).name}_${timestamp}${path.extname(fileName)}`;
+    const tempFilePath = path.join(tempMediaPath, tempFileName);
+    
+    // Copy the selected file to the temp location
+    fs.copyFileSync(newFilePath, tempFilePath);
+    
+    // Create a URL that can be used for preview
+    const previewUrl = `file:///${tempFilePath.replace(/\\/g, "/")}`;
+    
+    // Send success response
+    mainWindow.webContents.send("replacement-media-ready", {
+      success: true,
+      tempFilePath,
+      previewUrl,
+      message: "File media đã sẵn sàng để thay thế"
+    });
+  } catch (error) {
+    console.error("Lỗi khi chuẩn bị file media thay thế:", error);
+    mainWindow.webContents.send("replacement-media-ready", {
+      success: false,
+      message: `Lỗi khi chuẩn bị file media thay thế: ${error.message}`
+    });
+  }
+}
+
+/**
+ * Xử lý xuất template với file media đã thay thế
+ * @param {Event} event - Sự kiện IPC
+ * @param {Object} data - Dữ liệu từ renderer process
+ */
+async function handleExportModifiedTemplate(event, data) {
+  try {
+    const { templatePath, modifiedFiles } = data;
+    
+    // Validate input
+    if (!templatePath || !modifiedFiles || !Array.isArray(modifiedFiles) || modifiedFiles.length === 0) {
+      mainWindow.webContents.send("template-export-result", {
+        success: false,
+        message: "Thiếu thông tin cần thiết để xuất template"
+      });
+      return;
+    }
+    
+    // Check if draft_content.json exists
+    const draftContentPath = path.join(templatePath, "draft_content.json");
+    
+    if (!fs.existsSync(draftContentPath)) {
+      mainWindow.webContents.send("template-export-result", {
+        success: false,
+        message: "Không tìm thấy file draft_content.json trong template"
+      });
+      return;
+    }
+    
+    // Read the draft_content.json file
+    let draftContent;
+    try {
+      const draftContentData = fs.readFileSync(draftContentPath, 'utf8');
+      draftContent = JSON.parse(draftContentData);
+    } catch (error) {
+      mainWindow.webContents.send("template-export-result", {
+        success: false,
+        message: `Không thể đọc hoặc phân tích file draft_content.json: ${error.message}`
+      });
+      return;
+    }
+    
+    // Create a backup of the original draft_content.json
+    const backupPath = path.join(templatePath, `draft_content_backup_${new Date().getTime()}.json`);
+    fs.copyFileSync(draftContentPath, backupPath);
+    
+    // Mapping of original paths to new paths
+    const pathMap = new Map();
+    
+    // Process each modified file
+    for (const file of modifiedFiles) {
+      // Copy the new file to the template directory
+      const destFileName = path.basename(file.originalPath);
+      const destFilePath = path.join(templatePath, destFileName);
+      
+      fs.copyFileSync(file.newFilePath, destFilePath);
+      
+      // Add to path map
+      pathMap.set(file.originalPath, destFilePath);
+    }
+    
+    // Update paths in draft_content.json
+    // We need to find all instances of file paths in the materials section
+    if (draftContent.materials && Array.isArray(draftContent.materials)) {
+      for (let material of draftContent.materials) {
+        // Check if this material has a source that matches any of our modified files
+        if (material.source) {
+          for (const [originalPath, newPath] of pathMap.entries()) {
+            // Look for potential matches
+            if (material.source === originalPath || 
+                path.basename(material.source) === path.basename(originalPath)) {
+              // Update to use the new file (keeping just the file name to ensure relative paths work)
+              material.source = path.basename(newPath);
+              console.log(`Updated material source from ${originalPath} to ${material.source}`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Find and update paths in tracks if they exist
+    if (draftContent.tracks && Array.isArray(draftContent.tracks)) {
+      // Process each track
+      for (let track of draftContent.tracks) {
+        // Process segments in the track
+        if (track.segments && Array.isArray(track.segments)) {
+          for (let segment of track.segments) {
+            // Check if this segment has a material_id that references a material we modified
+            if (segment.material_id && typeof segment.material_id === 'string') {
+              // No direct action needed here as we updated the materials above
+              // But we might need to look for additional file references
+              
+              // Some segments might have direct file references
+              if (segment.source) {
+                for (const [originalPath, newPath] of pathMap.entries()) {
+                  if (segment.source === originalPath || 
+                      path.basename(segment.source) === path.basename(originalPath)) {
+                    segment.source = path.basename(newPath);
+                    console.log(`Updated segment source from ${originalPath} to ${segment.source}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Write the updated draft_content.json back to the file
+    fs.writeFileSync(draftContentPath, JSON.stringify(draftContent, null, 2), 'utf8');
+    
+    // Send success response
+    mainWindow.webContents.send("template-export-result", {
+      success: true,
+      message: `Template đã được xuất thành công với ${modifiedFiles.length} file media đã thay thế`
+    });
+  } catch (error) {
+    console.error("Lỗi khi xuất template:", error);
+    mainWindow.webContents.send("template-export-result", {
+      success: false,
+      message: `Lỗi khi xuất template: ${error.message}`
+    });
+  }
+}
+
+// Export module functionality
 module.exports = {
   init,
 };
