@@ -169,6 +169,7 @@ async function handleImportTemplate(event, data) {
     mainWindow.webContents.send("template-imported", {
       success: true,
       message: `Đã nhập mẫu "${templateName}" thành công như "${importedProjectName}"`,
+      projectPath: projectDir
     });
   } catch (error) {
     console.error("Lỗi khi nhập mẫu:", error);
@@ -610,7 +611,7 @@ async function handlePrepareReplacementMedia(event, data) {
  */
 async function handleExportModifiedTemplate(event, data) {
   try {
-    const { templatePath, modifiedFiles } = data;
+    const { templatePath, modifiedFiles, projectPath, isOverwrite } = data;
     
     // Validate input
     if (!templatePath || !modifiedFiles || !Array.isArray(modifiedFiles) || modifiedFiles.length === 0) {
@@ -621,13 +622,30 @@ async function handleExportModifiedTemplate(event, data) {
       return;
     }
     
-    // Check if draft_content.json exists
-    const draftContentPath = path.join(templatePath, "draft_content.json");
+    if (!projectPath) {
+      mainWindow.webContents.send("template-export-result", {
+        success: false,
+        message: "Thiếu thông tin về đường dẫn dự án"
+      });
+      return;
+    }
+    
+    // Kiểm tra sự tồn tại của thư mục dự án
+    if (!fs.existsSync(projectPath)) {
+      mainWindow.webContents.send("template-export-result", {
+        success: false,
+        message: `Không tìm thấy thư mục dự án: ${projectPath}`
+      });
+      return;
+    }
+    
+    // Check if draft_content.json exists in the project
+    const draftContentPath = path.join(projectPath, "draft_content.json");
     
     if (!fs.existsSync(draftContentPath)) {
       mainWindow.webContents.send("template-export-result", {
         success: false,
-        message: "Không tìm thấy file draft_content.json trong template"
+        message: "Không tìm thấy file draft_content.json trong dự án"
       });
       return;
     }
@@ -645,38 +663,157 @@ async function handleExportModifiedTemplate(event, data) {
       return;
     }
     
-    // Create a backup of the original draft_content.json
-    const backupPath = path.join(templatePath, `draft_content_backup_${new Date().getTime()}.json`);
+    // Create a backup of the original draft_content.json in the project folder
+    const backupPath = path.join(projectPath, `draft_content_backup_${new Date().getTime()}.json`);
     fs.copyFileSync(draftContentPath, backupPath);
     
-    // Mapping of original paths to new paths
+    // Mapping của file gốc đến file mới
     const pathMap = new Map();
+    
+    // Phân tích định dạng đường dẫn trong file draft_content.json hiện tại
+    let pathFormat = "relative"; // Giả định ban đầu là đường dẫn tương đối
+
+    // Kiểm tra định dạng đường dẫn bằng cách phân tích vài file đầu tiên
+    if (draftContent.materials) {
+      // Kiểm tra videos
+      if (draftContent.materials.videos && draftContent.materials.videos.length > 0) {
+        for (const video of draftContent.materials.videos) {
+          if (video.path) {
+            if (path.isAbsolute(video.path)) {
+              pathFormat = "absolute";
+              console.log("Phát hiện đường dẫn tuyệt đối:", video.path);
+            } else if (video.path.startsWith("./") || video.path.startsWith("../")) {
+              pathFormat = "relative-dot";
+              console.log("Phát hiện đường dẫn tương đối có dấu chấm:", video.path);
+            } else {
+              console.log("Phát hiện đường dẫn tương đối không có dấu chấm:", video.path);
+            }
+            break;
+          }
+        }
+      }
+      // Nếu không tìm thấy trong videos, kiểm tra audios
+      else if (draftContent.materials.audios && draftContent.materials.audios.length > 0) {
+        for (const audio of draftContent.materials.audios) {
+          if (audio.path) {
+            if (path.isAbsolute(audio.path)) {
+              pathFormat = "absolute";
+              console.log("Phát hiện đường dẫn tuyệt đối:", audio.path);
+            } else if (audio.path.startsWith("./") || audio.path.startsWith("../")) {
+              pathFormat = "relative-dot";
+              console.log("Phát hiện đường dẫn tương đối có dấu chấm:", audio.path);
+            } else {
+              console.log("Phát hiện đường dẫn tương đối không có dấu chấm:", audio.path);
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    console.log("Định dạng đường dẫn phát hiện:", pathFormat);
     
     // Process each modified file
     for (const file of modifiedFiles) {
-      // Copy the new file to the template directory
+      // Copy the new file to the project directory
       const destFileName = path.basename(file.originalPath);
-      const destFilePath = path.join(templatePath, destFileName);
+      const destFilePath = path.join(projectPath, destFileName);
       
       fs.copyFileSync(file.newFilePath, destFilePath);
       
-      // Add to path map
-      pathMap.set(file.originalPath, destFilePath);
+      // Chuẩn bị đường dẫn theo định dạng phù hợp
+      let newPathFormatted;
+      switch (pathFormat) {
+        case "absolute":
+          newPathFormatted = destFilePath; // Đường dẫn tuyệt đối đến file
+          break;
+        case "relative-dot":
+          newPathFormatted = "./" + destFileName; // Đường dẫn tương đối với dấu chấm
+          break;
+        default:
+          newPathFormatted = destFileName; // Chỉ tên file (mặc định)
+          break;
+      }
+      
+      // Add to path map with appropriate format
+      pathMap.set(file.originalPath, {
+        fullPath: destFilePath,
+        formattedPath: newPathFormatted
+      });
+      
+      console.log(`Đã copy file từ ${file.newFilePath} đến ${destFilePath}`);
+      console.log(`Đường dẫn đã định dạng: ${newPathFormatted}`);
     }
     
-    // Update paths in draft_content.json
-    // We need to find all instances of file paths in the materials section
+    // Lưu trữ lại thông tin file gốc để debug
+    let originalPaths = [];
+    
+    // Update draft_content.json based on structure
+    let updated = false;
+    
+    // Check for older structure with materials array
     if (draftContent.materials && Array.isArray(draftContent.materials)) {
       for (let material of draftContent.materials) {
+        // Lưu lại đường dẫn gốc
+        if (material.source) {
+          originalPaths.push(material.source);
+        }
+        
         // Check if this material has a source that matches any of our modified files
         if (material.source) {
-          for (const [originalPath, newPath] of pathMap.entries()) {
-            // Look for potential matches
+          for (const [originalPath, newPathInfo] of pathMap.entries()) {
+            // Look for potential matches by full path or basename
             if (material.source === originalPath || 
                 path.basename(material.source) === path.basename(originalPath)) {
-              // Update to use the new file (keeping just the file name to ensure relative paths work)
-              material.source = path.basename(newPath);
+              // Update to use the new file with appropriate format
+              material.source = newPathInfo.formattedPath;
+              updated = true;
               console.log(`Updated material source from ${originalPath} to ${material.source}`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Check for newer structure with videos/audios in materials
+    if (draftContent.materials) {
+      // Update videos
+      if (draftContent.materials.videos && Array.isArray(draftContent.materials.videos)) {
+        for (let video of draftContent.materials.videos) {
+          // Lưu lại đường dẫn gốc
+          if (video.path) {
+            originalPaths.push(video.path);
+          }
+          
+          if (video.path) {
+            for (const [originalPath, newPathInfo] of pathMap.entries()) {
+              if (video.path === originalPath || 
+                  path.basename(video.path) === path.basename(originalPath)) {
+                video.path = newPathInfo.formattedPath;
+                updated = true;
+                console.log(`Updated video path from ${originalPath} to ${video.path}`);
+              }
+            }
+          }
+        }
+      }
+      
+      // Update audios
+      if (draftContent.materials.audios && Array.isArray(draftContent.materials.audios)) {
+        for (let audio of draftContent.materials.audios) {
+          // Lưu lại đường dẫn gốc
+          if (audio.path) {
+            originalPaths.push(audio.path);
+          }
+          
+          if (audio.path) {
+            for (const [originalPath, newPathInfo] of pathMap.entries()) {
+              if (audio.path === originalPath || 
+                  path.basename(audio.path) === path.basename(originalPath)) {
+                audio.path = newPathInfo.formattedPath;
+                updated = true;
+                console.log(`Updated audio path from ${originalPath} to ${audio.path}`);
+              }
             }
           }
         }
@@ -690,19 +827,19 @@ async function handleExportModifiedTemplate(event, data) {
         // Process segments in the track
         if (track.segments && Array.isArray(track.segments)) {
           for (let segment of track.segments) {
-            // Check if this segment has a material_id that references a material we modified
-            if (segment.material_id && typeof segment.material_id === 'string') {
-              // No direct action needed here as we updated the materials above
-              // But we might need to look for additional file references
-              
-              // Some segments might have direct file references
-              if (segment.source) {
-                for (const [originalPath, newPath] of pathMap.entries()) {
-                  if (segment.source === originalPath || 
-                      path.basename(segment.source) === path.basename(originalPath)) {
-                    segment.source = path.basename(newPath);
-                    console.log(`Updated segment source from ${originalPath} to ${segment.source}`);
-                  }
+            // Lưu lại đường dẫn gốc
+            if (segment.source) {
+              originalPaths.push(segment.source);
+            }
+            
+            // Check if segment has source property
+            if (segment.source) {
+              for (const [originalPath, newPathInfo] of pathMap.entries()) {
+                if (segment.source === originalPath || 
+                    path.basename(segment.source) === path.basename(originalPath)) {
+                  segment.source = newPathInfo.formattedPath;
+                  updated = true;
+                  console.log(`Updated segment source from ${originalPath} to ${segment.source}`);
                 }
               }
             }
@@ -711,13 +848,32 @@ async function handleExportModifiedTemplate(event, data) {
       }
     }
     
+    if (!updated) {
+      console.warn("Không tìm thấy đường dẫn media nào để cập nhật trong draft_content.json");
+      console.warn("Danh sách đường dẫn gốc:", originalPaths);
+      console.warn("Danh sách đường dẫn mới cần thay thế:", Array.from(pathMap.keys()));
+    }
+    
     // Write the updated draft_content.json back to the file
     fs.writeFileSync(draftContentPath, JSON.stringify(draftContent, null, 2), 'utf8');
+    
+    // Lưu thông tin debug ra file nếu cần
+    const debugInfo = {
+      originalPaths,
+      replacementPaths: Array.from(pathMap.entries()).map(([original, info]) => ({
+        original,
+        newPath: info.formattedPath
+      })),
+      pathFormat
+    };
+    
+    fs.writeFileSync(path.join(projectPath, "debug_path_info.json"), JSON.stringify(debugInfo, null, 2), 'utf8');
     
     // Send success response
     mainWindow.webContents.send("template-export-result", {
       success: true,
-      message: `Template đã được xuất thành công với ${modifiedFiles.length} file media đã thay thế`
+      message: `Template đã được cập nhật thành công với ${modifiedFiles.length} file media đã thay thế`,
+      projectPath: projectPath
     });
   } catch (error) {
     console.error("Lỗi khi xuất template:", error);

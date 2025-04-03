@@ -6,6 +6,17 @@ const TemplateManager = (function () {
   let templates = [];
   let selectedTemplate = null;
   let modifiedMediaFiles = new Map();
+  let lastImportedProjectPath = null; // Biến để lưu đường dẫn thư mục dự án đã tạo
+
+  /**
+   * Get basename from path
+   * @param {string} filePath - Full file path
+   * @returns {string} - File name without directory
+   */
+  function basename(filePath) {
+    if (!filePath) return '';
+    return filePath.split(/[\\/]/).pop();
+  }
 
   /**
    * Initialize template manager
@@ -115,9 +126,15 @@ const TemplateManager = (function () {
 
       // Add listener for template import result
       window.electron.receive("template-imported", function (data) {
-        const { success, message } = data;
+        const { success, message, projectPath } = data;
 
         if (success) {
+          // Lưu lại đường dẫn dự án được tạo
+          if (projectPath) {
+            lastImportedProjectPath = projectPath;
+            console.log("Đã lưu đường dẫn dự án:", lastImportedProjectPath);
+          }
+          
           UIManager.showNotification(
             message || "Mẫu đã được nhập thành công",
             "success"
@@ -1019,24 +1036,32 @@ const TemplateManager = (function () {
       return;
     }
     
+    // Kiểm tra xem có thư mục dự án đã tạo không
+    if (!lastImportedProjectPath) {
+      UIManager.showNotification('Vui lòng nhập mẫu trước khi thay thế file media', 'error');
+      return;
+    }
+    
     // Show loading notification
-    UIManager.showNotification('Đang chuẩn bị xuất template...', 'info', 0);
+    UIManager.showNotification('Đang chuẩn bị xuất template...', 'info');
     
     if (window.electron) {
       // Send data to main process
       window.electron.send('export-modified-template', {
         templatePath: selectedTemplate.path,
-        modifiedFiles: Array.from(modifiedMediaFiles.values())
+        modifiedFiles: Array.from(modifiedMediaFiles.values()),
+        projectPath: lastImportedProjectPath,
+        isOverwrite: true // Chỉ định rằng chúng ta đang ghi đè vào dự án đã tồn tại
       });
       
       // Listen for export result
       window.electron.receive('template-export-result', function(data) {
-        const { success, message } = data;
+        const { success, message, projectPath } = data;
         
         UIManager.dismissNotification();
         
         if (success) {
-          UIManager.showNotification(message || 'Template đã được xuất thành công với file media đã thay thế', 'success');
+          UIManager.showNotification(message || `Template đã được xuất thành công đến: ${projectPath}`, 'success');
           
           // Reset modified files after successful export
           modifiedMediaFiles.clear();
@@ -1046,9 +1071,6 @@ const TemplateManager = (function () {
           if (exportButton) {
             exportButton.setAttribute('disabled', 'disabled');
           }
-          
-          // Reload the template to show updated content
-          loadTemplates();
         } else {
           UIManager.showNotification(message || 'Không thể xuất template', 'error');
         }
@@ -1057,7 +1079,8 @@ const TemplateManager = (function () {
       // Browser mode - just simulate
       setTimeout(() => {
         UIManager.dismissNotification();
-        UIManager.showNotification('Template đã được xuất thành công với file media đã thay thế (chế độ browser)', 'success');
+        
+        UIManager.showNotification(`Template đã được xuất thành công đến: ${lastImportedProjectPath} (chế độ browser)`, 'success');
         
         // Reset modified files after successful export
         modifiedMediaFiles.clear();

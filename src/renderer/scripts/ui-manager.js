@@ -285,6 +285,17 @@ const UIManager = (function () {
     }, 5000);
   }
 
+  // Function to dismiss all notifications
+  function dismissNotification() {
+    // Remove all existing notifications
+    const notifications = document.querySelectorAll('.notification');
+    notifications.forEach(notification => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    });
+  }
+
   // Global effects dropdown
   let globalEffectsDropdown = null;
   let currentThumbnailItem = null;
@@ -1141,12 +1152,13 @@ const UIManager = (function () {
     init,
     loadSavedSettings,
     showNotification,
+    dismissNotification,
     resetContent,
     createGlobalEffectsDropdown,
     createGlobalTransitionsDropdown,
     toggleEffectsDropdown,
     toggleTransitionsDropdown,
     showEffectDurationInput,
-    hideEffectDurationInput,
+    hideEffectDurationInput
   };
 })();
