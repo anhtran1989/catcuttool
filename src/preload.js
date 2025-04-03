@@ -4,7 +4,7 @@
 
 // Thiết lập biến môi trường mặc định là browser mode
 const ENV = {
-  isElectron: false
+  isElectron: false,
 };
 
 // Thiết lập browser mode trước tiên
@@ -13,13 +13,20 @@ setupBrowserMode();
 // Chỉ thực hiện kiểm tra và thiết lập Electron mode sau đó
 try {
   // Chúng ta cần phải tránh bất kỳ import nào ở mức global scope
-  if (typeof window !== 'undefined') {
-    if (window.process && window.process.type === 'renderer') {
+  if (typeof window !== "undefined") {
+    if (
+      window.electron ||
+      (window.process &&
+        window.process.versions &&
+        window.process.versions.electron)
+    ) {
       console.log("Detected real Electron environment!");
       ENV.isElectron = true;
       setupElectronMode();
     } else {
-      console.log("Not running in real Electron - continuing with browser mode");
+      console.log(
+        "Not running in real Electron - continuing with browser mode"
+      );
     }
   }
 } catch (error) {
@@ -31,7 +38,7 @@ try {
  */
 function setupBrowserMode() {
   console.log("Setting up browser mode");
-  
+
   // Create mock implementations
   window.electron = {
     readJsonFile: async (filename) => {
@@ -52,7 +59,9 @@ function setupBrowserMode() {
     },
     selectFiles: async () => {
       console.log("Browser mode: Mock selectFiles");
-      alert("File selection requires Electron. This is a demo in browser mode.");
+      alert(
+        "File selection requires Electron. This is a demo in browser mode."
+      );
       return [];
     },
     getFileDetails: async (filePaths) => {
@@ -64,7 +73,12 @@ function setupBrowserMode() {
       return "browser";
     },
     send: (channel, data) => {
-      console.log("Browser mode: Mock send for channel", channel, "with data", data);
+      console.log(
+        "Browser mode: Mock send for channel",
+        channel,
+        "with data",
+        data
+      );
     },
     receive: (channel, func) => {
       console.log("Browser mode: Mock receive for channel", channel);
@@ -75,7 +89,7 @@ function setupBrowserMode() {
       }
     },
   };
-  
+
   console.log("Browser mode electron API initialized");
 }
 
@@ -86,42 +100,14 @@ function setupBrowserMode() {
 function setupElectronMode() {
   try {
     // Dynamically import Electron modules only when we're sure we're in Electron
-    const electronModule = require('electron');
-    const fsModule = require('fs');
-    const pathModule = require('path');
-    
-    const { contextBridge, ipcRenderer } = electronModule;
-    
+    const { contextBridge, ipcRenderer } = require("electron");
+
     contextBridge.exposeInMainWorld("electron", {
-      readJsonFile: (filename) => {
-        try {
-          const possiblePaths = [
-            pathModule.join(__dirname, "renderer", "scripts", filename),
-            pathModule.join(__dirname, "renderer", "resources", filename),
-            pathModule.join(__dirname, "renderer", filename),
-            pathModule.join(process.cwd(), filename),
-          ];
-
-          console.log("Possible paths for", filename, ":", possiblePaths);
-
-          for (const filePath of possiblePaths) {
-            if (fsModule.existsSync(filePath)) {
-              console.log("Found file at:", filePath);
-              const data = fsModule.readFileSync(filePath, "utf8");
-              return JSON.parse(data);
-            }
-          }
-
-          throw new Error(
-            `File not found: ${filename}. Checked paths: ${possiblePaths.join(", ")}`
-          );
-        } catch (error) {
-          console.error("Error reading JSON file:", error);
-          throw error;
-        }
-      },
+      readJsonFile: (filename) =>
+        ipcRenderer.invoke("read-json-file", filename),
       selectFiles: () => ipcRenderer.invoke("select-files"),
-      getFileDetails: (filePaths) => ipcRenderer.invoke("get-file-details", filePaths),
+      getFileDetails: (filePaths) =>
+        ipcRenderer.invoke("get-file-details", filePaths),
       getPlatform: () => process.platform,
       send: (channel, data) => {
         const validChannels = [
@@ -151,7 +137,7 @@ function setupElectronMode() {
         }
       },
     });
-    
+
     console.log("Electron mode successfully initialized");
   } catch (error) {
     console.error("Failed to initialize Electron mode:", error);

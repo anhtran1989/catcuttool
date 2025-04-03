@@ -9,6 +9,10 @@ let mainWindow;
  * @param {BrowserWindow} window - Cửa sổ chính của ứng dụng
  */
 function init(window) {
+  if (!window) {
+    console.error("Main window is required for file handler initialization");
+    return;
+  }
   mainWindow = window;
   setupEventListeners();
 }
@@ -17,6 +21,11 @@ function init(window) {
  * Thiết lập các trình lắng nghe sự kiện
  */
 function setupEventListeners() {
+  if (!mainWindow) {
+    console.error("Main window not initialized");
+    return;
+  }
+
   // Xử lý chọn nhiều tệp media
   ipcMain.handle("select-files", handleSelectFiles);
 
@@ -35,6 +44,11 @@ function setupEventListeners() {
  * @returns {Array} Mảng đường dẫn tệp đã chọn
  */
 async function handleSelectFiles() {
+  if (!mainWindow) {
+    console.error("Main window not initialized");
+    return [];
+  }
+
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ["openFile", "multiSelections"],
     filters: [
@@ -75,6 +89,11 @@ function handleGetFileDetails(event, filePaths) {
  * @param {Object} data - Dữ liệu từ renderer process
  */
 async function handleSelectFolder(event, data) {
+  if (!mainWindow) {
+    console.error("Main window not initialized");
+    return;
+  }
+
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ["openDirectory"],
   });
@@ -93,6 +112,11 @@ async function handleSelectFolder(event, data) {
  * @param {Object} data - Dữ liệu từ renderer process
  */
 function handleSaveProjectFile(event, data) {
+  if (!mainWindow) {
+    console.error("Main window not initialized");
+    return;
+  }
+
   try {
     const { projectPath, fileName, content } = data;
 

@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const fileHandler = require("./file-handler");
 const projectManager = require("./project-manager");
 const templateManager = require("./template-manager");
@@ -25,17 +26,56 @@ function createWindow() {
   // Mở DevTools trong môi trường phát triển
   mainWindow.webContents.openDevTools();
 
+  // Initialize handlers after window is created
+  setupIpcHandlers();
+  fileHandler.init(mainWindow);
+  projectManager.init(mainWindow);
+  templateManager.init(mainWindow);
+
   mainWindow.on("closed", function () {
     mainWindow = null;
   });
 }
 
-app.whenReady().then(() => {
-  // Khởi tạo các trình xử lý sự kiện
-  fileHandler.init(mainWindow);
-  projectManager.init(mainWindow);
-  templateManager.init(mainWindow);
+// Setup IPC handlers
+function setupIpcHandlers() {
+  if (!mainWindow) {
+    console.error("Main window not initialized");
+    return;
+  }
 
+  ipcMain.handle("read-json-file", async (event, filename) => {
+    try {
+      const possiblePaths = [
+        path.join(__dirname, "../renderer/scripts", filename),
+        path.join(__dirname, "../renderer/resources", filename),
+        path.join(__dirname, "../renderer", filename),
+        path.join(process.cwd(), filename),
+      ];
+
+      console.log("Possible paths for", filename, ":", possiblePaths);
+
+      for (const filePath of possiblePaths) {
+        if (fs.existsSync(filePath)) {
+          console.log("Found file at:", filePath);
+          const data = fs.readFileSync(filePath, "utf8");
+          return JSON.parse(data);
+        }
+      }
+
+      throw new Error(
+        `File not found: ${filename}. Checked paths: ${possiblePaths.join(
+          ", "
+        )}`
+      );
+    } catch (error) {
+      console.error("Error reading JSON file:", error);
+      throw error;
+    }
+  });
+}
+
+app.whenReady().then(() => {
   createWindow();
 });
 
