@@ -21,8 +21,17 @@ const UIManager = (function () {
           document.getElementById("template-tab").style.display = "block";
         } else if (index === 1) {
           document.getElementById("custom-tab").style.display = "block";
+          
+          // Remove any pagination controls if they exist
+          const existingPagination = document.querySelector(".template-pagination");
+          if (existingPagination) {
+            existingPagination.remove();
+          }
+          
           // Load templates when switching to the template tab
-          TemplateManager.loadTemplates();
+          if (typeof TemplateManager !== 'undefined' && TemplateManager.loadTemplates) {
+            TemplateManager.loadTemplates();
+          }
         }
       });
     });

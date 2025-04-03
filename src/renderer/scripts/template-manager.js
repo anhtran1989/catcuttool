@@ -7,6 +7,8 @@ const TemplateManager = (function () {
   let selectedTemplate = null;
   let modifiedMediaFiles = new Map();
   let lastImportedProjectPath = null; // Biến để lưu đường dẫn thư mục dự án đã tạo
+  let currentPage = 1; // Current page for pagination
+  let templatesPerPage = 10; // Number of templates per page
 
   /**
    * Get basename from path
@@ -22,6 +24,10 @@ const TemplateManager = (function () {
    * Initialize template manager
    */
   function init() {
+    // Reset pagination
+    resetPagination();
+    
+    // Set up event handlers
     setupTemplateEventHandlers();
   }
 
@@ -30,6 +36,7 @@ const TemplateManager = (function () {
    */
   function setupTemplateEventHandlers() {
     const templateSearch = document.getElementById("template-search");
+    const templateCategory = document.getElementById("template-category");
     const refreshTemplatesButton = document.getElementById("refresh-templates");
     const importTemplateButton = document.getElementById("import-template");
     const openTemplateFolderButton = document.getElementById(
@@ -80,6 +87,13 @@ const TemplateManager = (function () {
         filterTemplates();
       });
     }
+    
+    // Category dropdown event listener
+    if (templateCategory) {
+      templateCategory.addEventListener("change", function() {
+        filterTemplates();
+      });
+    }
 
     // Add template-related IPC listeners
     if (window.electron) {
@@ -88,6 +102,10 @@ const TemplateManager = (function () {
 
         if (success) {
           templates = loadedTemplates;
+          
+          // Update category dropdown with available tags
+          updateCategoryDropdown(loadedTemplates);
+          
           renderTemplates(loadedTemplates);
         } else {
           templateGrid.innerHTML = `<div class="template-empty">
@@ -152,6 +170,95 @@ const TemplateManager = (function () {
   }
 
   /**
+   * Reset pagination to first page
+   */
+  function resetPagination() {
+    currentPage = 1;
+  }
+
+  /**
+   * Extract tag from template name (format: name-tag)
+   * @param {string} templateName - Full template name
+   * @returns {Object} - Object with name and tag properties
+   */
+  function extractNameAndTag(templateName) {
+    if (!templateName) return { name: '', tag: '' };
+    
+    const parts = templateName.split('-');
+    if (parts.length > 1) {
+      const tag = parts.pop(); // Get the last part as tag
+      const name = parts.join('-'); // Join the rest as name
+      return { name, tag };
+    }
+    
+    // If no hyphen is found, the whole string is the name and there's no tag
+    return { name: templateName, tag: '' };
+  }
+
+  /**
+   * Update the category dropdown with available tags
+   * @param {Array} templatesList - List of all templates
+   */
+  function updateCategoryDropdown(templatesList) {
+    const categorySelect = document.getElementById("template-category");
+    if (!categorySelect) return;
+    
+    // Clear existing options
+    categorySelect.innerHTML = '';
+    
+    // Add "All" option
+    const allOption = document.createElement('option');
+    allOption.value = '';
+    allOption.textContent = 'Tất cả';
+    categorySelect.appendChild(allOption);
+    
+    // Extract unique tags from templates
+    const tags = new Set();
+    templatesList.forEach(template => {
+      const { tag } = extractNameAndTag(template.name);
+      if (tag) tags.add(tag);
+    });
+    
+    // Add tag options
+    Array.from(tags).sort().forEach(tag => {
+      const option = document.createElement('option');
+      option.value = tag;
+      option.textContent = tag.charAt(0).toUpperCase() + tag.slice(1); // Capitalize first letter
+      categorySelect.appendChild(option);
+    });
+  }
+
+  /**
+   * Filter templates by search term and selected category
+   */
+  function filterTemplates() {
+    const templateSearch = document.getElementById("template-search");
+    const categorySelect = document.getElementById("template-category");
+    
+    const searchTerm = templateSearch ? templateSearch.value.toLowerCase() : '';
+    const selectedCategory = categorySelect ? categorySelect.value.toLowerCase() : '';
+    
+    // Reset to first page when filtering
+    resetPagination();
+    
+    // Filter templates based on search term and category
+    const filteredTemplates = templates.filter((template) => {
+      const { name, tag } = extractNameAndTag(template.name);
+      
+      // Check if the template matches the search term
+      const matchesSearch = template.name.toLowerCase().includes(searchTerm);
+      
+      // Check if the template matches the selected category
+      const matchesCategory = !selectedCategory || tag.toLowerCase() === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+    
+    // Render filtered templates
+    renderTemplates(filteredTemplates);
+  }
+
+  /**
    * Load templates from the template folder
    */
   function loadTemplates() {
@@ -163,6 +270,15 @@ const TemplateManager = (function () {
     if (existingStatus) {
       existingStatus.remove();
     }
+
+    // Remove any previous pagination controls
+    const existingPagination = document.querySelector(".template-pagination");
+    if (existingPagination) {
+      existingPagination.remove();
+    }
+
+    // Reset pagination
+    resetPagination();
 
     // Clear existing templates
     templates = [];
@@ -242,14 +358,39 @@ const TemplateManager = (function () {
     if (!templatesList || templatesList.length === 0) {
       templateGrid.innerHTML =
         '<div class="template-empty"><i class="fas fa-folder-open"></i><p>Không tìm thấy mẫu nào. Hãy thêm mẫu vào thư mục mẫu.</p></div>';
+      
+      // Remove any existing pagination
+      const existingPagination = document.querySelector(".template-pagination");
+      if (existingPagination) {
+        existingPagination.remove();
+      }
+      
+      // Remove any existing status
+      const existingStatus = document.querySelector(".template-status");
+      if (existingStatus) {
+        existingStatus.remove();
+      }
+      
       return;
     }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(templatesList.length / templatesPerPage);
+    
+    // Ensure current page is valid
+    if (currentPage < 1) currentPage = 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    
+    // Get templates for current page
+    const startIndex = (currentPage - 1) * templatesPerPage;
+    const endIndex = Math.min(startIndex + templatesPerPage, templatesList.length);
+    const currentTemplates = templatesList.slice(startIndex, endIndex);
 
     // Clear the grid
     templateGrid.innerHTML = "";
 
-    // Render each template as a list item
-    templatesList.forEach((template) => {
+    // Render each template as a list item for the current page
+    currentTemplates.forEach((template) => {
       const templateItem = document.createElement("div");
       templateItem.className = "template-item";
       templateItem.setAttribute("data-name", template.name);
@@ -272,13 +413,17 @@ const TemplateManager = (function () {
         imageSrc = template.coverImage || PLACEHOLDER_IMAGE;
       }
 
+      // Extract name and tag for display
+      const { name, tag } = extractNameAndTag(template.name);
+
       // Create template structure - simplified version
       templateItem.innerHTML = `
                 <div class="template-preview">
                     <img src="${imageSrc}" alt="${template.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'">
                 </div>
                 <div class="template-info">
-                    <h3>${template.name}</h3>
+                    <h3>${name}</h3>
+                    ${tag ? `<p class="template-category">${tag}</p>` : ''}
                 </div>
             `;
 
@@ -316,11 +461,120 @@ const TemplateManager = (function () {
       templateGrid.appendChild(templateItem);
     });
 
+    // Create/update pagination component
+    createPaginationComponent(templatesList.length, totalPages, templateGrid);
+
     // Add notice showing number of templates
     const statusElement = document.createElement("div");
     statusElement.className = "template-status";
     statusElement.innerHTML = `<p>Đã tìm thấy ${templatesList.length} mẫu</p>`;
-    templateGrid.insertAdjacentElement("afterend", statusElement);
+    
+    // Insert status after pagination
+    const paginationContainer = document.querySelector(".template-pagination");
+    if (paginationContainer) {
+      paginationContainer.after(statusElement);
+    } else {
+      templateGrid.after(statusElement);
+    }
+  }
+
+  /**
+   * Create pagination component
+   * @param {number} totalItems - Total number of items
+   * @param {number} totalPages - Total number of pages
+   * @param {HTMLElement} container - Container element to attach pagination after
+   */
+  function createPaginationComponent(totalItems, totalPages, container) {
+    // Remove any existing pagination
+    const existingPagination = document.querySelector(".template-pagination");
+    if (existingPagination) {
+      existingPagination.remove();
+    }
+    
+    if (totalPages <= 1) {
+      return; // No need for pagination if there's only one page
+    }
+    
+    // Create pagination container
+    const paginationContainer = document.createElement("div");
+    paginationContainer.className = "template-pagination";
+    
+    let paginationHTML = '';
+    
+    // Previous button
+    paginationHTML += `<button class="pagination-button prev-button" ${currentPage === 1 ? 'disabled' : ''}>
+      <i class="fas fa-chevron-left"></i>
+    </button>`;
+    
+    // Page numbers
+    const maxPageButtons = 5; // Maximum number of page buttons to show
+    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+    const endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+    
+    // Adjust startPage if we're near the end
+    startPage = Math.max(1, endPage - maxPageButtons + 1);
+    
+    // First page button (if not in range)
+    if (startPage > 1) {
+      paginationHTML += `<button class="pagination-button page-button" data-page="1">1</button>`;
+      if (startPage > 2) {
+        paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+      }
+    }
+    
+    // Page buttons
+    for (let i = startPage; i <= endPage; i++) {
+      paginationHTML += `<button class="pagination-button page-button ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    
+    // Last page button (if not in range)
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+      }
+      paginationHTML += `<button class="pagination-button page-button" data-page="${totalPages}">${totalPages}</button>`;
+    }
+    
+    // Next button
+    paginationHTML += `<button class="pagination-button next-button" ${currentPage === totalPages ? 'disabled' : ''}>
+      <i class="fas fa-chevron-right"></i>
+    </button>`;
+    
+    // Set HTML and append to DOM
+    paginationContainer.innerHTML = paginationHTML;
+    container.after(paginationContainer);
+    
+    // Add event listeners to the pagination buttons
+    const prevButton = paginationContainer.querySelector('.prev-button');
+    if (prevButton) {
+      prevButton.addEventListener('click', function() {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTemplates(templates);
+        }
+      });
+    }
+    
+    const nextButton = paginationContainer.querySelector('.next-button');
+    if (nextButton) {
+      nextButton.addEventListener('click', function() {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTemplates(templates);
+        }
+      });
+    }
+    
+    const pageButtons = paginationContainer.querySelectorAll('.page-button');
+    pageButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const page = parseInt(this.getAttribute('data-page'));
+        if (page !== currentPage) {
+          currentPage = page;
+          renderTemplates(templates);
+        }
+      });
+    });
   }
 
   /**
@@ -405,22 +659,6 @@ const TemplateManager = (function () {
         }
       });
     }
-  }
-
-  /**
-   * Filter templates based on search term
-   */
-  function filterTemplates() {
-    const templateSearch = document.getElementById("template-search");
-    const searchTerm = templateSearch.value.toLowerCase();
-
-    // Filter templates based on search term only
-    const filteredTemplates = templates.filter((template) => {
-      return template.name.toLowerCase().includes(searchTerm);
-    });
-
-    // Render filtered templates
-    renderTemplates(filteredTemplates);
   }
 
   /**
@@ -1319,6 +1557,7 @@ const TemplateManager = (function () {
     showTemplatePreviewPopup,
     displayTemplateMedia,
     replaceMedia,
-    exportModifiedTemplate
+    exportModifiedTemplate,
+    resetPagination
   };
 })();
