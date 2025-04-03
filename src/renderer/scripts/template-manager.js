@@ -124,23 +124,28 @@ const TemplateManager = (function () {
         }
       });
 
-      // Add listener for template import result
+      // Listen for template import result
       window.electron.receive("template-imported", function (data) {
-        const { success, message, projectPath } = data;
+        try {
+          const { success, message, projectPath } = data;
 
-        if (success) {
-          // Lưu lại đường dẫn dự án được tạo
-          if (projectPath) {
-            lastImportedProjectPath = projectPath;
-            console.log("Đã lưu đường dẫn dự án:", lastImportedProjectPath);
+          if (success) {
+            // Lưu lại đường dẫn dự án được tạo
+            if (projectPath) {
+              lastImportedProjectPath = projectPath;
+              console.log("Đã lưu đường dẫn dự án:", lastImportedProjectPath);
+            }
+            
+            UIManager.showNotification(
+              message || "Mẫu đã được nhập thành công",
+              "success"
+            );
+          } else {
+            UIManager.showNotification(message || "Không thể nhập mẫu", "error");
           }
-          
-          UIManager.showNotification(
-            message || "Mẫu đã được nhập thành công",
-            "success"
-          );
-        } else {
-          UIManager.showNotification(message || "Không thể nhập mẫu", "error");
+        } catch (error) {
+          console.error("Error processing template import result:", error);
+          UIManager.showNotification("Đã xảy ra lỗi khi nhập mẫu", "error");
         }
       });
     }
@@ -370,25 +375,36 @@ const TemplateManager = (function () {
     document.body.appendChild(popup);
 
     // Setup event handlers
-    popup.querySelector(".close-button").addEventListener("click", function() {
-      popup.remove();
-    });
+    const closeButton = popup.querySelector(".close-button");
+    if (closeButton) {
+      closeButton.addEventListener("click", function() {
+        popup.remove();
+      });
+    }
     
-    popup.querySelector("#close-preview-button").addEventListener("click", function() {
-      popup.remove();
-    });
+    const closePreviewButton = popup.querySelector("#close-preview-button");
+    if (closePreviewButton) {
+      closePreviewButton.addEventListener("click", function() {
+        popup.remove();
+      });
+    }
 
-    popup.querySelector("#import-template-button").addEventListener("click", function() {
-      importTemplate(templatePath, templateName);
-      popup.remove();
-    });
+    const importTemplateButton = popup.querySelector("#import-template-button");
+    if (importTemplateButton) {
+      importTemplateButton.addEventListener("click", function() {
+        importTemplate(templatePath, templateName);
+        popup.remove();
+      });
+    }
 
     // Close popup when clicking outside the content
-    popup.addEventListener("click", function(e) {
-      if (e.target === popup) {
-        popup.remove();
-      }
-    });
+    if (popup) {
+      popup.addEventListener("click", function(e) {
+        if (e.target === popup) {
+          popup.remove();
+        }
+      });
+    }
   }
 
   /**
@@ -413,40 +429,55 @@ const TemplateManager = (function () {
    * @param {string} templateName - Name of the template
    */
   function importTemplate(templatePath, templateName) {
-    if (!templatePath || !templateName) {
-      UIManager.showNotification("Invalid template information", "error");
-      return;
-    }
+    try {
+      if (!templatePath || !templateName) {
+        UIManager.showNotification("Invalid template information", "error");
+        return;
+      }
 
-    const targetPath =
-      localStorage.getItem("targetPath") ||
-      document.getElementById("target-path").value;
+      const targetPath =
+        localStorage.getItem("targetPath") ||
+        document.getElementById("target-path").value;
 
-    if (!targetPath) {
-      UIManager.showNotification(
-        "Please set the target path in settings first",
-        "error"
-      );
-      return;
-    }
-
-    // First, load and display the template media files
-    displayTemplateMedia(templatePath, templateName);
-
-    if (window.electron) {
-      window.electron.send("import-template", {
-        templatePath,
-        templateName,
-        targetPath,
-      });
-    } else {
-      // For browser testing
-      setTimeout(() => {
+      if (!targetPath) {
         UIManager.showNotification(
-          `Template "${templateName}" imported successfully (demo mode)`,
-          "success"
+          "Please set the target path in settings first",
+          "error"
         );
-      }, 1000);
+        return;
+      }
+
+      // Reset all previous template data
+      modifiedMediaFiles.clear();
+      selectedTemplate = null;
+      
+      // Remove any existing template media display first
+      const existingMediaDisplay = document.getElementById("template-media-display");
+      if (existingMediaDisplay) {
+        existingMediaDisplay.remove();
+      }
+
+      // First, load and display the template media files
+      displayTemplateMedia(templatePath, templateName);
+
+      if (window.electron) {
+        window.electron.send("import-template", {
+          templatePath,
+          templateName,
+          targetPath,
+        });
+      } else {
+        // For browser testing
+        setTimeout(() => {
+          UIManager.showNotification(
+            `Template "${templateName}" imported successfully (demo mode)`,
+            "success"
+          );
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error importing template:", error);
+      UIManager.showNotification("Đã xảy ra lỗi khi nhập mẫu", "error");
     }
   }
 
@@ -493,18 +524,27 @@ const TemplateManager = (function () {
     
     // Add the display to the template section
     const templateSection = document.querySelector(".tab-content#custom-tab");
-    templateSection.appendChild(mediaDisplay);
-    
-    // Scroll to the media display
-    mediaDisplay.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (templateSection) {
+      templateSection.appendChild(mediaDisplay);
+      
+      // Scroll to the media display
+      mediaDisplay.scrollIntoView({ behavior: "smooth", block: "end" });
+    } else {
+      console.error("Template section not found with selector .tab-content#custom-tab");
+    }
     
     // Request media files from the main process
     if (window.electron) {
+      // Remove any previous listeners for template media loaded to avoid duplicates
+      if (window.electron.removeListener) {
+        window.electron.removeListener("template-media-loaded");
+      }
+      
       window.electron.send("get-template-media", { templatePath });
       
-      // Set up listener for media files response (only once)
-      const setupMediaListener = () => {
-        window.electron.receive("template-media-loaded", function(data) {
+      // Set up a new listener for media files
+      window.electron.receive("template-media-loaded", function(data) {
+        try {
           const { success, mediaFiles, message } = data;
           
           if (success) {
@@ -517,14 +557,16 @@ const TemplateManager = (function () {
               </div>
             `;
           }
-        });
-      };
-      
-      // Only set up the listener if it doesn't exist yet
-      if (!window.templateMediaListenerSetup) {
-        setupMediaListener();
-        window.templateMediaListenerSetup = true;
-      }
+        } catch (error) {
+          console.error("Error processing template media data:", error);
+          mediaContainer.innerHTML = `
+            <div class="template-media-empty">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>Đã xảy ra lỗi khi xử lý dữ liệu media</p>
+            </div>
+          `;
+        }
+      });
     } else {
       // For browser testing, use mock data
       setTimeout(() => {
@@ -547,6 +589,12 @@ const TemplateManager = (function () {
    * @param {string} templatePath - Path to the template
    */
   function renderTemplateMedia(container, mediaFiles, templatePath) {
+    // Make sure container exists
+    if (!container) {
+      console.error('Container is null in renderTemplateMedia');
+      return;
+    }
+    
     // Clear loading state
     container.innerHTML = "";
     
@@ -755,12 +803,30 @@ const TemplateManager = (function () {
         
         // When all files are processed, update the container
         if (loadedCount === totalCount) {
-          // Clear the container and add all items
-          container.innerHTML = '';
-          container.appendChild(tempContainer);
-          
-          // Add export button if not already present
-          addExportButton(container);
+          try {
+            // Remove any existing export button before updating container
+            const existingExportButton = document.querySelector('.template-export-actions');
+            if (existingExportButton) {
+              existingExportButton.remove();
+            }
+            
+            // Clear the container and add all items
+            container.innerHTML = '';
+            container.appendChild(tempContainer);
+            
+            // Use a simple timeout instead of MutationObserver to ensure DOM updates
+            // are complete before adding the export button
+            setTimeout(() => {
+              try {
+                // Add export button only after DOM updates are complete
+                addExportButton(container);
+              } catch (error) {
+                console.error("Error adding export button:", error);
+              }
+            }, 100);
+          } catch (error) {
+            console.error("Error when finalizing template media render:", error);
+          }
         }
       };
       
@@ -795,302 +861,95 @@ const TemplateManager = (function () {
   }
 
   /**
+   * Safely get an element by ID with retries, useful for elements that might be added asynchronously
+   * @param {string} id - Element ID to find
+   * @param {function} callback - Function to call when element is found
+   * @param {number} maxAttempts - Maximum number of retry attempts
+   */
+  function getElementSafe(id, callback, maxAttempts = 5) {
+    let attempts = 0;
+    
+    function tryGetElement() {
+      attempts++;
+      const element = document.getElementById(id);
+      
+      if (element) {
+        // Element found, call the callback
+        callback(element);
+      } else if (attempts < maxAttempts) {
+        // Element not found yet, try again after a short delay
+        setTimeout(tryGetElement, 50);
+      } else {
+        // Max attempts reached, log error
+        console.error(`Element with ID ${id} not found after ${maxAttempts} attempts`);
+      }
+    }
+    
+    // Start trying to find the element
+    tryGetElement();
+  }
+
+  /**
    * Add export button to the media display
    * @param {HTMLElement} container - The media container element
    */
   function addExportButton(container) {
-    // Check if export button already exists
-    if (document.getElementById('export-modified-template')) {
-      return;
-    }
-    
-    // Create export button container
-    const exportButtonContainer = document.createElement('div');
-    exportButtonContainer.className = 'template-export-actions';
-    
-    // Add export button
-    exportButtonContainer.innerHTML = `
-      <button id="export-modified-template" class="primary-button" ${modifiedMediaFiles.size === 0 ? 'disabled' : ''}>
-        <i class="fas fa-file-export"></i> Xuất template với file media đã thay thế
-      </button>
-    `;
-    
-    // Add to container's parent
-    container.parentNode.appendChild(exportButtonContainer);
-    
-    // Add event listener
-    document.getElementById('export-modified-template').addEventListener('click', function() {
-      if (modifiedMediaFiles.size === 0) {
-        UIManager.showNotification('Vui lòng thay thế ít nhất một file media trước', 'warning');
+    try {
+      // Always check if the button already exists and remove it first to avoid duplicates
+      const existingButton = document.getElementById('export-modified-template');
+      if (existingButton) {
+        const parentElement = existingButton.closest('.template-export-actions');
+        if (parentElement) {
+          parentElement.remove();
+        } else {
+          existingButton.remove();
+        }
+      }
+      
+      // Check if container exists and has a parent
+      if (!container || !container.parentNode) {
+        console.error('Cannot add export button: container or container parent is null');
         return;
       }
       
-      exportModifiedTemplate();
-    });
-  }
-  
-  /**
-   * Handle replacing a media file
-   * @param {HTMLElement} mediaItem - The media item element
-   * @param {Object} fileInfo - Original file information
-   */
-  function replaceMedia(mediaItem, fileInfo) {
-    // Create file input element
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    
-    // Set accepted file types based on the original file type
-    const fileType = mediaItem.getAttribute('data-type');
-    if (fileType === 'image') {
-      fileInput.accept = 'image/*';
-    } else if (fileType === 'video') {
-      fileInput.accept = 'video/*';
-    } else if (fileType === 'audio') {
-      fileInput.accept = 'audio/*';
-    }
-    
-    // Handle file selection
-    fileInput.addEventListener('change', function(e) {
-      if (e.target.files && e.target.files[0]) {
-        const selectedFile = e.target.files[0];
-        
-        // Check if file type matches the original
-        const selectedFileType = getFileTypeFromName(selectedFile.name);
-        if (selectedFileType !== fileType) {
-          UIManager.showNotification(`Vui lòng chọn file ${getMediaTypeText(fileType).toLowerCase()} để thay thế`, 'error');
-          return;
-        }
-        
-        // Show loading state
-        mediaItem.classList.add('loading');
-        mediaItem.innerHTML = `
-          <div class="media-loading-overlay">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>Đang xử lý...</span>
-          </div>
-          ${mediaItem.innerHTML}
-        `;
-        
-        // Handle the file based on if we're in Electron or browser
-        if (window.electron) {
-          // In Electron, we need to copy the file to a temporary location
-          const originalPath = fileInfo.path;
-          
-          // Send the file to the main process
-          window.electron.send('prepare-replacement-media', {
-            originalPath,
-            newFilePath: selectedFile.path,
-            fileName: selectedFile.name,
-            fileType
-          });
-          
-          // Listen for the response
-          window.electron.receive('replacement-media-ready', function(data) {
-            const { success, tempFilePath, previewUrl, message } = data;
-            
-            if (success) {
-              // Add to modified media map
-              modifiedMediaFiles.set(originalPath, {
-                originalPath,
-                newFilePath: tempFilePath,
-                previewUrl,
-                fileType,
-                fileName: selectedFile.name
-              });
-              
-              // Update UI
-              updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
-              
-              // Enable export button
-              const exportButton = document.getElementById('export-modified-template');
-              if (exportButton) {
-                exportButton.removeAttribute('disabled');
-              }
-              
-              UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công`, 'success');
-            } else {
-              // Remove loading state
-              const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
-              if (loadingOverlay) {
-                loadingOverlay.remove();
-              }
-              mediaItem.classList.remove('loading');
-              
-              UIManager.showNotification(message || 'Không thể thay thế file', 'error');
-            }
-          });
-        } else {
-          // In browser, we can use FileReader for preview
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const previewUrl = e.target.result;
-            
-            // Add to modified media map
-            modifiedMediaFiles.set(fileInfo.path, {
-              originalPath: fileInfo.path,
-              newFilePath: null, // Browser mode doesn't have real file paths
-              previewUrl,
-              fileType,
-              fileName: selectedFile.name
-            });
-            
-            // Update UI
-            updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
-            
-            // Enable export button
-            const exportButton = document.getElementById('export-modified-template');
-            if (exportButton) {
-              exportButton.removeAttribute('disabled');
-            }
-            
-            UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công (chế độ browser)`, 'success');
-          };
-          
-          reader.onerror = function() {
-            // Remove loading state
-            const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
-            if (loadingOverlay) {
-              loadingOverlay.remove();
-            }
-            mediaItem.classList.remove('loading');
-            
-            UIManager.showNotification('Không thể đọc file', 'error');
-          };
-          
-          reader.readAsDataURL(selectedFile);
-        }
+      // Ensure the container is still in the DOM
+      if (!document.contains(container)) {
+        console.error('Cannot add export button: container is no longer in the DOM');
+        return;
       }
-    });
-    
-    // Trigger file selection dialog
-    fileInput.click();
-  }
-  
-  /**
-   * Update media item UI after replacement
-   * @param {HTMLElement} mediaItem - The media item element
-   * @param {Object} fileInfo - Original file information
-   * @param {string} previewUrl - URL for the new media preview
-   */
-  function updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl) {
-    // Remove loading state
-    const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
-    if (loadingOverlay) {
-      loadingOverlay.remove();
-    }
-    mediaItem.classList.remove('loading');
-    
-    // Mark as modified
-    mediaItem.classList.add('modified');
-    
-    // Update preview based on file type
-    const fileType = mediaItem.getAttribute('data-type');
-    
-    if (fileType === 'image') {
-      const imgElement = mediaItem.querySelector('img');
-      if (imgElement) {
-        imgElement.src = previewUrl;
-      }
-    } else if (fileType === 'video') {
-      const videoElement = mediaItem.querySelector('video');
-      if (videoElement) {
-        videoElement.src = previewUrl;
-      }
-    }
-    
-    // Add modified badge if not already present
-    const infoContainer = mediaItem.querySelector('.media-info');
-    if (infoContainer && !infoContainer.querySelector('.media-modified-badge')) {
-      const badge = document.createElement('span');
-      badge.className = 'media-modified-badge';
-      badge.textContent = 'Đã thay thế';
-      infoContainer.appendChild(badge);
-    }
-  }
-  
-  /**
-   * Get file type from file name based on extension
-   * @param {string} fileName - Name of the file
-   * @returns {string} - File type (image, video, audio, or other)
-   */
-  function getFileTypeFromName(fileName) {
-    const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
-    
-    if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
-      return 'image';
-    } else if (['.mp4', '.webm', '.mov', '.avi'].includes(ext)) {
-      return 'video';
-    } else if (['.mp3', '.wav', '.ogg', '.aac'].includes(ext)) {
-      return 'audio';
-    } else {
-      return 'other';
-    }
-  }
-  
-  /**
-   * Export the modified template with replaced media files
-   */
-  function exportModifiedTemplate() {
-    if (!selectedTemplate || modifiedMediaFiles.size === 0) {
-      UIManager.showNotification('Không có file media nào được thay thế', 'warning');
-      return;
-    }
-    
-    // Kiểm tra xem có thư mục dự án đã tạo không
-    if (!lastImportedProjectPath) {
-      UIManager.showNotification('Vui lòng nhập mẫu trước khi thay thế file media', 'error');
-      return;
-    }
-    
-    // Show loading notification
-    UIManager.showNotification('Đang chuẩn bị xuất template...', 'info');
-    
-    if (window.electron) {
-      // Send data to main process
-      window.electron.send('export-modified-template', {
-        templatePath: selectedTemplate.path,
-        modifiedFiles: Array.from(modifiedMediaFiles.values()),
-        projectPath: lastImportedProjectPath,
-        isOverwrite: true // Chỉ định rằng chúng ta đang ghi đè vào dự án đã tồn tại
-      });
       
-      // Listen for export result
-      window.electron.receive('template-export-result', function(data) {
-        const { success, message, projectPath } = data;
-        
-        UIManager.dismissNotification();
-        
-        if (success) {
-          UIManager.showNotification(message || `Template đã được xuất thành công đến: ${projectPath}`, 'success');
-          
-          // Reset modified files after successful export
-          modifiedMediaFiles.clear();
-          
-          // Disable export button
-          const exportButton = document.getElementById('export-modified-template');
-          if (exportButton) {
-            exportButton.setAttribute('disabled', 'disabled');
-          }
-        } else {
-          UIManager.showNotification(message || 'Không thể xuất template', 'error');
-        }
-      });
-    } else {
-      // Browser mode - just simulate
+      // Create export button container
+      const exportButtonContainer = document.createElement('div');
+      exportButtonContainer.className = 'template-export-actions';
+      
+      // Add export button
+      exportButtonContainer.innerHTML = `
+        <button id="export-modified-template" class="primary-button" ${modifiedMediaFiles.size === 0 ? 'disabled' : ''}>
+          <i class="fas fa-file-export"></i> Xuất template với file media đã thay thế
+        </button>
+      `;
+      
+      // Add to container's parent
+      container.parentNode.appendChild(exportButtonContainer);
+      
+      // Use direct DOM access with a small delay
       setTimeout(() => {
-        UIManager.dismissNotification();
-        
-        UIManager.showNotification(`Template đã được xuất thành công đến: ${lastImportedProjectPath} (chế độ browser)`, 'success');
-        
-        // Reset modified files after successful export
-        modifiedMediaFiles.clear();
-        
-        // Disable export button
         const exportButton = document.getElementById('export-modified-template');
         if (exportButton) {
-          exportButton.setAttribute('disabled', 'disabled');
+          exportButton.addEventListener('click', function() {
+            if (modifiedMediaFiles.size === 0) {
+              UIManager.showNotification('Vui lòng thay thế ít nhất một file media trước', 'warning');
+              return;
+            }
+            
+            exportModifiedTemplate();
+          });
+        } else {
+          console.error('Export button not found after adding it to DOM');
         }
-      }, 2000);
+      }, 50);
+    } catch (error) {
+      console.error('Error adding export button:', error);
     }
   }
 
@@ -1171,6 +1030,281 @@ const TemplateManager = (function () {
     } else {
       // For browser testing
       alert(`Browser mode: Would open folder at: ${templatePath}`);
+    }
+  }
+
+  /**
+   * Update media item UI after replacement
+   * @param {HTMLElement} mediaItem - The media item element
+   * @param {Object} fileInfo - Original file information
+   * @param {string} previewUrl - URL for the new media preview
+   */
+  function updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl) {
+    try {
+      // Remove loading state
+      const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+      if (loadingOverlay) {
+        loadingOverlay.remove();
+      }
+      mediaItem.classList.remove('loading');
+      
+      // Mark as modified
+      mediaItem.classList.add('modified');
+      
+      // Update preview based on file type
+      const fileType = mediaItem.getAttribute('data-type');
+      
+      if (fileType === 'image') {
+        const imgElement = mediaItem.querySelector('img');
+        if (imgElement) {
+          imgElement.src = previewUrl;
+        }
+      } else if (fileType === 'video') {
+        const videoElement = mediaItem.querySelector('video');
+        if (videoElement) {
+          videoElement.src = previewUrl;
+        }
+      }
+      
+      // Add modified badge if not already present
+      const infoContainer = mediaItem.querySelector('.media-info');
+      if (infoContainer && !infoContainer.querySelector('.media-modified-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'media-modified-badge';
+        badge.textContent = 'Đã thay thế';
+        infoContainer.appendChild(badge);
+      }
+      
+      // Enable export button with a small delay
+      setTimeout(() => {
+        const exportButton = document.getElementById('export-modified-template');
+        if (exportButton) {
+          exportButton.removeAttribute('disabled');
+        }
+      }, 50);
+    } catch (error) {
+      console.error('Error updating media item after replacement:', error);
+    }
+  }
+
+  /**
+   * Handle replacing a media file
+   * @param {HTMLElement} mediaItem - The media item element
+   * @param {Object} fileInfo - Original file information
+   */
+  function replaceMedia(mediaItem, fileInfo) {
+    try {
+      // Create file input element
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      
+      // Set accepted file types based on the original file type
+      const fileType = mediaItem.getAttribute('data-type');
+      if (fileType === 'image') {
+        fileInput.accept = 'image/*';
+      } else if (fileType === 'video') {
+        fileInput.accept = 'video/*';
+      } else if (fileType === 'audio') {
+        fileInput.accept = 'audio/*';
+      }
+      
+      // Handle file selection
+      fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+          const selectedFile = e.target.files[0];
+          
+          // Check if file type matches the original
+          const selectedFileType = getFileTypeFromName(selectedFile.name);
+          if (selectedFileType !== fileType) {
+            UIManager.showNotification(`Vui lòng chọn file ${getMediaTypeText(fileType).toLowerCase()} để thay thế`, 'error');
+            return;
+          }
+          
+          // Show loading state
+          mediaItem.classList.add('loading');
+          mediaItem.innerHTML = `
+            <div class="media-loading-overlay">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>Đang xử lý...</span>
+            </div>
+            ${mediaItem.innerHTML}
+          `;
+          
+          // Handle the file based on if we're in Electron or browser
+          if (window.electron) {
+            // In Electron, we need to copy the file to a temporary location
+            const originalPath = fileInfo.path;
+            
+            // Send the file to the main process
+            window.electron.send('prepare-replacement-media', {
+              originalPath,
+              newFilePath: selectedFile.path,
+              fileName: selectedFile.name,
+              fileType
+            });
+            
+            // Listen for the response
+            window.electron.receive('replacement-media-ready', function(data) {
+              const { success, tempFilePath, previewUrl, message } = data;
+              
+              if (success) {
+                // Add to modified media map
+                modifiedMediaFiles.set(originalPath, {
+                  originalPath,
+                  newFilePath: tempFilePath,
+                  previewUrl,
+                  fileType,
+                  fileName: selectedFile.name
+                });
+                
+                // Update UI
+                updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+                
+                UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công`, 'success');
+              } else {
+                // Remove loading state
+                const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+                if (loadingOverlay) {
+                  loadingOverlay.remove();
+                }
+                mediaItem.classList.remove('loading');
+                
+                UIManager.showNotification(message || 'Không thể thay thế file', 'error');
+              }
+            });
+          } else {
+            // In browser, we can use FileReader for preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const previewUrl = e.target.result;
+              
+              // Add to modified media map
+              modifiedMediaFiles.set(fileInfo.path, {
+                originalPath: fileInfo.path,
+                newFilePath: null, // Browser mode doesn't have real file paths
+                previewUrl,
+                fileType,
+                fileName: selectedFile.name
+              });
+              
+              // Update UI
+              updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+              
+              UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công (chế độ browser)`, 'success');
+            };
+            
+            reader.onerror = function() {
+              // Remove loading state
+              const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
+              if (loadingOverlay) {
+                loadingOverlay.remove();
+              }
+              mediaItem.classList.remove('loading');
+              
+              UIManager.showNotification('Không thể đọc file', 'error');
+            };
+            
+            reader.readAsDataURL(selectedFile);
+          }
+        }
+      });
+      
+      // Trigger file selection dialog
+      fileInput.click();
+    } catch (error) {
+      console.error('Error replacing media:', error);
+      UIManager.showNotification('Đã xảy ra lỗi khi thay thế file', 'error');
+    }
+  }
+
+  /**
+   * Get file type from file name based on extension
+   * @param {string} fileName - Name of the file
+   * @returns {string} - File type (image, video, audio, or other)
+   */
+  function getFileTypeFromName(fileName) {
+    const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
+    
+    if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
+      return 'image';
+    } else if (['.mp4', '.webm', '.mov', '.avi'].includes(ext)) {
+      return 'video';
+    } else if (['.mp3', '.wav', '.ogg', '.aac'].includes(ext)) {
+      return 'audio';
+    } else {
+      return 'other';
+    }
+  }
+  
+  /**
+   * Export the modified template with replaced media files
+   */
+  function exportModifiedTemplate() {
+    try {
+      if (!selectedTemplate || modifiedMediaFiles.size === 0) {
+        UIManager.showNotification('Không có file media nào được thay thế', 'warning');
+        return;
+      }
+      
+      // Kiểm tra xem có thư mục dự án đã tạo không
+      if (!lastImportedProjectPath) {
+        UIManager.showNotification('Vui lòng nhập mẫu trước khi thay thế file media', 'error');
+        return;
+      }
+      
+      // Show loading notification
+      UIManager.showNotification('Đang chuẩn bị xuất template...', 'info');
+      
+      if (window.electron) {
+        // Send data to main process
+        window.electron.send('export-modified-template', {
+          templatePath: selectedTemplate.path,
+          modifiedFiles: Array.from(modifiedMediaFiles.values()),
+          projectPath: lastImportedProjectPath,
+          isOverwrite: true // Chỉ định rằng chúng ta đang ghi đè vào dự án đã tồn tại
+        });
+        
+        // Listen for export result
+        window.electron.receive('template-export-result', function(data) {
+          const { success, message, projectPath } = data;
+          
+          UIManager.dismissNotification();
+          
+          if (success) {
+            UIManager.showNotification(message || `Template đã được xuất thành công đến: ${projectPath}`, 'success');
+            
+            // Reset modified files after successful export
+            modifiedMediaFiles.clear();
+            
+            // Disable export button
+            const exportButton = document.getElementById('export-modified-template');
+            if (exportButton) {
+              exportButton.setAttribute('disabled', 'disabled');
+            }
+          } else {
+            UIManager.showNotification(message || 'Không thể xuất template', 'error');
+          }
+        });
+      } else {
+        // Browser mode - just simulate
+        setTimeout(() => {
+          UIManager.dismissNotification();
+          
+          UIManager.showNotification(`Template đã được xuất thành công đến: ${lastImportedProjectPath} (chế độ browser)`, 'success');
+          
+          // Reset modified files after successful export
+          modifiedMediaFiles.clear();
+          
+          // Disable export button
+          const exportButton = document.getElementById('export-modified-template');
+          if (exportButton) {
+            exportButton.setAttribute('disabled', 'disabled');
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error exporting modified template:', error);
+      UIManager.showNotification('Đã xảy ra lỗi khi xuất template', 'error');
     }
   }
 

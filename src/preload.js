@@ -14,12 +14,14 @@ setupBrowserMode();
 try {
   // Chúng ta cần phải tránh bất kỳ import nào ở mức global scope
   if (typeof window !== "undefined") {
-    if (
-      window.electron ||
-      (window.process &&
-        window.process.versions &&
-        window.process.versions.electron)
-    ) {
+    const isElectron = 
+      window.electron || 
+      (window.process && window.process.versions && window.process.versions.electron) ||
+      // Check if it's in an Electron renderer
+      (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && 
+       navigator.userAgent.indexOf('Electron') >= 0);
+    
+    if (isElectron) {
       console.log("Detected real Electron environment!");
       ENV.isElectron = true;
       setupElectronMode();
@@ -31,6 +33,10 @@ try {
   }
 } catch (error) {
   console.log("Error checking environment:", error);
+  // Ensure we always have a valid electron object even on error
+  if (!window.electron) {
+    console.log("Falling back to browser mode after error");
+  }
 }
 
 /**
@@ -84,8 +90,12 @@ function setupBrowserMode() {
       console.log("Browser mode: Mock receive for channel", channel);
       // Đối với các channel phổ biến, thiết lập mock handlers
       if (channel === "folder-selected") {
-        window.mockReceiveHandlers = window.mockReceiveHandlers || {};
-        window.mockReceiveHandlers[channel] = func;
+        try {
+          window.mockReceiveHandlers = window.mockReceiveHandlers || {};
+          window.mockReceiveHandlers[channel] = func;
+        } catch (error) {
+          console.error(`Error setting up mock handler for ${channel}:`, error);
+        }
       }
     },
   };
@@ -142,8 +152,18 @@ function setupElectronMode() {
           "template-export-result"
         ];
         if (validChannels.includes(channel)) {
-          ipcRenderer.removeAllListeners(channel);
-          ipcRenderer.on(channel, (event, ...args) => func(...args));
+          try {
+            ipcRenderer.removeAllListeners(channel);
+            ipcRenderer.on(channel, (event, ...args) => {
+              try {
+                func(...args);
+              } catch (error) {
+                console.error(`Error in handler for ${channel}:`, error);
+              }
+            });
+          } catch (error) {
+            console.error(`Error setting up listener for ${channel}:`, error);
+          }
         }
       },
     });

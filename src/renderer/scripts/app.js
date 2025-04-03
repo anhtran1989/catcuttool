@@ -57,48 +57,66 @@ document.addEventListener("DOMContentLoaded", function () {
  * Set up listeners for Electron IPC events
  */
 function setupElectronListeners() {
-  if (window.electron) {
-    // Listen for folder selection results
-    window.electron.receive("folder-selected", function (data) {
-      const { path, inputId } = data;
-      document.getElementById(inputId).value = path;
+  // Check if electron object exists and has the receive method
+  if (window.electron && typeof window.electron.receive === 'function') {
+    try {
+      // Listen for folder selection results
+      window.electron.receive("folder-selected", function (data) {
+        try {
+          const { path, inputId } = data;
+          const inputElement = document.getElementById(inputId);
+          if (inputElement) {
+            inputElement.value = path;
+          } else {
+            console.warn(`Element with ID ${inputId} not found for folder selection`);
+          }
 
-      // Also update localStorage when selecting folder
-      if (inputId === "default-path") {
-        localStorage.setItem("defaultPath", path);
-      } else if (inputId === "target-path") {
-        localStorage.setItem("targetPath", path);
-      } else if (inputId === "template-path") {
-        localStorage.setItem("templatePath", path);
-        // Refresh templates if the template path was updated
-        TemplateManager.loadTemplates();
-      }
-    });
+          // Also update localStorage when selecting folder
+          if (inputId === "default-path") {
+            localStorage.setItem("defaultPath", path);
+          } else if (inputId === "target-path") {
+            localStorage.setItem("targetPath", path);
+          } else if (inputId === "template-path") {
+            localStorage.setItem("templatePath", path);
+            // Refresh templates if the template path was updated
+            if (typeof TemplateManager !== 'undefined' && TemplateManager.loadTemplates) {
+              TemplateManager.loadTemplates();
+            }
+          }
+        } catch (error) {
+          console.error("Error handling folder selection:", error);
+        }
+      });
 
-    // Listen for project creation results
-    window.electron.receive("project-created", function (data) {
-      const { success, message } = data;
-      if (success) {
-        UIManager.showNotification(message, "success");
-        document.getElementById("project-name").value = ""; // Clear the project name after successful creation
+      // Listen for project creation results
+      window.electron.receive("project-created", function (data) {
+        const { success, message } = data;
+        if (success) {
+          UIManager.showNotification(message, "success");
+          document.getElementById("project-name").value = ""; // Clear the project name after successful creation
 
-        // Reset all content when project is created successfully
-        // Skip additional notification since we already show success message
-        UIManager.resetContent(true);
-      } else {
-        UIManager.showNotification(message, "error");
-      }
-    });
+          // Reset all content when project is created successfully
+          // Skip additional notification since we already show success message
+          UIManager.resetContent(true);
+        } else {
+          UIManager.showNotification(message, "error");
+        }
+      });
 
-    // Listen for file save results
-    window.electron.receive("save-file-result", function (data) {
-      const { success, message } = data;
-      if (success) {
-        UIManager.showNotification(message, "success");
-      } else {
-        UIManager.showNotification(message, "error");
-      }
-    });
+      // Listen for file save results
+      window.electron.receive("save-file-result", function (data) {
+        const { success, message } = data;
+        if (success) {
+          UIManager.showNotification(message, "success");
+        } else {
+          UIManager.showNotification(message, "error");
+        }
+      });
+    } catch (error) {
+      console.error("Error setting up Electron listeners:", error);
+    }
+  } else {
+    console.warn("Electron IPC API not available or incomplete");
   }
 }
 
