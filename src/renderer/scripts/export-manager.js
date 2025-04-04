@@ -96,14 +96,15 @@ const ExportManager = (function () {
       if (window.electron) {
         console.log("Using Node.js API to read template files");
 
-        // Use Promise.all to read both files concurrently
+        // Use Promise.all to read all template files concurrently
         Promise.all([
           window.electron.readJsonFile("draft_content_effect.json"),
+          window.electron.readJsonFile("draft_content_transition.json"),
           window.electron.readJsonFile("draft_content_default.json"),
         ])
-          .then(([effectTemplateData, templateData]) => {
+          .then(([effectTemplateData, transitionTemplateData, templateData]) => {
             console.log("Successfully loaded template files");
-            processTemplateData(effectTemplateData, templateData);
+            processTemplateData(effectTemplateData, transitionTemplateData, templateData);
           })
           .catch((error) => {
             console.error("Error loading template files:", error);
@@ -117,29 +118,30 @@ const ExportManager = (function () {
         console.log("Running in browser environment, using fetch API");
 
         // First try to fetch from the current directory
-        fetch("./draft_content_effect.json")
-          .then((response) => {
+        // Sử dụng Promise.all để đọc tất cả các file template cùng lúc
+        Promise.all([
+          fetch("./draft_content_effect.json").then(response => {
             if (!response.ok) {
-              throw new Error(
-                `Failed to load effect template: ${response.status} ${response.statusText}`
-              );
+              throw new Error(`Failed to load effect template: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+          }),
+          fetch("./draft_content_transition.json").then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to load transition template: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+          }),
+          fetch("./draft_content_default.json").then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to load default template: ${response.status} ${response.statusText}`);
             }
             return response.json();
           })
-          .then((effectTemplateData) => {
-            return fetch("./draft_content_default.json")
-              .then((response) => {
-                if (!response.ok) {
-                  throw new Error(
-                    `Failed to load default template: ${response.status} ${response.statusText}`
-                  );
-                }
-                return response.json();
-              })
-              .then((templateData) => {
-                processTemplateData(effectTemplateData, templateData);
-              });
-          })
+        ])
+        .then(([effectTemplateData, transitionTemplateData, templateData]) => {
+          processTemplateData(effectTemplateData, transitionTemplateData, templateData);
+        })
           .catch((error) => {
             console.error("Error loading templates with fetch:", error);
             UIManager.showNotification(
@@ -157,9 +159,10 @@ const ExportManager = (function () {
   /**
    * Process template data and generate CapCut export
    * @param {Object} effectTemplateData - The effect template data
+   * @param {Object} transitionTemplateData - The transition template data
    * @param {Object} templateData - The default template data
    */
-  function processTemplateData(effectTemplateData, templateData) {
+  function processTemplateData(effectTemplateData, transitionTemplateData, templateData) {
     try {
       console.log("Processing template data");
 
@@ -175,6 +178,18 @@ const ExportManager = (function () {
       ) {
         effectTemplateData.materials.video_effects.forEach((effect) => {
           effectsMap[effect.effect_id] = effect;
+        });
+      }
+      
+      // Create a map of transition IDs to their full configurations from the transition template
+      const transitionsMap = {};
+      if (
+        transitionTemplateData &&
+        transitionTemplateData.materials &&
+        transitionTemplateData.materials.transitions
+      ) {
+        transitionTemplateData.materials.transitions.forEach((transition) => {
+          transitionsMap[transition.effect_id] = transition;
         });
       }
 
@@ -423,41 +438,66 @@ const ExportManager = (function () {
             console.log(`Creating transition ${index}: ${transition.name}, effect_id: ${transition.effect_id}`);
             console.log(`Media types: Current=${isCurrentImage ? 'image' : 'video'}, Next=${isNextImage ? 'image' : 'video'}`);
             
-            // Create the transition with proper settings
-            capcutData.materials.transitions.push({
-              id: transitionId,
-              effect_id: transition.effect_id,
-              duration: transition.duration,
-              name: transition.name,
-              // For image-to-image transitions, ensure is_overlap is set correctly
-              is_overlap: isCurrentImage && isNextImage ? true : (transition.is_overlap || false),
-              path: transition.path || "",
-              platform: transition.platform || "all",
-              category_id: transition.category_id || "27296",
-              category_name: transition.category_name || "Đang thịnh hành",
-              resource_id: transition.resource_id || transition.effect_id,
-              source_platform: transition.source_platform || 1,
-              type: "transition",
-              // Additional required parameters
-              adjust_params: [
-                {
-                  name: "transition_adjust_duration",
-                  default_value: 0.5,
-                  value: 0.5
-                },
-                {
-                  name: "transition_adjust_smoothness",
-                  default_value: 0.5,
-                  value: 0.5
-                }
-              ],
-              apply_target_type: 2,
-              covering_relation_change: 0,
-              render_index: 0,
-              request_id: generateUUID().replace(/-/g, ""),
-              value: 1.0,
-              version: ""
-            });
+            // Kiểm tra xem có thông tin chi tiết về transition trong template không
+            const templateTransition = transitionsMap[transition.effect_id];
+            
+            // Nếu tìm thấy transition trong template, sử dụng nó làm cơ sở
+            let transitionObject;
+            if (templateTransition) {
+              // Clone từ template và cập nhật các thuộc tính cần thiết
+              transitionObject = JSON.parse(JSON.stringify(templateTransition));
+              transitionObject.id = transitionId;
+              
+              // Cập nhật duration nếu có giá trị tùy chỉnh
+              if (transition.duration) {
+                transitionObject.duration = transition.duration;
+              }
+              
+              // Cập nhật is_overlap dựa trên loại media
+              if (isCurrentImage && isNextImage) {
+                transitionObject.is_overlap = true;
+              }
+              
+              // Đảm bảo có request_id
+              transitionObject.request_id = templateTransition.request_id || generateUUID().replace(/-/g, "");
+            } else {
+              // Nếu không tìm thấy trong template, tạo mới với các giá trị mặc định
+              transitionObject = {
+                id: transitionId,
+                effect_id: transition.effect_id,
+                duration: transition.duration,
+                name: transition.name,
+                is_overlap: isCurrentImage && isNextImage ? true : (transition.is_overlap || false),
+                path: transition.path || "",
+                platform: transition.platform || "all",
+                category_id: transition.category_id || "25835",
+                category_name: transition.category_name || "Đang thịnh hành",
+                resource_id: transition.resource_id || transition.effect_id,
+                source_platform: transition.source_platform || 1,
+                type: "transition",
+                adjust_params: [
+                  {
+                    name: "transition_adjust_duration",
+                    default_value: 0.5,
+                    value: 0.5
+                  },
+                  {
+                    name: "transition_adjust_smoothness",
+                    default_value: 0.5,
+                    value: 0.5
+                  }
+                ],
+                apply_target_type: 2,
+                covering_relation_change: 0,
+                render_index: 0,
+                request_id: generateUUID().replace(/-/g, ""),
+                value: 1.0,
+                version: ""
+              };
+            }
+            
+            // Thêm transition vào danh sách
+            capcutData.materials.transitions.push(transitionObject);
             idMap.transitions[index] = transitionId;
           } else {
             console.log(`Skipping transition ${index}: Missing effect_id`);
@@ -525,28 +565,24 @@ const ExportManager = (function () {
           
           console.log(`Creating effect for item ${index}: ${item.effectName}, effect_id: ${item.effectId}`);
 
+          // Tạo đối tượng effect
+          let effectObject;
+          
           if (templateEffect) {
             // Clone the effect from the template and use the new ID
-            const effectClone = JSON.parse(JSON.stringify(templateEffect));
-            effectClone.id = effectId;
+            effectObject = JSON.parse(JSON.stringify(templateEffect));
+            effectObject.id = effectId;
             
-            // Ensure all required fields are present
-            if (!effectClone.type) effectClone.type = "video_effect";
-            if (!effectClone.category_id) effectClone.category_id = "27296";
-            if (!effectClone.category_name) effectClone.category_name = "Đang thịnh hành";
-            if (!effectClone.apply_target_type) effectClone.apply_target_type = 2;
-            if (!effectClone.platform) effectClone.platform = "all";
-            if (!effectClone.source_platform) effectClone.source_platform = 1;
-            if (!effectClone.request_id) effectClone.request_id = generateUUID().replace(/-/g, "");
-            if (!effectClone.resource_id) effectClone.resource_id = item.effectId;
-            if (!effectClone.value) effectClone.value = 1.0;
-
-            // Add to the materials
-            capcutData.materials.video_effects.push(effectClone);
-            idMap.videoEffects[index] = effectId;
+            // Đảm bảo có request_id mới
+            effectObject.request_id = generateUUID().replace(/-/g, "");
+            
+            // Cập nhật resource_id nếu cần
+            if (!effectObject.resource_id) {
+              effectObject.resource_id = item.effectId;
+            }
           } else {
-            // Fallback if effect not found in template
-            capcutData.materials.video_effects.push({
+            // Nếu không tìm thấy trong template, tạo mới với các giá trị mặc định
+            effectObject = {
               id: effectId,
               effect_id: item.effectId,
               name: item.effectName,
@@ -597,9 +633,12 @@ const ExportManager = (function () {
               source_platform: 1,
               value: 1.0,
               version: "",
-            });
-            idMap.videoEffects[index] = effectId;
+            };
           }
+          
+          // Thêm effect vào danh sách
+          capcutData.materials.video_effects.push(effectObject);
+          idMap.videoEffects[index] = effectId;
         } else {
           idMap.videoEffects[index] = null;
         }
@@ -759,16 +798,17 @@ const ExportManager = (function () {
             // Get the custom effect duration (if set) or use the media duration
             let effectDuration = item.duration;
             if (selectedEffect && selectedEffect.dataset.duration) {
-              // Get the effect duration from the dataset (in microseconds)
+                // Get the effect duration from the dataset (in microseconds)
               const customDuration = parseInt(selectedEffect.dataset.duration);
               // Use custom duration if it's valid, otherwise fall back to media duration
               if (!isNaN(customDuration) && customDuration > 0) {
                 effectDuration = customDuration;
               }
+              console.log(`Using custom effect duration for item ${index}: ${effectDuration} microseconds`);
             }
 
-            // Create a more complete effect segment with all required properties
-            effectTrack.segments.push({
+            // Tạo segment cho effect với đầy đủ thuộc tính cần thiết
+            const effectSegment = {
               id: generateUUID(),
               material_id: idMap.videoEffects[index],
               target_timerange: {
@@ -807,7 +847,10 @@ const ExportManager = (function () {
               state: 0,
               cartoon: false,
               intensifies_audio: false,
-            });
+            };
+            
+            // Thêm segment vào track
+            effectTrack.segments.push(effectSegment);
             console.log(`Added effect segment for item ${index}: ${item.effectName}`);
             
           }
