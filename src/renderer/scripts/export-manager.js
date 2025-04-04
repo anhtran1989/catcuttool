@@ -245,6 +245,36 @@ const ExportManager = (function () {
           filePath = FileManager.formatPathForCapcut(filePath);
         }
 
+        // Check if this file has been modified and get the correct isVideo value
+        let isVideo = !!video;
+        
+        // If we have access to TemplateManager's modifiedMediaFiles, check it
+        if (window.TemplateManager && window.TemplateManager.getModifiedFile) {
+          const modifiedFile = window.TemplateManager.getModifiedFile(filePath);
+          if (modifiedFile) {
+            // Use the file type from the modified file data
+            isVideo = modifiedFile.fileType === 'video';
+          }
+        } else {
+          // Fallback detection methods:
+          
+          // 1. Check if data-type attribute exists on the item element
+          const dataType = item.getAttribute('data-type');
+          if (dataType) {
+            isVideo = dataType === 'video';
+          } 
+          // 2. Check for presence of video element
+          else if (video) {
+            isVideo = true;
+          }
+          // 3. Check for presence of img element
+          else if (img) {
+            isVideo = false;
+          }
+          
+          console.log(`Media item ${fileName} determined to be ${isVideo ? 'video' : 'image'}`);
+        }
+
         // Get transition (if not the last item)
         let transition = null;
         if (index < thumbnails.length - 1) {
@@ -280,7 +310,7 @@ const ExportManager = (function () {
 
         mediaItems.push({
           fileName: fileName,
-          isVideo: !!video,
+          isVideo: isVideo,
           filePath: filePath,
           duration: duration,
           effectName: effectName,
@@ -520,8 +550,8 @@ const ExportManager = (function () {
           path: item.filePath, // Use the actual file path from the source
           width: 1280, // Default width
           height: 720, // Default height
-          duration: item.isVideo ? item.duration : 10800000000, // Long duration for images
-          has_audio: item.isVideo,
+          duration: item.duration,
+          has_audio: item.isVideo, // Only videos have audio
           has_sound_separated: false,
           crop: {
             lower_left_x: 0.0,

@@ -1280,8 +1280,9 @@ const TemplateManager = (function () {
    * @param {HTMLElement} mediaItem - The media item element
    * @param {Object} fileInfo - Original file information
    * @param {string} previewUrl - URL for the new media preview
+   * @param {string} newFileType - Type of the new file ('image' or 'video')
    */
-  function updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl) {
+  function updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl, newFileType) {
     try {
       // Remove loading state
       const loadingOverlay = mediaItem.querySelector('.media-loading-overlay');
@@ -1293,18 +1294,91 @@ const TemplateManager = (function () {
       // Mark as modified
       mediaItem.classList.add('modified');
       
-      // Update preview based on file type
-      const fileType = mediaItem.getAttribute('data-type');
+      // Get the original file type
+      const originalFileType = mediaItem.getAttribute('data-type');
       
-      if (fileType === 'image') {
-        const imgElement = mediaItem.querySelector('img');
-        if (imgElement) {
-          imgElement.src = previewUrl;
+      // If the file type has changed (e.g., image to video or vice versa)
+      if (newFileType && newFileType !== originalFileType) {
+        // Update the data-type attribute
+        mediaItem.setAttribute('data-type', newFileType);
+        
+        // Replace the preview element with the appropriate type
+        const mediaPreview = mediaItem.querySelector('.media-preview');
+        if (mediaPreview) {
+          // Create new preview based on new file type
+          if (newFileType === 'image') {
+            // Change from video to image
+            mediaPreview.classList.remove('video-preview');
+            mediaPreview.innerHTML = `<img src="${previewUrl}" alt="${fileInfo.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'; console.error('Không thể tải hình ảnh:', '${previewUrl}');">`;
+          } else if (newFileType === 'video') {
+            // Change from image to video
+            mediaPreview.classList.add('video-preview');
+            mediaPreview.innerHTML = `
+              <video src="${previewUrl}" muted onerror="console.error('Không thể tải video:', '${previewUrl}');"></video>
+              <div class="video-play-button">
+                <i class="fas fa-play"></i>
+              </div>
+            `;
+            
+            // Add video play/pause functionality
+            const videoPreview = mediaItem.querySelector(".video-preview");
+            if (videoPreview) {
+              videoPreview.addEventListener("click", function(e) {
+                e.stopPropagation();
+                
+                const video = this.querySelector("video");
+                if (!video) return;
+                
+                const playButton = this.querySelector(".video-play-button");
+                
+                if (video.paused) {
+                  try {
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                      playPromise.then(_ => {
+                        playButton.style.display = "none";
+                      }).catch(error => {
+                        console.error("Error playing video:", error);
+                        UIManager.showNotification("Không thể phát video này", "error");
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error when playing video:", error);
+                  }
+                } else {
+                  video.pause();
+                  playButton.style.display = "flex";
+                }
+              });
+              
+              const video = videoPreview.querySelector("video");
+              if (video) {
+                video.addEventListener("ended", function() {
+                  const playButton = videoPreview.querySelector(".video-play-button");
+                  if (playButton) playButton.style.display = "flex";
+                });
+              }
+            }
+          }
+          
+          // Update media type text
+          const mediaTypeElement = mediaItem.querySelector('.media-type');
+          if (mediaTypeElement) {
+            mediaTypeElement.textContent = getMediaTypeText(newFileType);
+          }
         }
-      } else if (fileType === 'video') {
-        const videoElement = mediaItem.querySelector('video');
-        if (videoElement) {
-          videoElement.src = previewUrl;
+      } else {
+        // If same type, just update the source
+        if (originalFileType === 'image') {
+          const imgElement = mediaItem.querySelector('img');
+          if (imgElement) {
+            imgElement.src = previewUrl;
+          }
+        } else if (originalFileType === 'video') {
+          const videoElement = mediaItem.querySelector('video');
+          if (videoElement) {
+            videoElement.src = previewUrl;
+          }
         }
       }
       
@@ -1340,12 +1414,10 @@ const TemplateManager = (function () {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       
-      // Set accepted file types based on the original file type
+      // Set accepted file types to allow both images and videos
       const fileType = mediaItem.getAttribute('data-type');
-      if (fileType === 'image') {
-        fileInput.accept = 'image/*';
-      } else if (fileType === 'video') {
-        fileInput.accept = 'video/*';
+      if (fileType === 'image' || fileType === 'video') {
+        fileInput.accept = 'image/*,video/*';
       } else if (fileType === 'audio') {
         fileInput.accept = 'audio/*';
       }
@@ -1355,10 +1427,14 @@ const TemplateManager = (function () {
         if (e.target.files && e.target.files[0]) {
           const selectedFile = e.target.files[0];
           
-          // Check if file type matches the original
+          // Check if file type is valid (just ensure it's either image or video)
           const selectedFileType = getFileTypeFromName(selectedFile.name);
-          if (selectedFileType !== fileType) {
-            UIManager.showNotification(`Vui lòng chọn file ${getMediaTypeText(fileType).toLowerCase()} để thay thế`, 'error');
+          if ((fileType === 'image' || fileType === 'video') && 
+              (selectedFileType !== 'image' && selectedFileType !== 'video')) {
+            UIManager.showNotification(`Vui lòng chọn file ảnh hoặc video để thay thế`, 'error');
+            return;
+          } else if (fileType === 'audio' && selectedFileType !== 'audio') {
+            UIManager.showNotification(`Vui lòng chọn file âm thanh để thay thế`, 'error');
             return;
           }
           
@@ -1382,7 +1458,7 @@ const TemplateManager = (function () {
               originalPath,
               newFilePath: selectedFile.path,
               fileName: selectedFile.name,
-              fileType
+              fileType: selectedFileType // Use the detected file type instead of original
             });
             
             // Listen for the response
@@ -1395,12 +1471,12 @@ const TemplateManager = (function () {
                   originalPath,
                   newFilePath: tempFilePath,
                   previewUrl,
-                  fileType,
+                  fileType: selectedFileType, // Store the new file type
                   fileName: selectedFile.name
                 });
                 
                 // Update UI
-                updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+                updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl, selectedFileType);
                 
                 UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công`, 'success');
               } else {
@@ -1425,12 +1501,12 @@ const TemplateManager = (function () {
                 originalPath: fileInfo.path,
                 newFilePath: null, // Browser mode doesn't have real file paths
                 previewUrl,
-                fileType,
+                fileType: selectedFileType, // Use the detected file type instead of original
                 fileName: selectedFile.name
               });
               
               // Update UI
-              updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl);
+              updateMediaItemAfterReplacement(mediaItem, fileInfo, previewUrl, selectedFileType);
               
               UIManager.showNotification(`Đã thay thế file ${fileInfo.name} thành công (chế độ browser)`, 'success');
             };
@@ -1562,6 +1638,23 @@ const TemplateManager = (function () {
     displayTemplateMedia,
     replaceMedia,
     exportModifiedTemplate,
-    resetPagination
+    resetPagination,
+    getModifiedFile: function(filePath) {
+      // Check if the path exists in our modified files map
+      if (modifiedMediaFiles.has(filePath)) {
+        return modifiedMediaFiles.get(filePath);
+      }
+      
+      // Try checking with just the filename if full path doesn't match
+      const filename = basename(filePath);
+      for (const [path, fileData] of modifiedMediaFiles.entries()) {
+        if (basename(path) === filename) {
+          return fileData;
+        }
+      }
+      
+      // File not found in modified files
+      return null;
+    }
   };
 })();

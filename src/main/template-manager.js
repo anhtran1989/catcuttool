@@ -713,6 +713,9 @@ async function handleExportModifiedTemplate(event, data) {
 
     console.log("Định dạng đường dẫn phát hiện:", pathFormat);
     
+    // Log modified files to verify data
+    console.log("Modified files:", JSON.stringify(modifiedFiles, null, 2));
+    
     // Process each modified file
     for (const file of modifiedFiles) {
       // Copy the new file to the project directory
@@ -738,11 +741,13 @@ async function handleExportModifiedTemplate(event, data) {
       // Add to path map with appropriate format
       pathMap.set(file.originalPath, {
         fullPath: destFilePath,
-        formattedPath: newPathFormatted
+        formattedPath: newPathFormatted,
+        fileType: file.fileType
       });
       
       console.log(`Đã copy file từ ${file.newFilePath} đến ${destFilePath}`);
       console.log(`Đường dẫn đã định dạng: ${newPathFormatted}`);
+      console.log(`Loại file: ${file.fileType}`);
     }
     
     // Lưu trữ lại thông tin file gốc để debug
@@ -789,7 +794,22 @@ async function handleExportModifiedTemplate(event, data) {
             for (const [originalPath, newPathInfo] of pathMap.entries()) {
               if (video.path === originalPath || 
                   path.basename(video.path) === path.basename(originalPath)) {
+                // Update path
                 video.path = newPathInfo.formattedPath;
+                
+                // Update type based on the new file type
+                if (newPathInfo.fileType) {
+                  if (newPathInfo.fileType === 'video' && video.type !== 'video') {
+                    video.type = 'video';
+                    video.has_audio = true; // Videos have audio
+                    console.log(`Updated media type from ${video.type} to video`);
+                  } else if (newPathInfo.fileType === 'image' && video.type !== 'photo') {
+                    video.type = 'photo';
+                    video.has_audio = false; // Photos don't have audio
+                    console.log(`Updated media type from ${video.type} to photo`);
+                  }
+                }
+                
                 updated = true;
                 console.log(`Updated video path from ${originalPath} to ${video.path}`);
               }
