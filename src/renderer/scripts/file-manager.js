@@ -638,19 +638,50 @@ const FileManager = (function () {
     console.log(`Applying ${animationType} animation to file:`, fileData.fileName);
     console.log('Animation details:', animation);
     
-    // Tìm thumbnail item dựa trên file path
+    // Tìm thumbnail item dựa trên fileName hoặc filePath
     const thumbnailItems = document.querySelectorAll('.thumbnail-item');
     let targetItem = null;
     
+    // Debug thông tin về các thumbnail items hiện có
+    console.log(`Searching among ${thumbnailItems.length} thumbnail items for file: ${fileData.fileName}`);
+    console.log(`File path to match: ${fileData.filePath}`);
+    
     for (const item of thumbnailItems) {
-      if (item.dataset.path === fileData.filePath) {
+      // Kiểm tra cả fileName và filePath
+      const itemFileName = item.querySelector('.thumbnail-title')?.textContent;
+      console.log(`Checking item: ${itemFileName}, path: ${item.dataset.path}`);
+      
+      if (item.dataset.path === fileData.filePath || 
+          (itemFileName && fileData.fileName && itemFileName.includes(fileData.fileName))) {
         targetItem = item;
+        console.log(`Found matching thumbnail item for ${fileData.fileName}`);
         break;
+      }
+    }
+    
+    // Nếu không tìm thấy, thử tìm theo cách khác
+    if (!targetItem) {
+      console.warn(`First attempt failed. Trying alternative method to find thumbnail for ${fileData.fileName}`);
+      // Thử tìm theo tên file (không phân biệt hoa thường và bỏ qua đường dẫn)
+      const fileName = fileData.fileName.toLowerCase();
+      for (const item of thumbnailItems) {
+        const itemTitle = item.querySelector('.thumbnail-title')?.textContent?.toLowerCase() || '';
+        if (itemTitle.includes(fileName)) {
+          targetItem = item;
+          console.log(`Found thumbnail by filename match: ${itemTitle}`);
+          break;
+        }
       }
     }
     
     if (!targetItem) {
       console.error('Could not find thumbnail item for file:', fileData.fileName);
+      // Không return ngay, thử tạo animation badge mà không cần thumbnail item
+      // Chúng ta sẽ lưu thông tin animation để sử dụng sau này
+      window.pendingAnimations = window.pendingAnimations || {};
+      window.pendingAnimations[fileData.fileName] = window.pendingAnimations[fileData.fileName] || {};
+      window.pendingAnimations[fileData.fileName][animationType] = animation;
+      console.log(`Saved animation for later application to ${fileData.fileName}`);
       return;
     }
     
