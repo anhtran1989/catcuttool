@@ -864,7 +864,7 @@ const UIManager = (function () {
   }
 
   /**
-   * Cập nhật danh sách effects và transitions từ file draft_content.json
+   * Cập nhật danh sách effects, transitions và material animations từ file draft_content.json
    * @param {Object} draftContent Nội dung của file draft_content.json
    */
   function updateEffectsAndTransitions(draftContent) {
@@ -877,6 +877,12 @@ const UIManager = (function () {
       // Cập nhật transitions từ draft_content.json
       if (TransitionManager && typeof TransitionManager.updateFromDraftContent === 'function') {
         TransitionManager.updateFromDraftContent(draftContent);
+      }
+      
+      // Cập nhật material animations từ draft_content.json
+      if (MaterialManager && typeof MaterialManager.updateFromDraftContent === 'function') {
+        MaterialManager.updateFromDraftContent(draftContent);
+        console.log("Material animations updated from draft_content.json");
       }
 
       // Tạo lại các dropdown để hiển thị danh sách đã cập nhật

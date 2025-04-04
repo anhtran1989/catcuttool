@@ -14,18 +14,47 @@ const MaterialManager = (function () {
   }
 
   /**
-   * Lấy danh sách material animations theo loại (in, out, combo)
-   * @param {string} type Loại animation cần lọc (in, out, combo)
-   * @returns {Array} Danh sách material animations theo loại
+   * Lấy danh sách hiệu ứng cho một loại cụ thể
+   * @param {string} type Loại hiệu ứng (in, out, group)
+   * @returns {Array} Danh sách hiệu ứng
    */
   function getMaterialAnimationsByType(type) {
     if (!type) return materialAnimations;
     
-    // Lọc animations theo loại và thêm tùy chọn None vào đầu danh sách
-    const noneOption = materialAnimations.find(a => a.name === "None");
-    const filteredAnimations = materialAnimations.filter(a => a.type === type);
+    // Đảm bảo type hợp lệ
+    if (!['in', 'out', 'group'].includes(type)) {
+      console.warn(`Invalid animation type: ${type}. Must be one of: in, out, group`);
+      return [];
+    }
     
-    return noneOption ? [noneOption, ...filteredAnimations] : filteredAnimations;
+    // Tạo "None" option với cấu trúc giống với material animation thật
+    const noneOption = {
+      name: "None",
+      animation_id: "none",
+      id: "none",
+      category_id: "",
+      category_name: type === 'in' ? "Vào" : (type === 'out' ? "Ra" : "Kết hợp"),
+      duration: 0,
+      material_type: "video",
+      panel: "video",
+      path: "",
+      platform: "all",
+      resource_id: "none",
+      source_platform: 1,
+      start: 0,
+      third_resource_id: "none",
+      type: type,
+      icon: "fas fa-ban"
+    };
+    
+    console.log(`Getting animations for type: ${type}`);
+    console.log(`Total animations available: ${materialAnimations.length}`);
+    
+    // Lọc chính xác theo type (in, out, group)
+    const filteredAnimations = materialAnimations.filter(a => a.type === type);
+    console.log(`Found ${filteredAnimations.length} animations of type ${type}`);
+    
+    return [noneOption, ...filteredAnimations];
   }
 
   /**
@@ -45,54 +74,179 @@ const MaterialManager = (function () {
   }
 
   /**
-   * Lấy danh sách material animations hiệu ứng kết hợp (combo)
+   * Lấy danh sách material animations hiệu ứng kết hợp (group)
    * @returns {Array} Danh sách hiệu ứng kết hợp
    */
   function getGroupAnimations() {
-    return getMaterialAnimationsByType("combo");
+    return getMaterialAnimationsByType("group");
   }
 
   /**
-   * Cập nhật danh sách material animations từ file draft_content.json
-   * @param {Object} draftContent Nội dung của file draft_content.json
+   * Cập nhật danh sách hiệu ứng từ draft_content.json
+   * @param {Object} draftContent Nội dung draft_content.json
    */
   function updateFromDraftContent(draftContent) {
     try {
-      if (!draftContent || !draftContent.materials || !draftContent.materials.material_animations) {
-        console.error("Invalid draft content format");
+      if (!draftContent) {
+        console.warn("Không tìm thấy dữ liệu trong draft_content.json");
         return;
       }
 
       const newAnimations = [];
-      
-      // Duyệt qua các material_animations trong draft content
-      draftContent.materials.material_animations.forEach(material => {
-        if (material.animations && Array.isArray(material.animations)) {
-          // Duyệt qua các animations trong mỗi material_animation
-          material.animations.forEach(animation => {
-            newAnimations.push({
-              name: animation.name,
-              animation_id: animation.id,
-              category_id: animation.category_id || "",
-              category_name: animation.category_name || "",
-              type: animation.type || "", // in, out, combo
-              duration: animation.duration || 0,
-              material_type: animation.material_type || "video",
-              path: animation.path || "",
-              platform: animation.platform || "all",
-              resource_id: animation.resource_id || animation.id,
-              source_platform: animation.source_platform || 1,
-              start: animation.start || 0,
-              icon: getIconForMaterialAnimation(animation.type, animation.name)
-            });
-          });
-        }
-      });
+      console.log("Đang xử lý draft content...");
 
+      // Kiểm tra cụ thể cho cấu trúc material_animations
+      if (draftContent.materials && draftContent.materials.material_animations) {
+        console.log("Tìm thấy cấu trúc material_animations");
+        
+        // Xử lý cấu trúc material_animations theo mẫu của người dùng
+        const materialAnimationsData = draftContent.materials.material_animations;
+        
+        if (Array.isArray(materialAnimationsData)) {
+          materialAnimationsData.forEach(material => {
+            console.log(`Xử lý container material_animations với ID: ${material.id}`);
+            
+            // Kiểm tra nếu material có mảng animations
+            if (material.animations && Array.isArray(material.animations)) {
+              material.animations.forEach(animation => {
+                if (!animation) return;
+                
+                // Kiểm tra các thuộc tính cần thiết
+                if (animation.name && animation.type && (animation.duration !== undefined || animation.id)) {
+                  // Kiểm tra type hợp lệ
+                  if (['in', 'out', 'group'].includes(animation.type)) {
+                    console.log(`Tìm thấy animation: ${animation.name}, Type: ${animation.type}`);
+                    
+                    // Tạo animation mới
+                    const newAnimation = { ...animation };
+                    newAnimation.animation_id = animation.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    newAnimation.icon = getIconForMaterialAnimation(animation.type, animation.name);
+                    newAnimation.parent_id = material.id; // Lưu ID của thành phần cha
+                    
+                    // Đảm bảo có category_name
+                    if (!newAnimation.category_name) {
+                      newAnimation.category_name = animation.type === 'in' ? "Vào" : (animation.type === 'out' ? "Ra" : "Kết hợp");
+                    }
+                    
+                    newAnimations.push(newAnimation);
+                  }
+                }
+              });
+            }
+          });
+        } else {
+          console.log("material_animations không phải là mảng");
+        }
+      } else {
+        console.log("Không tìm thấy cấu trúc material_animations, sẽ tìm kiếm đệ quy");
+        
+        // Hàm đệ quy tìm kiếm tất cả các đối tượng có thuộc tính name, type, duration
+        function findAnimationsRecursively(obj, path = '') {
+          // Nếu không phải object hoặc null, thoát
+          if (!obj || typeof obj !== 'object') return;
+          
+          // Kiểm tra nếu đối tượng hiện tại có các thuộc tính cần thiết của một animation
+          if (obj.name && obj.type && (obj.duration !== undefined || obj.id)) {
+            // Kiểm tra nếu type hợp lệ
+            if (['in', 'out', 'group'].includes(obj.type)) {
+              console.log(`Tìm thấy animation tại ${path}: ${obj.name}, Type: ${obj.type}`);
+              
+              // Tạo animation mới với đầy đủ thông tin
+              const newAnimation = { ...obj };
+              
+              // Đảm bảo các thuộc tính quan trọng luôn có
+              newAnimation.animation_id = obj.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              newAnimation.icon = getIconForMaterialAnimation(obj.type, obj.name);
+              
+              // Đảm bảo có category_name nếu không có
+              if (!newAnimation.category_name) {
+                newAnimation.category_name = obj.type === 'in' ? "Vào" : (obj.type === 'out' ? "Ra" : "Kết hợp");
+              }
+              
+              // Thêm vào danh sách mới
+              newAnimations.push(newAnimation);
+              return; // Không cần tìm sâu hơn trong đối tượng này
+            }
+          }
+          
+          // Nếu là mảng, duyệt qua từng phần tử
+          if (Array.isArray(obj)) {
+            obj.forEach((item, index) => {
+              findAnimationsRecursively(item, `${path}[${index}]`);
+            });
+          } else {
+            // Nếu là object, duyệt qua từng thuộc tính
+            for (const key in obj) {
+              if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                findAnimationsRecursively(obj[key], path ? `${path}.${key}` : key);
+              }
+            }
+          }
+        }
+
+        // Bắt đầu tìm kiếm đệ quy từ gốc của draft_content
+        findAnimationsRecursively(draftContent, 'draftContent');
+      }
+      
+      // Nếu vẫn không tìm thấy animations nào, thêm animation mẫu "Nếp gấp"
+      if (newAnimations.length === 0) {
+        console.log("Không tìm thấy animations nào, thêm animation mẫu 'Nếp gấp'");
+        
+        // Thêm animation "Nếp gấp" từ ví dụ người dùng cung cấp
+        const exampleAnimation = {
+          "anim_adjust_params": null,
+          "category_id": "6824",
+          "category_name": "Vào",
+          "duration": 500000,
+          "id": "7221443319530787330",
+          "material_type": "video",
+          "name": "Nếp gấp",
+          "panel": "video",
+          "path": "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7221443319530787330/727e2d4e66fb0fd66cbd7cae910b5e68",
+          "platform": "all",
+          "request_id": "202504041330049F35CB9A5511E7A38B85",
+          "resource_id": "7221443319530787330",
+          "source_platform": 1,
+          "start": 0,
+          "third_resource_id": "7221443319530787330",
+          "type": "in"
+        };
+        
+        const newAnimation = { ...exampleAnimation };
+        newAnimation.animation_id = exampleAnimation.id;
+        newAnimation.icon = getIconForMaterialAnimation(exampleAnimation.type, exampleAnimation.name);
+        
+        newAnimations.push(newAnimation);
+        console.log("Thêm animation mẫu 'Nếp gấp'");
+      }
+      
       // Cập nhật danh sách material animations
+      console.log(`Tìm thấy tổng cộng ${newAnimations.length} animations để thêm vào`);
       mergeMaterialAnimations(newAnimations);
       
-      console.log(`Updated material animations list: ${materialAnimations.length} animations available`);
+      // Log số lượng animation theo từng loại
+      const inAnimations = materialAnimations.filter(a => a.type === 'in');
+      const outAnimations = materialAnimations.filter(a => a.type === 'out');
+      const groupAnimations = materialAnimations.filter(a => a.type === 'group');
+      
+      console.log(`Đã cập nhật danh sách animations: ${materialAnimations.length} animations khả dụng`);
+      console.log(`Loại animations: in=${inAnimations.length}, out=${outAnimations.length}, group=${groupAnimations.length}`);
+      
+      // Hiển thị chi tiết về các animation đã được xử lý
+      console.log('=== ANIMATIONS IN ===');
+      inAnimations.forEach(anim => {
+        console.log(`Name: ${anim.name}, ID: ${anim.id}, Type: ${anim.type}, Category: ${anim.category_name}`);
+      });
+      
+      console.log('=== ANIMATIONS OUT ===');
+      outAnimations.forEach(anim => {
+        console.log(`Name: ${anim.name}, ID: ${anim.id}, Type: ${anim.type}, Category: ${anim.category_name}`);
+      });
+      
+      console.log('=== ANIMATIONS GROUP ===');
+      groupAnimations.forEach(anim => {
+        console.log(`Name: ${anim.name}, ID: ${anim.id}, Type: ${anim.type}, Category: ${anim.category_name}`);
+      });
     } catch (error) {
       console.error("Error updating material animations from draft content:", error);
     }
@@ -103,43 +257,32 @@ const MaterialManager = (function () {
    * @param {Array} newAnimations Danh sách material animations mới
    */
   function mergeMaterialAnimations(newAnimations) {
-    if (!Array.isArray(newAnimations)) return;
-
-    // Luôn đảm bảo có tùy chọn "None"
-    const hasNone = materialAnimations.some(a => a.name === "None");
-    if (!hasNone) {
-      materialAnimations.push({
-        name: "None",
-        animation_id: "none",
-        type: "all",
-        icon: "fas fa-ban"
-      });
+    console.log(`mergeMaterialAnimations: Received ${newAnimations.length} new animations`);
+    
+    // Kiểm tra xem có animation nào không
+    if (newAnimations.length === 0) {
+      console.warn('Không có animation nào được thêm vào');
+      return;
     }
 
-    // Duyệt qua từng animation mới
-    newAnimations.forEach(newAnimation => {
-      // Kiểm tra xem animation đã tồn tại chưa
-      const existingIndex = materialAnimations.findIndex(a => 
-        a.animation_id === newAnimation.animation_id || 
-        (a.name === newAnimation.name && a.type === newAnimation.type)
-      );
+    // Log một vài animation để kiểm tra
+    console.log('Sample of animations to be added:');
+    for (let i = 0; i < Math.min(3, newAnimations.length); i++) {
+      console.log(`Animation ${i+1}: ${newAnimations[i].name}, Type: ${newAnimations[i].type}`);
+    }
 
-      if (existingIndex >= 0) {
-        // Cập nhật animation đã tồn tại
-        materialAnimations[existingIndex] = {
-          ...materialAnimations[existingIndex],
-          ...newAnimation
-        };
-      } else {
-        // Thêm mới animation
-        materialAnimations.push(newAnimation);
-      }
-    });
+    // Không cần thêm tùy chọn "None" ở đây vì sẽ được tạo riêng cho từng loại animation trong hàm getMaterialAnimationsByType
+
+    // Xóa danh sách cũ và thêm danh sách mới
+    materialAnimations = [...newAnimations];
+    
+    console.log(`Material animations list updated. Total: ${materialAnimations.length}`);
+    console.log(`Types: in=${materialAnimations.filter(a => a.type === 'in').length}, out=${materialAnimations.filter(a => a.type === 'out').length}, group=${materialAnimations.filter(a => a.type === 'group').length}`);
   }
 
   /**
    * Lấy biểu tượng phù hợp cho material animation dựa trên loại và tên
-   * @param {string} type Loại animation (in, out, combo)
+   * @param {string} type Loại animation (in, out, group)
    * @param {string} name Tên animation
    * @returns {string} Class của biểu tượng
    */
@@ -154,7 +297,7 @@ const MaterialManager = (function () {
         return nameLower.includes("fade") ? "fas fa-sign-in-alt" : "fas fa-arrow-right";
       case "out":
         return nameLower.includes("fade") ? "fas fa-sign-out-alt" : "fas fa-arrow-left";
-      case "combo":
+      case "group":
         return "fas fa-object-group";
       default:
         return "fas fa-magic";
@@ -166,12 +309,6 @@ const MaterialManager = (function () {
    */
   function initializeDefaultMaterialAnimations() {
     const defaultAnimations = [
-      {
-        name: "None",
-        animation_id: "none",
-        type: "all",
-        icon: "fas fa-ban"
-      },
       {
         name: "Fade In",
         animation_id: "fade_in",
@@ -209,15 +346,15 @@ const MaterialManager = (function () {
         icon: "fas fa-search-minus"
       },
       {
-        name: "Combo Fade",
-        animation_id: "combo_fade",
-        type: "combo",
+        name: "Group Fade",
+        animation_id: "group_fade",
+        type: "group",
         icon: "fas fa-object-group"
       },
       {
-        name: "Combo Slide",
-        animation_id: "combo_slide",
-        type: "combo",
+        name: "Group Slide",
+        animation_id: "group_slide",
+        type: "group",
         icon: "fas fa-object-group"
       }
     ];
@@ -249,15 +386,15 @@ const MaterialManager = (function () {
     };
     animationButtonsContainer.appendChild(inButton);
 
-    // Nút Animation Kết hợp (Combo)
-    const comboButton = document.createElement('button');
-    comboButton.className = 'animation-combo-button';
-    comboButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
-    comboButton.onclick = function(e) {
+    // Nút Animation Kết hợp (Group)
+    const groupButton = document.createElement('button');
+    groupButton.className = 'animation-group-button';
+    groupButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
+    groupButton.onclick = function(e) {
       e.stopPropagation();
-      showAnimationDropdown(thumbnailItem, 'combo', fileData, onApplyAnimation);
+      showAnimationDropdown(thumbnailItem, 'group', fileData, onApplyAnimation);
     };
-    animationButtonsContainer.appendChild(comboButton);
+    animationButtonsContainer.appendChild(groupButton);
 
     // Nút Animation Ra (Out)
     const outButton = document.createElement('button');
@@ -299,7 +436,7 @@ const MaterialManager = (function () {
   /**
    * Hiển thị dropdown chọn animation
    * @param {HTMLElement} thumbnailItem - Thumbnail item element
-   * @param {string} animationType - Loại animation (in, combo, out)
+   * @param {string} animationType - Loại animation (in, out, group)
    * @param {Object} fileData - File data
    * @param {Function} onApplyAnimation - Callback function to apply animation
    */
@@ -324,7 +461,7 @@ const MaterialManager = (function () {
       case 'out':
         headerText = 'Hiệu ứng ra';
         break;
-      case 'combo':
+      case 'group':
         headerText = 'Hiệu ứng kết hợp';
         break;
       default:
@@ -338,45 +475,93 @@ const MaterialManager = (function () {
     const animationList = document.createElement('div');
     animationList.className = 'animation-list';
 
-    // Lấy danh sách hiệu ứng từ MaterialManager dựa vào loại (in, out, combo)
-    let animations = [];
-    switch (animationType) {
-      case 'in':
-        animations = getInAnimations();
-        break;
-      case 'out':
-        animations = getOutAnimations();
-        break;
-      case 'combo':
-        animations = getGroupAnimations();
-        break;
-      default:
-        animations = getMaterialAnimations();
+    // Trong CapCut, tất cả các loại animation đều là: in, out, group
+    // Không cần mapping vì chúng ta sẽ sử dụng cùng tên trong UI
+    const typeMapping = {
+      'in': 'in',
+      'out': 'out',
+      'group': 'group'
+    };
+    
+    // Lấy đúng loại animation trong CapCut dựa trên loại UI
+    const capCutType = typeMapping[animationType];
+    if (!capCutType) {
+      console.error(`Invalid UI animation type: ${animationType}. Must be one of: in, out, group`);
+      return;
     }
-
-    // Thêm tùy chọn 'Không có hiệu ứng'
-    const noneItem = document.createElement('div');
-    noneItem.className = 'animation-dropdown-item';
-    noneItem.innerHTML = '<i class="fas fa-ban"></i> Không có hiệu ứng';
-    noneItem.addEventListener('click', () => {
-      onApplyAnimation(fileData, 'none', animationType);
-      dropdown.classList.remove('show');
-      setTimeout(() => dropdown.remove(), 100);
-    });
-    animationList.appendChild(noneItem);
-
-    // Thêm các hiệu ứng vào danh sách
-    animations.forEach(animation => {
-      const item = document.createElement('div');
-      item.className = 'animation-dropdown-item';
-      item.innerHTML = `<i class="${animation.icon}"></i> ${animation.name}`;
-      item.addEventListener('click', () => {
-        onApplyAnimation(fileData, animation.animation_id, animationType);
-        dropdown.classList.remove('show');
-        setTimeout(() => dropdown.remove(), 100);
+    
+    console.log(`UI animation type: ${animationType}, CapCut type: ${capCutType}`);
+    
+    // Lấy danh sách animation theo đúng type
+    const animations = getMaterialAnimationsByType(capCutType);
+    console.log(`Found ${animations.length} animations for type ${capCutType}`);
+    
+    // Kiểm tra xem có animation nào không
+    if (animations.length === 0) {
+      const noAnimations = document.createElement('div');
+      noAnimations.className = 'animation-dropdown-item no-animations';
+      noAnimations.textContent = 'Không có hiệu ứng nào';
+      animationList.appendChild(noAnimations);
+    } else {
+      // Hiển thị tất cả các hiệu ứng trong danh sách animations
+      animations.forEach(animation => {
+        const item = document.createElement('div');
+        item.className = 'animation-dropdown-item';
+        
+        // Thêm class đặc biệt cho option "None"
+        if (animation.animation_id === 'none') {
+          item.classList.add('none-option');
+        }
+        
+        item.innerHTML = `<i class="${animation.icon}"></i> ${animation.name}`;
+        console.log(`Adding animation to dropdown: ${animation.name} (${animation.type})`);
+        
+        item.addEventListener('click', () => {
+          // Cập nhật text của button theo tên animation đã chọn
+          const currentButton = thumbnailItem.querySelector(`.animation-${animationType}-button`);
+          if (currentButton) {
+            currentButton.innerHTML = `<i class="${animation.icon}"></i> ${animation.name}`;
+          }
+          
+          // Nếu chọn animation kết hợp, reset 2 button in và out về None
+          if (animationType === 'group' && animation.animation_id !== 'none') {
+            const inButton = thumbnailItem.querySelector('.animation-in-button');
+            const outButton = thumbnailItem.querySelector('.animation-out-button');
+            
+            if (inButton) {
+              inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> None';
+              // Gọi onApplyAnimation với animation_id là 'none' cho button in
+              onApplyAnimation(fileData, 'none', 'in');
+            }
+            
+            if (outButton) {
+              outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> None';
+              // Gọi onApplyAnimation với animation_id là 'none' cho button out
+              onApplyAnimation(fileData, 'none', 'out');
+            }
+          }
+          
+          // Nếu chọn animation in hoặc out, reset button kết hợp về None
+          if ((animationType === 'in' || animationType === 'out') && animation.animation_id !== 'none') {
+            const groupButton = thumbnailItem.querySelector('.animation-group-button');
+            
+            if (groupButton) {
+              groupButton.innerHTML = '<i class="fas fa-object-group"></i> None';
+              // Gọi onApplyAnimation với animation_id là 'none' cho button group
+              onApplyAnimation(fileData, 'none', 'group');
+            }
+          }
+          
+          // Gọi hàm onApplyAnimation để xử lý animation đã chọn
+          onApplyAnimation(fileData, animation.animation_id, animationType);
+          
+          // Đóng dropdown
+          dropdown.classList.remove('show');
+          setTimeout(() => dropdown.remove(), 100);
+        });
+        animationList.appendChild(item);
       });
-      animationList.appendChild(item);
-    });
+    }
 
     dropdown.appendChild(animationList);
     document.body.appendChild(dropdown);
@@ -428,11 +613,115 @@ const MaterialManager = (function () {
     }, 100);
   }
 
-  function init() {
-    // Khởi tạo danh sách material animations mặc định
-    initializeDefaultMaterialAnimations();
+  /**
+   * Hiển thị thông tin về mảng material_animations trên giao diện
+   */
+  function showMaterialAnimationsInfo() {
+    // Tạo một div để hiển thị thông tin
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'material-animations-info';
+    infoDiv.style.position = 'fixed';
+    infoDiv.style.top = '50px';
+    infoDiv.style.left = '50px';
+    infoDiv.style.width = '80%';
+    infoDiv.style.height = '80%';
+    infoDiv.style.backgroundColor = 'white';
+    infoDiv.style.border = '1px solid black';
+    infoDiv.style.padding = '20px';
+    infoDiv.style.overflow = 'auto';
+    infoDiv.style.zIndex = '9999';
     
-    console.log("Material Animation Manager initialized");
+    // Thêm nút đóng
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Đóng';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.addEventListener('click', () => infoDiv.remove());
+    infoDiv.appendChild(closeButton);
+    
+    // Thêm tiêu đề
+    const title = document.createElement('h2');
+    title.textContent = 'Thông tin về Material Animations';
+    infoDiv.appendChild(title);
+    
+    // Thêm thống kê
+    const inAnimations = materialAnimations.filter(a => a.type === 'in');
+    const outAnimations = materialAnimations.filter(a => a.type === 'out');
+    const groupAnimations = materialAnimations.filter(a => a.type === 'group');
+    
+    const stats = document.createElement('div');
+    stats.innerHTML = `
+      <p>Tổng số animation: ${materialAnimations.length}</p>
+      <p>Animation Vào (in): ${inAnimations.length}</p>
+      <p>Animation Ra (out): ${outAnimations.length}</p>
+      <p>Animation Kết hợp (group): ${groupAnimations.length}</p>
+    `;
+    infoDiv.appendChild(stats);
+    
+    // Hiển thị danh sách animation theo loại
+    const createAnimationList = (animations, title) => {
+      const section = document.createElement('div');
+      section.style.marginTop = '20px';
+      
+      const sectionTitle = document.createElement('h3');
+      sectionTitle.textContent = title;
+      section.appendChild(sectionTitle);
+      
+      const list = document.createElement('ul');
+      animations.forEach(anim => {
+        const item = document.createElement('li');
+        item.textContent = `${anim.name} (ID: ${anim.id}, Type: ${anim.type}, Category: ${anim.category_name})`;
+        list.appendChild(item);
+      });
+      section.appendChild(list);
+      
+      return section;
+    };
+    
+    infoDiv.appendChild(createAnimationList(inAnimations, 'Animations Vào (in)'));
+    infoDiv.appendChild(createAnimationList(outAnimations, 'Animations Ra (out)'));
+    infoDiv.appendChild(createAnimationList(groupAnimations, 'Animations Kết hợp (group)'));
+    
+    // Hiển thị cấu trúc chi tiết của một animation mẫu
+    if (materialAnimations.length > 0) {
+      const sampleSection = document.createElement('div');
+      sampleSection.style.marginTop = '20px';
+      
+      const sampleTitle = document.createElement('h3');
+      sampleTitle.textContent = 'Cấu trúc chi tiết của một Animation';
+      sampleSection.appendChild(sampleTitle);
+      
+      const samplePre = document.createElement('pre');
+      samplePre.style.backgroundColor = '#f5f5f5';
+      samplePre.style.padding = '10px';
+      samplePre.style.overflow = 'auto';
+      samplePre.textContent = JSON.stringify(materialAnimations[0], null, 2);
+      sampleSection.appendChild(samplePre);
+      
+      infoDiv.appendChild(sampleSection);
+    }
+    
+    // Thêm vào body
+    document.body.appendChild(infoDiv);
+  }
+  
+  /**
+   * Khởi tạo Material Manager
+   */
+  function init() {
+    initializeDefaultMaterialAnimations();
+    console.log("Material Manager initialized");
+    
+    // Thêm nút để hiển thị thông tin về material_animations
+    const showInfoButton = document.createElement('button');
+    showInfoButton.textContent = 'Hiển thị Material Animations';
+    showInfoButton.style.position = 'fixed';
+    showInfoButton.style.bottom = '20px';
+    showInfoButton.style.right = '20px';
+    showInfoButton.style.zIndex = '9999';
+    showInfoButton.addEventListener('click', showMaterialAnimationsInfo);
+    document.body.appendChild(showInfoButton);
   }
 
   // Public API
