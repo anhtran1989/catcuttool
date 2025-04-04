@@ -201,6 +201,7 @@ const FileManager = (function () {
 
       // Store the original file path as a data attribute
       thumbnailItem.dataset.originalPath = formattedPath;
+      thumbnailItem.dataset.path = formattedPath; // Thêm data-path để dễ tìm kiếm
 
       // Add index number
       const thumbnailIndex = document.createElement("div");
@@ -299,6 +300,19 @@ const FileManager = (function () {
       thumbnailItem.appendChild(thumbnailIndex);
       thumbnailItem.appendChild(thumbnail);
       thumbnailItem.appendChild(thumbnailInfo);
+      
+      // Thêm các button animation (Vào, Kết hợp, Ra) cho thumbnail
+      if (typeof MaterialManager !== 'undefined' && MaterialManager.addAnimationButtons) {
+        console.log("Adding animation buttons to thumbnail");
+        MaterialManager.addAnimationButtons(thumbnailItem, {
+          filePath: formattedPath,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        }, applyAnimation);
+      } else {
+        console.warn("MaterialManager not available or addAnimationButtons not defined");
+      }
 
       // If there's already at least one item in the list, add transition element before this one
       if (thumbnailList.children.length > 0) {
@@ -308,9 +322,11 @@ const FileManager = (function () {
 
       thumbnailList.appendChild(thumbnailItem);
       console.log("Thumbnail added to list");
-
+      
       // Add drag event listeners
-      DragDropManager.setupDragListeners(thumbnailItem);
+      if (typeof DragDropManager !== 'undefined' && DragDropManager.setupDragListeners) {
+        DragDropManager.setupDragListeners(thumbnailItem);
+      }
 
       // Update the total duration
       updateTotalDuration();
@@ -446,6 +462,16 @@ const FileManager = (function () {
     thumbnailItem.appendChild(thumbnailIndex);
     thumbnailItem.appendChild(thumbnail);
     thumbnailItem.appendChild(thumbnailInfo);
+    
+    // Thêm các button animation (Vào, Kết hợp, Ra) cho thumbnail
+    if (typeof MaterialManager !== 'undefined' && MaterialManager.addAnimationButtons) {
+      MaterialManager.addAnimationButtons(thumbnailItem, {
+        filePath: realPath,
+        fileName: fileDetail.name,
+        fileType: fileDetail.type,
+        fileSize: fileDetail.size
+      }, applyAnimation);
+    }
 
     // If there's already at least one item in the list, add transition element before this one
     if (thumbnailList.children.length > 0) {
@@ -602,6 +628,72 @@ const FileManager = (function () {
     return formattedPath;
   }
 
+  /**
+   * Apply animation to a file
+   * @param {Object} fileData - File data
+   * @param {Object} animation - Animation to apply
+   * @param {string} animationType - Type of animation (in, out, group)
+   */
+  function applyAnimation(fileData, animation, animationType) {
+    console.log(`Applying ${animationType} animation to file:`, fileData.fileName);
+    console.log('Animation details:', animation);
+    
+    // Tìm thumbnail item dựa trên file path
+    const thumbnailItems = document.querySelectorAll('.thumbnail-item');
+    let targetItem = null;
+    
+    for (const item of thumbnailItems) {
+      if (item.dataset.path === fileData.filePath) {
+        targetItem = item;
+        break;
+      }
+    }
+    
+    if (!targetItem) {
+      console.error('Could not find thumbnail item for file:', fileData.fileName);
+      return;
+    }
+    
+    // Cập nhật giao diện để hiển thị animation đã chọn
+    const animationTypeDisplay = {
+      'in': 'Vào',
+      'out': 'Ra',
+      'group': 'Kết hợp'
+    };
+    
+    // Tạo hoặc cập nhật badge hiển thị animation
+    let animationBadge = targetItem.querySelector(`.animation-badge-${animationType}`);
+    
+    if (!animationBadge) {
+      animationBadge = document.createElement('div');
+      animationBadge.className = `animation-badge animation-badge-${animationType}`;
+      targetItem.querySelector('.thumbnail-info').appendChild(animationBadge);
+    }
+    
+    if (animation.name === 'None') {
+      // Nếu chọn None, xóa badge
+      if (animationBadge) {
+        animationBadge.remove();
+      }
+    } else {
+      // Cập nhật nội dung badge
+      animationBadge.innerHTML = `<i class="${animation.icon || 'fas fa-magic'}"></i> ${animationTypeDisplay[animationType]}: ${animation.name}`;
+      animationBadge.style.backgroundColor = animationType === 'in' ? '#e8f4ff' : 
+                                           animationType === 'out' ? '#ffebeb' : '#f0f0f0';
+      animationBadge.style.color = animationType === 'in' ? '#4a90e2' : 
+                                 animationType === 'out' ? '#ff5e4c' : '#666';
+    }
+    
+    // Hiển thị thông báo
+    if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
+      if (animation.name === 'None') {
+        UIManager.showNotification(`Đã xóa hiệu ứng ${animationTypeDisplay[animationType]} cho ${fileData.fileName}`, 'info');
+      } else {
+        UIManager.showNotification(`Đã áp dụng hiệu ứng ${animationTypeDisplay[animationType]} "${animation.name}" cho ${fileData.fileName}`, 'success');
+      }
+    }
+  }
+
   // Public API
   return {
     init,
@@ -612,5 +704,6 @@ const FileManager = (function () {
     updateTotalDuration,
     formatPathForCapcut,
     formatFileSize,
+    applyAnimation
   };
 })();

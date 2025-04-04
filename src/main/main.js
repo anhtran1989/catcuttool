@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const electron = require("electron");
+const { app, BrowserWindow, ipcMain } = electron;
 const path = require("path");
 const fs = require("fs");
 const chokidar = require("chokidar");

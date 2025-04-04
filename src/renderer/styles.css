@@ -495,6 +495,188 @@ p {
   align-items: center;
 }
 
+/* Animation buttons styles */
+.animation-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+  opacity: 1;
+}
+
+.animation-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.animation-buttons button {
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: white;
+  border: 1px solid #ddd;
+  color: #333;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  margin: 0 2px;
+}
+
+.animation-buttons button:hover {
+  background-color: #f8f8f8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.animation-buttons button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.animation-buttons button i {
+  margin-right: 3px;
+  font-size: 0.7rem;
+}
+
+.animation-buttons .animation-in-button {
+  background-color: #e8f4ff;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
+}
+
+.animation-buttons .animation-in-button:hover {
+  background-color: #d0e7ff;
+}
+
+.animation-buttons .animation-group-button {
+  background-color: #f0f0f0;
+  border: 1px solid #666;
+  color: #666;
+}
+
+.animation-buttons .animation-group-button:hover {
+  background-color: #e0e0e0;
+}
+
+.animation-buttons .animation-out-button {
+  background-color: #ffebeb;
+  border: 1px solid #ff5e4c;
+  color: #ff5e4c;
+}
+
+.animation-buttons .animation-out-button:hover {
+  background-color: #ffd7d7;
+}
+
+.animation-dropdown {
+  position: fixed;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  min-width: 180px;
+  display: none;
+  overflow: hidden;
+  max-height: 400px;
+}
+
+.animation-dropdown.show {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.animation-list {
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 5px 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animation-dropdown-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.animation-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.animation-dropdown-item i {
+  margin-right: 8px;
+  width: 18px;
+  text-align: center;
+}
+
+.animation-dropdown-item.selected {
+  background-color: #e8f4ff;
+  color: #4a90e2;
+  font-weight: 500;
+}
+
+.animation-dropdown-header {
+  padding: 6px 10px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9;
+  font-size: 0.85rem;
+}
+
+/* Animation badge styles */
+.animation-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  margin-right: 5px;
+  margin-top: 5px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.animation-badge i {
+  margin-right: 4px;
+}
+
+.animation-badge-in {
+  background-color: #e8f4ff;
+  color: #4a90e2;
+  border: 1px solid #d0e7ff;
+}
+
+.animation-badge-group {
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1px solid #e0e0e0;
+}
+
+.animation-badge-out {
+  background-color: #ffebeb;
+  color: #ff5e4c;
+  border: 1px solid #ffd7d7;
+}
+
 .effects-button {
   width: 40px;
   height: 40px;
