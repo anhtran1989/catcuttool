@@ -271,10 +271,38 @@ const MaterialManager = (function () {
       console.log(`Animation ${i+1}: ${newAnimations[i].name}, Type: ${newAnimations[i].type}`);
     }
 
+    // Lọc các animation trùng lặp dựa trên id, resource_id, type và third_resource_id
+    const uniqueAnimations = [];
+    const seenKeys = new Set();
+
+    // Hàm tạo khóa duy nhất cho mỗi animation dựa trên các thuộc tính quan trọng
+    const getUniqueKey = (anim) => {
+      // Sử dụng các thuộc tính quan trọng để tạo khóa duy nhất
+      const id = anim.id || anim.animation_id || '';
+      const resourceId = anim.resource_id || '';
+      const type = anim.type || '';
+      const thirdResourceId = anim.third_resource_id || '';
+      
+      return `${id}|${resourceId}|${type}|${thirdResourceId}`;
+    };
+
+    // Lọc các animation trùng lặp
+    for (const anim of newAnimations) {
+      const key = getUniqueKey(anim);
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueAnimations.push(anim);
+      } else {
+        console.log(`Bỏ qua animation trùng lặp: ${anim.name}, ID: ${anim.id || anim.animation_id}, Type: ${anim.type}`);
+      }
+    }
+
+    console.log(`Sau khi lọc trùng lặp: ${uniqueAnimations.length}/${newAnimations.length} animations`);
+
     // Không cần thêm tùy chọn "None" ở đây vì sẽ được tạo riêng cho từng loại animation trong hàm getMaterialAnimationsByType
 
-    // Xóa danh sách cũ và thêm danh sách mới
-    materialAnimations = [...newAnimations];
+    // Xóa danh sách cũ và thêm danh sách mới đã lọc trùng
+    materialAnimations = [...uniqueAnimations];
     
     console.log(`Material animations list updated. Total: ${materialAnimations.length}`);
     console.log(`Types: in=${materialAnimations.filter(a => a.type === 'in').length}, out=${materialAnimations.filter(a => a.type === 'out').length}, group=${materialAnimations.filter(a => a.type === 'group').length}`);
