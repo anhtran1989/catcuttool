@@ -575,13 +575,13 @@ const MaterialManager = (function () {
             
             if (groupButton) {
               groupButton.innerHTML = '<i class="fas fa-object-group"></i> None';
-              // Gọi onApplyAnimation với animation_id là 'none' cho button group
-              onApplyAnimation(fileData, 'none', 'group');
+              // Gọi onApplyAnimation với animation là 'none' cho button group
+              onApplyAnimation(fileData, { animation_id: 'none', name: 'None', icon: 'fas fa-ban' }, 'group');
             }
           }
           
           // Gọi hàm onApplyAnimation để xử lý animation đã chọn
-          onApplyAnimation(fileData, animation.animation_id, animationType);
+          onApplyAnimation(fileData, animation, animationType);
           
           // Đóng dropdown
           dropdown.classList.remove('show');

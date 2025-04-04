@@ -487,6 +487,13 @@ const FileManager = (function () {
 
     // Update the total duration
     updateTotalDuration();
+    
+    // Kiểm tra và áp dụng các animations đang chờ
+    applyPendingAnimations({
+      fileName: fileDetail.name,
+      filePath: realPath,
+      isVideo: fileDetail.type.startsWith("video/")
+    });
   }
 
   /**
@@ -648,7 +655,7 @@ const FileManager = (function () {
     
     for (const item of thumbnailItems) {
       // Kiểm tra cả fileName và filePath
-      const itemFileName = item.querySelector('.thumbnail-title')?.textContent;
+      const itemFileName = item.querySelector('.thumbnail-title')?.textContent || item.querySelector('.thumbnail-info p')?.textContent;
       console.log(`Checking item: ${itemFileName}, path: ${item.dataset.path}`);
       
       if (item.dataset.path === fileData.filePath || 
@@ -665,7 +672,7 @@ const FileManager = (function () {
       // Thử tìm theo tên file (không phân biệt hoa thường và bỏ qua đường dẫn)
       const fileName = fileData.fileName.toLowerCase();
       for (const item of thumbnailItems) {
-        const itemTitle = item.querySelector('.thumbnail-title')?.textContent?.toLowerCase() || '';
+        const itemTitle = item.querySelector('.thumbnail-info p')?.textContent?.toLowerCase() || '';
         if (itemTitle.includes(fileName)) {
           targetItem = item;
           console.log(`Found thumbnail by filename match: ${itemTitle}`);
@@ -685,56 +692,87 @@ const FileManager = (function () {
       return;
     }
     
-    // Cập nhật giao diện để hiển thị animation đã chọn
-    const animationTypeDisplay = {
-      'in': 'Vào',
-      'out': 'Ra',
-      'group': 'Kết hợp'
-    };
-    
-    // Tạo hoặc cập nhật badge hiển thị animation
-    let animationBadge = targetItem.querySelector(`.animation-badge-${animationType}`);
-    
-    if (!animationBadge) {
-      animationBadge = document.createElement('div');
-      animationBadge.className = `animation-badge animation-badge-${animationType}`;
-      targetItem.querySelector('.thumbnail-info').appendChild(animationBadge);
+    // Lưu thông tin animation cho file này mà không hiển thị badge
+    // Chỉ lưu thông tin để sử dụng khi export
+    if (!targetItem.dataset.animations) {
+      targetItem.dataset.animations = JSON.stringify({});
     }
     
-    if (animation.name === 'None') {
-      // Nếu chọn None, xóa badge
-      if (animationBadge) {
-        animationBadge.remove();
-      }
+    const animations = JSON.parse(targetItem.dataset.animations);
+    
+    if (animation.name === 'None' || animation.animation_id === 'none') {
+      // Nếu chọn None, xóa animation
+      delete animations[animationType];
     } else {
-      // Cập nhật nội dung badge
-      animationBadge.innerHTML = `<i class="${animation.icon || 'fas fa-magic'}"></i> ${animationTypeDisplay[animationType]}: ${animation.name}`;
-      animationBadge.style.backgroundColor = animationType === 'in' ? '#e8f4ff' : 
-                                           animationType === 'out' ? '#ffebeb' : '#f0f0f0';
-      animationBadge.style.color = animationType === 'in' ? '#4a90e2' : 
-                                 animationType === 'out' ? '#ff5e4c' : '#666';
+      // Lưu animation
+      animations[animationType] = {
+        id: animation.animation_id || animation.id,
+        name: animation.name,
+        type: animationType
+      };
     }
+    
+    // Cập nhật dataset
+    targetItem.dataset.animations = JSON.stringify(animations);
     
     // Hiển thị thông báo
     if (typeof UIManager !== 'undefined' && UIManager.showNotification) {
-      if (animation.name === 'None') {
-        UIManager.showNotification(`Đã xóa hiệu ứng ${animationTypeDisplay[animationType]} cho ${fileData.fileName}`, 'info');
+      // Tạo bảng ánh xạ loại animation
+      const animationTypeText = {
+        'in': 'Vào',
+        'out': 'Ra',
+        'group': 'Kết hợp'
+      };
+      
+      if (animation.name === 'None' || animation.animation_id === 'none') {
+        UIManager.showNotification(`Đã xóa hiệu ứng ${animationTypeText[animationType]} cho ${fileData.fileName}`, 'info');
       } else {
-        UIManager.showNotification(`Đã áp dụng hiệu ứng ${animationTypeDisplay[animationType]} "${animation.name}" cho ${fileData.fileName}`, 'success');
+        UIManager.showNotification(`Đã áp dụng hiệu ứng ${animationTypeText[animationType]} "${animation.name}" cho ${fileData.fileName}`, 'success');
       }
     }
+  }
+
+  /**
+   * Kiểm tra và áp dụng các animations đang chờ cho một file
+   * @param {Object} fileData - Thông tin file
+   */
+  function applyPendingAnimations(fileData) {
+    if (!window.pendingAnimations || !fileData.fileName) {
+      return;
+    }
+    
+    // Kiểm tra xem có animations nào đang chờ cho file này không
+    const pendingForFile = window.pendingAnimations[fileData.fileName];
+    if (!pendingForFile) {
+      return;
+    }
+    
+    console.log(`Found pending animations for ${fileData.fileName}:`, pendingForFile);
+    
+    // Áp dụng từng animation đang chờ
+    for (const animationType in pendingForFile) {
+      const animation = pendingForFile[animationType];
+      console.log(`Applying pending ${animationType} animation to ${fileData.fileName}`);
+      
+      // Gọi lại hàm applyAnimation với animation đang chờ
+      applyAnimation(fileData, animation, animationType);
+    }
+    
+    // Xóa animations đã xử lý
+    delete window.pendingAnimations[fileData.fileName];
   }
 
   // Public API
   return {
     init,
     handleFiles,
+    processElectronFiles,
     createThumbnail,
     createElectronThumbnail,
-    createTransitionsElement,
+    applyAnimation,
+    applyPendingAnimations,
     updateTotalDuration,
     formatPathForCapcut,
-    formatFileSize,
-    applyAnimation
+    formatFileSize
   };
 })();
