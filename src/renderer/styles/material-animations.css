@@ -1,0 +1,78 @@
+/**
+ * CSS cho Material Animations
+ */
+
+/* Container cho các nút animation */
+.animation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+/* Style cho dropdown menu */
+.animation-dropdown {
+  display: none;
+  position: absolute;
+  background-color: #fff;
+  min-width: 180px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Hiển thị dropdown khi có class show */
+.animation-dropdown.show {
+  display: block;
+}
+
+/* Style cho các item trong dropdown */
+.animation-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.animation-dropdown .dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Style cho icon trong dropdown item */
+.animation-dropdown .dropdown-item i {
+  margin-right: 8px;
+  width: 16px;
+  text-align: center;
+}
+
+/* Style cho thông tin animation đã áp dụng */
+.animation-info {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Style cho các nút */
+.btn-outline-primary.active,
+.btn-outline-secondary.active,
+.btn-outline-danger.active {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .animation-buttons {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .animation-dropdown {
+    width: 100%;
+    position: static;
+    margin-top: 5px;
+  }
+} 
