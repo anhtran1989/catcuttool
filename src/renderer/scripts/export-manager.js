@@ -293,17 +293,39 @@ const ExportManager = (function () {
                 is_overlap:
                   selectedTransitionElement.dataset.isOverlap === "true",
                 duration:
-                  parseInt(selectedTransitionElement.dataset.duration) || 0,
-                category_id: selectedTransitionElement.dataset.categoryId || "",
+                  parseInt(selectedTransitionElement.dataset.duration) || 500000, // Default to 500000 microseconds (0.5s) if not set
+                category_id: selectedTransitionElement.dataset.categoryId || "27296",
                 category_name:
-                  selectedTransitionElement.dataset.categoryName || "",
+                  selectedTransitionElement.dataset.categoryName || "Đang thịnh hành",
                 path: selectedTransitionElement.dataset.path || "",
-                platform: selectedTransitionElement.dataset.platform || "",
-                resource_id: selectedTransitionElement.dataset.resourceId || "",
+                platform: selectedTransitionElement.dataset.platform || "all",
+                resource_id: selectedTransitionElement.dataset.resourceId || selectedTransitionElement.dataset.effectId || "",
                 source_platform:
                   parseInt(selectedTransitionElement.dataset.sourcePlatform) ||
-                  0,
+                  1,
+                // Additional parameters needed for proper transition functionality
+                adjust_params: [
+                  {
+                    name: "transition_adjust_duration",
+                    default_value: 0.5,
+                    value: 0.5
+                  },
+                  {
+                    name: "transition_adjust_smoothness",
+                    default_value: 0.5,
+                    value: 0.5
+                  }
+                ],
+                apply_target_type: 2,
+                covering_relation_change: 0,
+                render_index: 0,
+                request_id: "", // Will be generated during export
+                value: 1.0,
+                version: "",
               };
+              
+              // Log the transition information for debugging
+              console.log(`Found transition for item ${index}: ${transition.name}, effect_id: ${transition.effect_id}`);
             }
           }
         }
@@ -393,26 +415,57 @@ const ExportManager = (function () {
           const transition = item.transition;
 
           if (transition && transition.effect_id) {
+            // Determine if this is an image-to-image transition
+            const isCurrentImage = !item.isVideo;
+            const isNextImage = index < mediaItems.length - 1 ? !mediaItems[index + 1].isVideo : false;
+            
+            // Log transition details for debugging
+            console.log(`Creating transition ${index}: ${transition.name}, effect_id: ${transition.effect_id}`);
+            console.log(`Media types: Current=${isCurrentImage ? 'image' : 'video'}, Next=${isNextImage ? 'image' : 'video'}`);
+            
+            // Create the transition with proper settings
             capcutData.materials.transitions.push({
               id: transitionId,
               effect_id: transition.effect_id,
               duration: transition.duration,
               name: transition.name,
-              is_overlap: transition.is_overlap,
-              path: transition.path,
-              platform: transition.platform,
-              category_id: transition.category_id,
-              category_name: transition.category_name,
-              resource_id: transition.resource_id,
-              source_platform: transition.source_platform,
+              // For image-to-image transitions, ensure is_overlap is set correctly
+              is_overlap: isCurrentImage && isNextImage ? true : (transition.is_overlap || false),
+              path: transition.path || "",
+              platform: transition.platform || "all",
+              category_id: transition.category_id || "27296",
+              category_name: transition.category_name || "Đang thịnh hành",
+              resource_id: transition.resource_id || transition.effect_id,
+              source_platform: transition.source_platform || 1,
               type: "transition",
+              // Additional required parameters
+              adjust_params: [
+                {
+                  name: "transition_adjust_duration",
+                  default_value: 0.5,
+                  value: 0.5
+                },
+                {
+                  name: "transition_adjust_smoothness",
+                  default_value: 0.5,
+                  value: 0.5
+                }
+              ],
+              apply_target_type: 2,
+              covering_relation_change: 0,
+              render_index: 0,
+              request_id: generateUUID().replace(/-/g, ""),
+              value: 1.0,
+              version: ""
             });
-            idMap.transitions.push(transitionId);
+            idMap.transitions[index] = transitionId;
           } else {
-            idMap.transitions.push(null);
+            console.log(`Skipping transition ${index}: Missing effect_id`);
+            idMap.transitions[index] = null;
           }
         } else {
-          idMap.transitions.push(null);
+          console.log(`No transition for media item ${index}: ${item.fileName}`);
+          idMap.transitions[index] = null;
         }
       });
 
@@ -469,14 +522,28 @@ const ExportManager = (function () {
 
           // Get the full effect details from the effect template
           const templateEffect = effectsMap[item.effectId];
+          
+          console.log(`Creating effect for item ${index}: ${item.effectName}, effect_id: ${item.effectId}`);
 
           if (templateEffect) {
             // Clone the effect from the template and use the new ID
             const effectClone = JSON.parse(JSON.stringify(templateEffect));
             effectClone.id = effectId;
+            
+            // Ensure all required fields are present
+            if (!effectClone.type) effectClone.type = "video_effect";
+            if (!effectClone.category_id) effectClone.category_id = "27296";
+            if (!effectClone.category_name) effectClone.category_name = "Đang thịnh hành";
+            if (!effectClone.apply_target_type) effectClone.apply_target_type = 2;
+            if (!effectClone.platform) effectClone.platform = "all";
+            if (!effectClone.source_platform) effectClone.source_platform = 1;
+            if (!effectClone.request_id) effectClone.request_id = generateUUID().replace(/-/g, "");
+            if (!effectClone.resource_id) effectClone.resource_id = item.effectId;
+            if (!effectClone.value) effectClone.value = 1.0;
 
             // Add to the materials
             capcutData.materials.video_effects.push(effectClone);
+            idMap.videoEffects[index] = effectId;
           } else {
             // Fallback if effect not found in template
             capcutData.materials.video_effects.push({
@@ -525,16 +592,16 @@ const ExportManager = (function () {
               covering_relation_change: 0,
               platform: "all",
               render_index: 0,
-              request_id: "20250326081840BAF4C832F66D08BA0105",
+              request_id: generateUUID().replace(/-/g, ""),
               resource_id: item.effectId,
               source_platform: 1,
               value: 1.0,
               version: "",
             });
+            idMap.videoEffects[index] = effectId;
           }
-          idMap.videoEffects.push(effectId);
         } else {
-          idMap.videoEffects.push(null);
+          idMap.videoEffects[index] = null;
         }
       });
 
@@ -577,7 +644,7 @@ const ExportManager = (function () {
           startTime += mediaItems[i].duration;
         }
 
-        // Build extra material references
+        // Add extra material references
         const extraRefs = [
           idMap.speeds[index],
           idMap.placeholders[index],
@@ -586,9 +653,27 @@ const ExportManager = (function () {
           idMap.vocalSeparations[index],
         ];
 
+        // Add video effect if it exists
+        if (idMap.videoEffects[index]) {
+          extraRefs.push(idMap.videoEffects[index]);
+          console.log(`Adding effect reference ${idMap.videoEffects[index]} to segment for media item ${item.fileName}`);
+        }
+
         // Add transition if it exists
-        if (idMap.transitions[index]) {
+        // For transitions, we need to check if this is an image and handle it differently
+        let hasTransition = false;
+        let transitionDuration = 0;
+        if (index < mediaItems.length - 1 && mediaItems[index].transition && mediaItems[index].transition.name !== "Cut" && idMap.transitions[index]) {
           extraRefs.push(idMap.transitions[index]);
+          
+          // Log transition being applied
+          console.log(`Applying transition ${index}: ${mediaItems[index].transition.name} to media item ${item.fileName}`);
+          
+          // Store transition info for later use after segment is created
+          if (!item.isVideo) {
+            hasTransition = true;
+            transitionDuration = mediaItems[index].transition.duration || 500000;
+          }
         }
 
         // Create segment
@@ -631,6 +716,17 @@ const ExportManager = (function () {
           },
         };
 
+        // If this is an image with a transition, add transition properties
+        if (hasTransition) {
+          // Add transition-specific properties for image segments
+          segment.transition_duration = transitionDuration;
+          segment.transition_progress = 0.0;
+          segment.transition_time_range = {
+            start: startTime,
+            duration: transitionDuration
+          };
+        }
+        
         capcutData.tracks[0].segments.push(segment);
       });
 
@@ -671,6 +767,7 @@ const ExportManager = (function () {
               }
             }
 
+            // Create a more complete effect segment with all required properties
             effectTrack.segments.push({
               id: generateUUID(),
               material_id: idMap.videoEffects[index],
@@ -678,11 +775,41 @@ const ExportManager = (function () {
                 start: startTime,
                 duration: effectDuration,
               },
+              source_timerange: {
+                start: 0,
+                duration: effectDuration,
+              },
               render_index: 11000 + index,
               track_render_index: 1,
               visible: true,
               volume: 1.0,
+              enable_adjust: true,
+              enable_video_mask: true,
+              clip: {
+                alpha: 1.0,
+                flip: {
+                  horizontal: false,
+                  vertical: false,
+                },
+                rotation: 0.0,
+                scale: {
+                  x: 1.0,
+                  y: 1.0,
+                },
+                transform: {
+                  x: 0.0,
+                  y: 0.0,
+                },
+              },
+              // Add effect-specific properties
+              effect_id: item.effectId,
+              effect_name: item.effectName,
+              state: 0,
+              cartoon: false,
+              intensifies_audio: false,
             });
+            console.log(`Added effect segment for item ${index}: ${item.effectName}`);
+            
           }
         });
 
