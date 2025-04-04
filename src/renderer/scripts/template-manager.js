@@ -963,16 +963,20 @@ const TemplateManager = (function () {
           `;
         }
         
-        mediaItem.innerHTML = `
-          ${mediaContent}
-          <div class="media-info">
-            <p title="${file.name}">${file.name}</p>
-            ${file.duration ? `<p class="media-duration">${formatDuration(file.duration)}</p>` : ''}
-            <p class="media-type">${getMediaTypeText(fileType)}</p>
-            ${isModified ? '<span class="media-modified-badge">Đã thay thế</span>' : ''}
-          </div>
+        // Set the content
+        mediaItem.innerHTML = mediaContent;
+
+        // Add media title with all original information
+        const mediaInfoDiv = document.createElement("div");
+        mediaInfoDiv.className = "media-info";
+        mediaInfoDiv.innerHTML = `
+          <p title="${file.name}">${file.name}</p>
+          ${file.duration ? `<p class="media-duration">${formatDuration(file.duration)}</p>` : ''}
+          <p class="media-type">${getMediaTypeText(fileType)}</p>
+          ${isModified ? '<span class="media-modified-badge">Đã thay thế</span>' : ''}
         `;
-        
+        mediaItem.appendChild(mediaInfoDiv);
+
         // Add click event for videos to play/pause
         if (fileType === "video") {
           const videoPreview = mediaItem.querySelector(".video-preview");
@@ -1035,6 +1039,59 @@ const TemplateManager = (function () {
         
         // Add to fragment
         tempContainer.appendChild(mediaItem);
+        
+        // Thêm các nút Material Animations (nếu là ảnh hoặc video)
+        if (fileType === "image" || fileType === "video") {
+          // Kiểm tra xem MaterialManager đã được import chưa
+          if (typeof MaterialManager !== 'undefined') {
+            // Tạo container cho các nút
+            const animationButtonsContainer = document.createElement("div");
+            animationButtonsContainer.className = "animation-buttons";
+            mediaItem.appendChild(animationButtonsContainer);
+            
+            // Thêm các nút và dropdown với MaterialManager
+            MaterialManager.addAnimationButtons(mediaItem, file, (mediaItem, animation, animationType) => {
+              console.log(`Áp dụng ${animationType} animation: ${animation.name} cho ${mediaItem.name}`);
+              
+              // Hiển thị thông tin animation đã chọn
+              const infoContainer = mediaItem.querySelector('.animation-info-container') || 
+                                   document.createElement('div');
+              
+              if (!mediaItem.querySelector('.animation-info-container')) {
+                infoContainer.className = 'animation-info-container';
+                mediaItem.appendChild(infoContainer);
+              }
+              
+              // Tạo hoặc tìm phần tử hiển thị thông tin
+              const animationInfo = infoContainer.querySelector(`.${animationType}-animation-info`) || 
+                                   document.createElement('div');
+              
+              animationInfo.className = `animation-info ${animationType}-animation-info`;
+              
+              if (animation.name === "None") {
+                // Xóa thông tin nếu chọn None
+                animationInfo.style.display = 'none';
+              } else {
+                // Hiển thị thông tin animation
+                const typeLabel = animationType === 'in' ? 'Vào' : 
+                                 animationType === 'out' ? 'Ra' : 'Kết hợp';
+                
+                animationInfo.innerHTML = `
+                  <i class="${animation.icon}"></i> 
+                  <span>${typeLabel}: ${animation.name}</span>
+                `;
+                animationInfo.style.display = 'block';
+              }
+              
+              if (!infoContainer.querySelector(`.${animationType}-animation-info`)) {
+                infoContainer.appendChild(animationInfo);
+              }
+              
+              // Trong triển khai thực tế, bạn sẽ lưu thông tin animation này 
+              // vào dữ liệu template để xuất ra
+            });
+          }
+        }
         
         // Update loading progress
         loadedCount++;

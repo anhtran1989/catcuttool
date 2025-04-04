@@ -42,6 +42,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initialize transition manager
   TransitionManager.init();
+  
+  // Initialize material animation manager
+  if (typeof MaterialManager !== 'undefined') {
+    MaterialManager.init();
+    console.log("Material Animation Manager initialized");
+  }
 
   // Load effects và transitions từ các file draft_content
   loadEffectsAndTransitions();
@@ -112,6 +118,13 @@ function loadEffectsAndTransitions() {
       .then(data => {
         // Cập nhật cả effects và transitions từ file chung
         UIManager.updateEffectsAndTransitions(data);
+        
+        // Cập nhật material animations nếu có
+        if (typeof MaterialManager !== 'undefined') {
+          MaterialManager.updateFromDraftContent(data);
+          console.log("Material animations updated from draft_content.json");
+        }
+        
         console.log("Effects and transitions updated from draft_content.json");
       })
       .catch(error => {
