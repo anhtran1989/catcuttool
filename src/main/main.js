@@ -1,11 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const chokidar = require("chokidar");
 const fileHandler = require("./file-handler");
 const projectManager = require("./project-manager");
 const templateManager = require("./template-manager");
 
 let mainWindow;
+let watcher = null;
 
 /**
  * Hàm khởi tạo cửa sổ chính của ứng dụng
@@ -32,9 +34,57 @@ function createWindow() {
   projectManager.init(mainWindow);
   templateManager.init(mainWindow);
 
+  // Setup file watcher for draft_content files
+  setupFileWatcher();
+
   mainWindow.on("closed", function () {
+    // Dừng watcher khi đóng cửa sổ
+    if (watcher) {
+      watcher.close();
+      watcher = null;
+    }
     mainWindow = null;
   });
+}
+
+/**
+ * Thiết lập file watcher để theo dõi thay đổi các file draft_content
+ */
+function setupFileWatcher() {
+  try {
+    const rendererDir = path.join(__dirname, "../renderer");
+    
+    // Mảng các file cần theo dõi
+    const filesToWatch = [
+      path.join(rendererDir, "draft_content.json"),
+      path.join(rendererDir, "draft_content_effect.json"),
+      path.join(rendererDir, "draft_content_transition.json")
+    ];
+    
+    console.log("Setting up file watcher for:", filesToWatch);
+    
+    // Khởi tạo watcher
+    watcher = chokidar.watch(filesToWatch, {
+      persistent: true,
+      ignoreInitial: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 2000,
+        pollInterval: 100
+      }
+    });
+    
+    // Xử lý sự kiện thay đổi
+    watcher.on('change', (filePath) => {
+      console.log(`File changed: ${filePath}`);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('file-changed', { filePath });
+      }
+    });
+    
+    console.log("File watcher initialized successfully");
+  } catch (error) {
+    console.error("Error setting up file watcher:", error);
+  }
 }
 
 // Setup IPC handlers
@@ -72,6 +122,45 @@ function setupIpcHandlers() {
       console.error("Error reading JSON file:", error);
       throw error;
     }
+  });
+
+  // Handler for watching specific files
+  ipcMain.handle("watch-files", async (event, files) => {
+    try {
+      if (!watcher) {
+        setupFileWatcher();
+      }
+      
+      if (Array.isArray(files) && files.length > 0) {
+        watcher.add(files);
+        return { success: true, message: "Files added to watch list" };
+      }
+      
+      return { success: false, message: "No valid files to watch" };
+    } catch (error) {
+      console.error("Error watching files:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  
+  // Handler for unwatching specific files
+  ipcMain.handle("unwatch-files", async (event, files) => {
+    try {
+      if (watcher && Array.isArray(files) && files.length > 0) {
+        watcher.unwatch(files);
+        return { success: true, message: "Files removed from watch list" };
+      }
+      
+      return { success: false, message: "No valid files to unwatch or watcher not initialized" };
+    } catch (error) {
+      console.error("Error unwatching files:", error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // Listener for watching draft content files
+  ipcMain.on("watch-draft-content", (event) => {
+    setupFileWatcher();
   });
 }
 

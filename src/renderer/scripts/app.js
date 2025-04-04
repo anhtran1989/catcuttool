@@ -37,6 +37,15 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize drag and drop functionality
   DragDropManager.init();
 
+  // Initialize effect manager
+  EffectManager.init();
+
+  // Initialize transition manager
+  TransitionManager.init();
+
+  // Load effects và transitions từ các file draft_content
+  loadEffectsAndTransitions();
+
   // Create global effects dropdown
   UIManager.createGlobalEffectsDropdown();
 
@@ -52,6 +61,91 @@ document.addEventListener("DOMContentLoaded", function () {
   // Add IPC listeners for Electron
   setupElectronListeners();
 });
+
+/**
+ * Đọc các file draft_content và cập nhật danh sách effects/transitions
+ */
+function loadEffectsAndTransitions() {
+  try {
+    // Đọc file draft_content_effect.json
+    fetch('./draft_content_effect.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Cập nhật effects từ file
+        EffectManager.updateFromDraftContent(data);
+        console.log("Effects updated from draft_content_effect.json");
+      })
+      .catch(error => {
+        console.warn("Could not load draft_content_effect.json:", error);
+      });
+
+    // Đọc file draft_content_transition.json
+    fetch('./draft_content_transition.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Cập nhật transitions từ file
+        TransitionManager.updateFromDraftContent(data);
+        console.log("Transitions updated from draft_content_transition.json");
+      })
+      .catch(error => {
+        console.warn("Could not load draft_content_transition.json:", error);
+      });
+
+    // Đọc file draft_content.json chung
+    fetch('./draft_content.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Cập nhật cả effects và transitions từ file chung
+        UIManager.updateEffectsAndTransitions(data);
+        console.log("Effects and transitions updated from draft_content.json");
+      })
+      .catch(error => {
+        console.warn("Could not load draft_content.json:", error);
+      });
+  } catch (error) {
+    console.error("Error loading effects and transitions:", error);
+  }
+}
+
+/**
+ * Cập nhật draft_content.json khi có thay đổi
+ */
+function updateDraftContent() {
+  // Đọc file hiện tại
+  fetch('./draft_content.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Cập nhật hiển thị
+      UIManager.updateEffectsAndTransitions(data);
+      
+      // Gửi thông báo thành công
+      UIManager.showNotification("Effects and transitions updated successfully", "success");
+    })
+    .catch(error => {
+      console.error("Error updating draft content:", error);
+      UIManager.showNotification("Failed to update effects and transitions", "error");
+    });
+}
 
 /**
  * Set up listeners for Electron IPC events
@@ -108,8 +202,23 @@ function setupElectronListeners() {
         const { success, message } = data;
         if (success) {
           UIManager.showNotification(message, "success");
+          
+          // Nếu file được lưu là draft_content.json hoặc các file liên quan, 
+          // cập nhật danh sách effects và transitions
+          if (data.filePath && (data.filePath.includes('draft_content'))) {
+            updateDraftContent();
+          }
         } else {
           UIManager.showNotification(message, "error");
+        }
+      });
+      
+      // Listen for file change events (when draft_content.json được cập nhật)
+      window.electron.receive("file-changed", function (data) {
+        const { filePath } = data;
+        // Nếu file thay đổi là draft_content.json hoặc các file liên quan
+        if (filePath && (filePath.includes('draft_content'))) {
+          updateDraftContent();
         }
       });
     } catch (error) {

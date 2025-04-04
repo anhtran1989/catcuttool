@@ -121,6 +121,10 @@ function setupElectronMode() {
       getPlatform: () => process.platform,
       checkFileExists: (filePath, basePath) => 
         ipcRenderer.invoke("check-file-exists", { filePath, basePath }),
+      watchFiles: (files) => 
+        ipcRenderer.invoke("watch-files", files),
+      unwatchFiles: (files) => 
+        ipcRenderer.invoke("unwatch-files", files),
       send: (channel, data) => {
         const validChannels = [
           "select-folder",
@@ -132,7 +136,8 @@ function setupElectronMode() {
           "load-template-video",
           "get-template-media",
           "prepare-replacement-media",
-          "export-modified-template"
+          "export-modified-template",
+          "watch-draft-content"
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, data);
@@ -149,7 +154,8 @@ function setupElectronMode() {
           "template-video-loaded",
           "template-media-loaded",
           "replacement-media-ready",
-          "template-export-result"
+          "template-export-result",
+          "file-changed"
         ];
         if (validChannels.includes(channel)) {
           try {

@@ -323,212 +323,29 @@ const UIManager = (function () {
     dropdown.id = "global-effects-dropdown";
     dropdown.className = "effects-dropdown";
 
-    // Define effect options - chỉ sử dụng những effect thực sự tồn tại trong file JSON
-    const effectOptions = [
-      { name: "None", icon: "fas fa-ban" },
-      {
-        name: "Lật Zoom",
-        icon: "fas fa-arrows-alt",
-        effect_id: "7395465413527899398",
-        duration: 3000000,
-      },
-      {
-        name: "Làm mờ bùng nổ",
-        icon: "fas fa-bomb",
-        effect_id: "7399465788387773701",
-        duration: 3000000,
-      },
-      {
-        name: "Lắc lư",
-        icon: "fas fa-random",
-        effect_id: "7399467327726587141",
-        duration: 3000000,
-      },
-      {
-        name: "Màn hình 3D",
-        icon: "fas fa-cube",
-        effect_id: "7436469103449084432",
-        duration: 3000000,
-      },
-      {
-        name: "Chuyển động máy ảnh",
-        icon: "fas fa-video",
-        effect_id: "7399472023874948357",
-        duration: 3000000,
-      },
-      {
-        name: "Cuộn ngang",
-        icon: "fas fa-arrows-alt-h",
-        effect_id: "7442287977864106497",
-        duration: 3000000,
-      },
-      {
-        name: "Tình yêu mờ nhạt",
-        icon: "fas fa-heart",
-        effect_id: "7399470509722815750",
-        duration: 3000000,
-      },
-      {
-        name: "Nét truyện tranh",
-        icon: "fas fa-pencil-alt",
-        effect_id: "7462247315059789117",
-        duration: 3000000,
-      },
-      {
-        name: "Theo dõi bắn",
-        icon: "fas fa-bullseye",
-        effect_id: "7399471976714128645",
-        duration: 3000000,
-      },
-      {
-        name: "Mở ngược",
-        icon: "fas fa-undo",
-        effect_id: "7399471215905082630",
-        duration: 3000000,
-      },
-      {
-        name: "Tuyết vàng",
-        icon: "fas fa-snowflake",
-        effect_id: "7445221319781650945",
-        duration: 3000000,
-      },
-      {
-        name: "Trái tim bung nở",
-        icon: "fas fa-heartbeat",
-        effect_id: "7448891008441405953",
-        duration: 3000000,
-      },
-      {
-        name: "Lóe sáng chớp nảy",
-        icon: "fas fa-bolt",
-        effect_id: "7399464712909507846",
-        duration: 3000000,
-      },
-      {
-        name: "Phim",
-        icon: "fas fa-film",
-        effect_id: "7399471460445621509",
-        duration: 3000000,
-      },
-      {
-        name: "Điểm lục giác",
-        icon: "fas fa-stop",
-        effect_id: "7399466433782058245",
-        duration: 3000000,
-      },
-      {
-        name: "Lăng kính đá quý",
-        icon: "fas fa-gem",
-        effect_id: "7446312093990523408",
-        duration: 3000000,
-      },
-      {
-        name: "Bụi rơi",
-        icon: "fas fa-feather",
-        effect_id: "7456798559417930257",
-        duration: 3000000,
-      },
-      {
-        name: "Đèn nhấp nháy theo nhịp",
-        icon: "fas fa-lightbulb",
-        effect_id: "7399470385282026758",
-        duration: 3000000,
-      },
-      {
-        name: "Đèn nháy",
-        icon: "fas fa-lightbulb",
-        effect_id: "7463254687957912893",
-        duration: 3000000,
-      },
-      {
-        name: "Bám sát đối tượng 2",
-        icon: "fas fa-crosshairs",
-        effect_id: "7399467027066375429",
-        duration: 3000000,
-      },
-      {
-        name: "Vở kịch Giáng Sinh",
-        icon: "fas fa-snowman",
-        effect_id: "7450046927875346960",
-        duration: 3000000,
-      },
-      {
-        name: "Lũ quét qua",
-        icon: "fas fa-water",
-        effect_id: "7395468013832523014",
-        duration: 3000000,
-      },
-      {
-        name: "S-Movement",
-        icon: "fas fa-wave-square",
-        effect_id: "7399471490363608325",
-        duration: 3000000,
-      },
-      {
-        name: "Cười lên",
-        icon: "fas fa-smile",
-        effect_id: "7442284470150894081",
-        duration: 3000000,
-      },
-      {
-        name: "Chớp mắt mở",
-        icon: "fas fa-eye",
-        effect_id: "7395467471026785541",
-        duration: 3000000,
-      },
-      {
-        name: "Đèn flash chéo",
-        icon: "fas fa-bolt",
-        effect_id: "7399471479596895494",
-        duration: 3000000,
-      },
-      {
-        name: "Tia sáng kéo dài",
-        icon: "fas fa-sun",
-        effect_id: "7399466235026509061",
-        duration: 3000000,
-      },
-      {
-        name: "Sóng xung kích",
-        icon: "fas fa-broadcast-tower",
-        effect_id: "7395471053717277957",
-        duration: 3000000,
-      },
-      {
-        name: "Lấp lánh 2",
-        icon: "fas fa-star",
-        effect_id: "7399466236188380421",
-        duration: 3000000,
-      },
-      {
-        name: "Trục trặc pixel",
-        icon: "fas fa-th",
-        effect_id: "7399464859097730309",
-        duration: 3000000,
-      },
-      {
-        name: "Làm mờ ảo diệu",
-        icon: "fas fa-magic",
-        effect_id: "7395468812021157126",
-        duration: 3000000,
-      },
-      {
-        name: "Phóng to phơi sáng",
-        icon: "fas fa-expand",
-        effect_id: "7395473374673259782",
-        duration: 3000000,
-      },
-    ];
+    // Lấy danh sách effects từ EffectManager
+    const effectOptions = [{
+      name: "None",
+      icon: "fas fa-ban"
+    }];
+
+    // Thêm effects từ EffectManager nếu có
+    if (EffectManager && typeof EffectManager.getEffects === 'function') {
+      const managerEffects = EffectManager.getEffects();
+      if (Array.isArray(managerEffects) && managerEffects.length > 0) {
+        effectOptions.push(...managerEffects);
+      }
+    }
 
     // Add effect options to the dropdown
     effectOptions.forEach((option) => {
       const effectOption = document.createElement("div");
       effectOption.className = "effect-option";
-      effectOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+      effectOption.innerHTML = `<i class="${option.icon || 'fas fa-star'}"></i> ${option.name}`;
       effectOption.dataset.name = option.name;
-      effectOption.dataset.icon = option.icon;
       effectOption.dataset.effectId = option.effect_id || "";
-      effectOption.dataset.duration = option.duration || "0";
+      effectOption.dataset.duration = option.duration || "3000000";
+
       effectOption.onclick = function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -536,19 +353,18 @@ const UIManager = (function () {
         if (currentSelectedEffect) {
           // Update the selected effect display
           const optionName = this.dataset.name;
-          const iconClass = this.dataset.icon;
+          const iconClass = option.icon || 'fas fa-star';
           currentSelectedEffect.innerHTML = `<i class="${iconClass}"></i> ${optionName}`;
-          currentSelectedEffect.dataset.effectId = this.dataset.effectId || "";
-          currentSelectedEffect.dataset.duration =
-            this.dataset.duration || "3000000";
-
+          currentSelectedEffect.dataset.effectId = this.dataset.effectId;
+          currentSelectedEffect.dataset.duration = this.dataset.duration;
+          
           // Show or hide effect duration input based on selection
-          if (optionName !== "None") {
-            showEffectDurationInput(currentSelectedEffect);
-          } else {
+          if (optionName === "None") {
             hideEffectDurationInput(currentSelectedEffect);
+          } else {
+            showEffectDurationInput(currentSelectedEffect);
           }
-
+          
           // Close the dropdown
           hideEffectsDropdown();
         }
@@ -561,59 +377,6 @@ const UIManager = (function () {
 
     // Store the dropdown for later use
     globalEffectsDropdown = dropdown;
-
-    // Add global click listener to hide dropdown when clicking outside
-    document.addEventListener("click", function (e) {
-      if (
-        globalEffectsDropdown &&
-        globalEffectsDropdown.classList.contains("show")
-      ) {
-        // If click is outside the dropdown and not on the current effects button
-        if (
-          !globalEffectsDropdown.contains(e.target) &&
-          (!currentEffectsButton || !currentEffectsButton.contains(e.target))
-        ) {
-          hideEffectsDropdown();
-        }
-      }
-    });
-
-    // Add scroll listener to reposition or hide dropdown
-    window.addEventListener("scroll", function () {
-      if (
-        globalEffectsDropdown &&
-        globalEffectsDropdown.classList.contains("show")
-      ) {
-        if (currentThumbnailItem && currentEffectsButton) {
-          const thumbnailRect = currentThumbnailItem.getBoundingClientRect();
-
-          // If thumbnail is no longer visible, hide the dropdown
-          if (
-            thumbnailRect.bottom < 0 ||
-            thumbnailRect.top > window.innerHeight ||
-            thumbnailRect.right < 0 ||
-            thumbnailRect.left > window.innerWidth
-          ) {
-            hideEffectsDropdown();
-          } else {
-            // Update position
-            positionEffectsDropdown(currentThumbnailItem);
-          }
-        }
-      }
-    });
-
-    // Add resize listener
-    window.addEventListener("resize", function () {
-      if (
-        globalEffectsDropdown &&
-        globalEffectsDropdown.classList.contains("show")
-      ) {
-        if (currentThumbnailItem) {
-          positionEffectsDropdown(currentThumbnailItem);
-        }
-      }
-    });
 
     return dropdown;
   }
@@ -819,119 +582,127 @@ const UIManager = (function () {
     dropdown.id = "global-transitions-dropdown";
     dropdown.className = "transitions-dropdown effects-dropdown"; // Using effects-dropdown style
 
-    // Define transition options with full details from draft_content_transition.json
-    const transitionOptions = [
-      {
-        name: "Cut",
-        icon: "fas fa-cut",
-        effect_id: null,
-        is_overlap: false,
-        duration: 0,
-        category_id: "",
-        category_name: "",
-        path: "",
-        platform: "",
-        resource_id: "",
-        source_platform: 0,
-      },
-      {
-        name: "Giảm dần zoom",
-        icon: "fas fa-search-minus",
-        effect_id: "7262258307128103425",
-        is_overlap: true,
-        duration: 800000,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7262258307128103425/e4cafc076ecab223a39a26fe6f05b6db",
-        platform: "all",
-        resource_id: "7262258307128103425",
-        source_platform: 1,
-      },
-      {
-        name: "Tín hiệu trục trặc 2",
-        icon: "fas fa-bolt",
-        effect_id: "7343854374147330562",
-        is_overlap: false,
-        duration: 666666,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7343854374147330562/bc6d04c47df8aa910544fdf657419ab7",
-        platform: "all",
-        resource_id: "7343854374147330562",
-        source_platform: 1,
-      },
-      {
-        name: "Ba lát",
-        icon: "fas fa-th",
-        effect_id: "7252631917437129218",
-        is_overlap: true,
-        duration: 800000,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7252631917437129218/e47aeeef97032d11bf767bd290881da4",
-        platform: "all",
-        resource_id: "7252631917437129218",
-        source_platform: 1,
-      },
-      {
-        name: "Lấp lánh",
-        icon: "fas fa-star",
-        effect_id: "7361758943661527569",
-        is_overlap: true,
-        duration: 933333,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7361758943661527569/da913924bc6975821de103b371d540ff",
-        platform: "all",
-        resource_id: "7361758943661527569",
-        source_platform: 1,
-      },
-      {
-        name: "Thổi ra",
-        icon: "fas fa-expand-arrows-alt",
-        effect_id: "7362947185249358353",
-        is_overlap: true,
-        duration: 800000,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7362947185249358353/9d6a02b47846369cec6d19a35826570d",
-        platform: "all",
-        resource_id: "7362947185249358353",
-        source_platform: 1,
-      },
-      {
-        name: "Trượt xuống",
-        icon: "fas fa-arrow-down",
-        effect_id: "7309454269982183938",
-        is_overlap: true,
-        duration: 533333,
-        category_id: "25835",
-        category_name: "Đang thịnh hành",
-        path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7309454269982183938/9c54ccb7b27ab98f7c3bb03a5d4acc4b",
-        platform: "all",
-        resource_id: "7309454269982183938",
-        source_platform: 1,
-      },
-    ];
+    // Lấy danh sách transitions từ TransitionManager
+    let transitionOptions = [];
+
+    // Nếu TransitionManager tồn tại và có getTransitions
+    if (TransitionManager && typeof TransitionManager.getTransitions === 'function') {
+      transitionOptions = TransitionManager.getTransitions();
+    } else {
+      // Fallback nếu không có TransitionManager
+      transitionOptions = [
+        {
+          name: "Cut",
+          icon: "fas fa-cut",
+          effect_id: null,
+          is_overlap: false,
+          duration: 0,
+          category_id: "",
+          category_name: "",
+          path: "",
+          platform: "",
+          resource_id: "",
+          source_platform: 0,
+        },
+        {
+          name: "Giảm dần zoom",
+          icon: "fas fa-search-minus",
+          effect_id: "7262258307128103425",
+          is_overlap: true,
+          duration: 800000,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7262258307128103425/e4cafc076ecab223a39a26fe6f05b6db",
+          platform: "all",
+          resource_id: "7262258307128103425",
+          source_platform: 1,
+        },
+        {
+          name: "Tín hiệu trục trặc 2",
+          icon: "fas fa-bolt",
+          effect_id: "7343854374147330562",
+          is_overlap: false,
+          duration: 666666,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7343854374147330562/bc6d04c47df8aa910544fdf657419ab7",
+          platform: "all",
+          resource_id: "7343854374147330562",
+          source_platform: 1,
+        },
+        {
+          name: "Ba lát",
+          icon: "fas fa-th",
+          effect_id: "7252631917437129218",
+          is_overlap: true,
+          duration: 800000,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7252631917437129218/e47aeeef97032d11bf767bd290881da4",
+          platform: "all",
+          resource_id: "7252631917437129218",
+          source_platform: 1,
+        },
+        {
+          name: "Lấp lánh",
+          icon: "fas fa-star",
+          effect_id: "7361758943661527569",
+          is_overlap: true,
+          duration: 933333,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7361758943661527569/da913924bc6975821de103b371d540ff",
+          platform: "all",
+          resource_id: "7361758943661527569",
+          source_platform: 1,
+        },
+        {
+          name: "Thổi ra",
+          icon: "fas fa-expand-arrows-alt",
+          effect_id: "7362947185249358353",
+          is_overlap: true,
+          duration: 800000,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7362947185249358353/9d6a02b47846369cec6d19a35826570d",
+          platform: "all",
+          resource_id: "7362947185249358353",
+          source_platform: 1,
+        },
+        {
+          name: "Trượt xuống",
+          icon: "fas fa-arrow-down",
+          effect_id: "7309454269982183938",
+          is_overlap: true,
+          duration: 533333,
+          category_id: "25835",
+          category_name: "Đang thịnh hành",
+          path: "C:/Users/ADMIN/AppData/Local/CapCut/User Data/Cache/effect/7309454269982183938/9c54ccb7b27ab98f7c3bb03a5d4acc4b",
+          platform: "all",
+          resource_id: "7309454269982183938",
+          source_platform: 1,
+        },
+      ];
+    }
 
     // Add transition options to the dropdown
     transitionOptions.forEach((option) => {
       const transitionOption = document.createElement("div");
       transitionOption.className = "effect-option"; // Using effect-option style
-      transitionOption.innerHTML = `<i class="${option.icon}"></i> ${option.name}`;
+      transitionOption.innerHTML = `<i class="${option.icon || 'fas fa-exchange-alt'}"></i> ${option.name}`;
 
       // Lưu trữ đầy đủ thông tin cho mỗi transition
       transitionOption.dataset.name = option.name;
-      transitionOption.dataset.icon = option.icon;
+      transitionOption.dataset.icon = option.icon || 'fas fa-exchange-alt';
       transitionOption.dataset.effectId = option.effect_id || "";
       transitionOption.dataset.isOverlap = option.is_overlap;
       transitionOption.dataset.duration = option.duration;
-      transitionOption.dataset.categoryId = option.category_id;
-      transitionOption.dataset.categoryName = option.category_name;
-      transitionOption.dataset.path = option.path;
-      transitionOption.dataset.platform = option.platform;
-      transitionOption.dataset.resourceId = option.resource_id;
-      transitionOption.dataset.sourcePlatform = option.source_platform;
+      transitionOption.dataset.categoryId = option.category_id || "";
+      transitionOption.dataset.categoryName = option.category_name || "";
+      transitionOption.dataset.path = option.path || "";
+      transitionOption.dataset.platform = option.platform || "";
+      transitionOption.dataset.resourceId = option.resource_id || "";
+      transitionOption.dataset.sourcePlatform = option.source_platform || 0;
 
       transitionOption.onclick = function (e) {
         e.preventDefault();
@@ -970,61 +741,6 @@ const UIManager = (function () {
 
     // Store the dropdown for later use
     globalTransitionsDropdown = dropdown;
-
-    // Add global click listener to hide dropdown when clicking outside
-    document.addEventListener("click", function (e) {
-      if (
-        globalTransitionsDropdown &&
-        globalTransitionsDropdown.classList.contains("show")
-      ) {
-        // If click is outside the dropdown and not on the current transitions button
-        if (
-          !globalTransitionsDropdown.contains(e.target) &&
-          (!currentTransitionButton ||
-            !currentTransitionButton.contains(e.target))
-        ) {
-          hideTransitionsDropdown();
-        }
-      }
-    });
-
-    // Add scroll listener to reposition or hide dropdown
-    window.addEventListener("scroll", function () {
-      if (
-        globalTransitionsDropdown &&
-        globalTransitionsDropdown.classList.contains("show")
-      ) {
-        if (currentTransitionThumbnailItem && currentTransitionButton) {
-          const thumbnailRect =
-            currentTransitionThumbnailItem.getBoundingClientRect();
-
-          // If thumbnail is no longer visible, hide the dropdown
-          if (
-            thumbnailRect.bottom < 0 ||
-            thumbnailRect.top > window.innerHeight ||
-            thumbnailRect.right < 0 ||
-            thumbnailRect.left > window.innerWidth
-          ) {
-            hideTransitionsDropdown();
-          } else {
-            // Update position
-            positionTransitionsDropdown(currentTransitionThumbnailItem);
-          }
-        }
-      }
-    });
-
-    // Add resize listener
-    window.addEventListener("resize", function () {
-      if (
-        globalTransitionsDropdown &&
-        globalTransitionsDropdown.classList.contains("show")
-      ) {
-        if (currentTransitionThumbnailItem) {
-          positionTransitionsDropdown(currentTransitionThumbnailItem);
-        }
-      }
-    });
 
     return dropdown;
   }
@@ -1147,6 +863,32 @@ const UIManager = (function () {
     }
   }
 
+  /**
+   * Cập nhật danh sách effects và transitions từ file draft_content.json
+   * @param {Object} draftContent Nội dung của file draft_content.json
+   */
+  function updateEffectsAndTransitions(draftContent) {
+    try {
+      // Cập nhật effects từ draft_content.json
+      if (EffectManager && typeof EffectManager.updateFromDraftContent === 'function') {
+        EffectManager.updateFromDraftContent(draftContent);
+      }
+
+      // Cập nhật transitions từ draft_content.json
+      if (TransitionManager && typeof TransitionManager.updateFromDraftContent === 'function') {
+        TransitionManager.updateFromDraftContent(draftContent);
+      }
+
+      // Tạo lại các dropdown để hiển thị danh sách đã cập nhật
+      createGlobalEffectsDropdown();
+      createGlobalTransitionsDropdown();
+
+      console.log("Updated effects and transitions dropdowns from draft content");
+    } catch (error) {
+      console.error("Error updating effects and transitions:", error);
+    }
+  }
+
   // Initialize all UI components
   function init() {
     initTabSwitching();
@@ -1168,6 +910,7 @@ const UIManager = (function () {
     toggleEffectsDropdown,
     toggleTransitionsDropdown,
     showEffectDurationInput,
-    hideEffectDurationInput
+    hideEffectDurationInput,
+    updateEffectsAndTransitions
   };
 })();

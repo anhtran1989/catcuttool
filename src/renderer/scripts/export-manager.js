@@ -748,6 +748,8 @@ const ExportManager = (function () {
   return {
     init,
     exportToCapcut,
+    processTemplateData,
     generateUUID,
+    capcut // Expose the capcut object
   };
 })();
