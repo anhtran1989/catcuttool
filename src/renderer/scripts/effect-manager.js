@@ -1,5 +1,13 @@
 /**
  * Effect Manager - Quản lý và cập nhật danh sách effects
+ * 
+ * Cấu trúc của mỗi effect trong CapCut cần có các thuộc tính:
+ * - id: Một chuỗi UUID duy nhất cho mỗi effect
+ * - name: Tên của effect
+ * - type: Loại effect (thường là "video_effect")
+ * - target_id: ID của ảnh/video mà effect sẽ áp dụng
+ * - start: Thời gian bắt đầu của effect
+ * - duration: Thời gian hiệu ứng kéo dài
  */
 const EffectManager = (function () {
   // Danh sách các effects đã được lưu
@@ -27,23 +35,33 @@ const EffectManager = (function () {
       const newEffects = draftContent.materials.video_effects.map(effect => {
         // Tạo đối tượng effect mới với tất cả các thuộc tính cần thiết cho CapCut
         const newEffect = {
+          // Thuộc tính cơ bản
+          id: effect.id || generateUUID(), // Đảm bảo mỗi effect có một UUID duy nhất
           name: effect.name,
           effect_id: effect.effect_id,
-          // Sử dụng duration từ effect nếu có, nếu không thì dùng giá trị mặc định
-          duration: effect.duration || 3000000,
+          type: "video_effect", // Loại effect cố định
+          
+          // Thời gian và thông số kỹ thuật
+          duration: effect.duration || 3000000, // Thời gian mặc định nếu không có
+          start: 0, // Thời gian bắt đầu mặc định
+          
+          // Thông tin phân loại
           category_id: effect.category_id || "",
           category_name: effect.category_name || "",
+          
+          // Thông tin tài nguyên
           path: effect.path || "",
           platform: effect.platform || "all",
           resource_id: effect.resource_id || effect.effect_id,
           source_platform: effect.source_platform || 1,
-          // Các thuộc tính quan trọng khác cho CapCut
+          
+          // Các thuộc tính điều chỉnh
           adjust_params: effect.adjust_params || [],
           apply_target_type: effect.apply_target_type || 2,
-          type: effect.type || "video_effect",
           enable_mask: effect.enable_mask !== undefined ? effect.enable_mask : true,
           item_effect_type: effect.item_effect_type || 0,
           value: effect.value !== undefined ? effect.value : 1.0,
+          
           // Thêm icon cho giao diện
           icon: getIconForEffect(effect.name)
         };
@@ -156,9 +174,16 @@ const EffectManager = (function () {
         const exportManagerEffects = ExportManager.capcut.effects;
         
         const initialEffects = Object.entries(exportManagerEffects).map(([name, effect_id]) => ({
+          id: generateUUID(), // UUID duy nhất cho mỗi effect
           name,
           effect_id: effect_id || "",
+          type: "video_effect", // Loại effect cố định
           duration: 3000000, // Default duration
+          start: 0, // Thời gian bắt đầu mặc định
+          apply_target_type: 2, // Mặc định áp dụng cho toàn bộ media
+          enable_mask: true,
+          item_effect_type: 0,
+          value: 1.0,
           icon: getIconForEffect(name)
         }));
         
@@ -184,22 +209,56 @@ const EffectManager = (function () {
     // Thêm một số effects mặc định
     effects = [
       {
+        id: generateUUID(),
         name: "Lật Zoom",
         effect_id: "7395465413527899398",
+        type: "video_effect",
         duration: 3000000,
+        start: 0,
+        apply_target_type: 2,
+        enable_mask: true,
+        item_effect_type: 0,
+        value: 1.0,
         icon: "fas fa-arrows-alt"
       },
       {
-        name: "Làm mờ bùng nổ",
-        effect_id: "7399465788387773701",
+        id: generateUUID(),
+        name: "Hình vuông mờ",
+        effect_id: "7395470784166251782",
+        type: "video_effect",
         duration: 3000000,
-        icon: "fas fa-bomb"
+        start: 0,
+        apply_target_type: 2,
+        enable_mask: true,
+        item_effect_type: 0,
+        value: 1.0,
+        icon: "fas fa-square"
       },
       {
-        name: "Lắc lư",
-        effect_id: "7399467327726587141",
+        id: generateUUID(),
+        name: "Lóe",
+        effect_id: "7399470564022291717",
+        type: "video_effect",
         duration: 3000000,
-        icon: "fas fa-random"
+        start: 0,
+        apply_target_type: 2,
+        enable_mask: true,
+        item_effect_type: 0,
+        value: 1.0,
+        icon: "fas fa-bolt"
+      },
+      {
+        id: generateUUID(),
+        name: "Mưa sao băng",
+        effect_id: "7399468413527051525",
+        type: "video_effect",
+        duration: 3000000,
+        start: 0,
+        apply_target_type: 2,
+        enable_mask: true,
+        item_effect_type: 0,
+        value: 1.0,
+        icon: "fas fa-star"
       }
     ];
     console.log("Initialized default effects list with sample effects");
@@ -215,11 +274,24 @@ const EffectManager = (function () {
     console.log("Effect Manager initialized");
   }
 
+  /**
+   * Tạo một UUID duy nhất cho các đối tượng
+   * @returns {string} UUID duy nhất
+   */
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16).toUpperCase();
+    });
+  }
+
   // Public API
   return {
     init,
     getEffects,
     updateFromDraftContent,
-    mergeEffects
+    mergeEffects,
+    generateUUID
   };
 })(); 

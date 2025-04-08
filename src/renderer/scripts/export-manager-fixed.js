@@ -325,100 +325,59 @@ const ExportManager = (function () {
         canvases: [],
         speeds: [],
         placeholders: [],
-        placeholderInfos: [], 
         soundMappings: [],
         vocalSeparations: [],
-        videoEffects: [], 
-        transitions: [],
-        mediaIds: []
+        videoEffects: {},
+        transitions: {},
       };
-      
-      // Xóa các mảng để tạo mới, đảm bảo chỉ tạo đúng số lượng phần tử cần thiết
-      capcutData.materials.speeds = [];
-      capcutData.materials.placeholder_infos = [];
-      capcutData.materials.canvases = [];
-      capcutData.materials.sound_channel_mappings = [];
-      capcutData.materials.vocal_separations = [];
+
+      // Ensure we have at least one canvas
+      if (capcutData.materials.canvases.length === 0) {
+        const canvasId = generateUUID();
+        capcutData.materials.canvases.push({
+          album_image: "",
+          blur: 0.0,
+          color: "",
+          id: canvasId,
+          image: "",
+          image_id: "",
+          image_name: "",
+          source_platform: 0,
+          team_id: "",
+          type: "canvas_color",
+        });
+        idMap.canvases.push(canvasId);
+      } else {
+        // Use existing canvas
+        idMap.canvases.push(capcutData.materials.canvases[0].id);
+      }
 
       // Process each thumbnail to extract media information
       thumbnailItems.forEach((item) => {
-        // Tìm kiếm tên file trong thumbnail-info > p (đối tượng p đầu tiên chứa tên file)
-        const thumbnailInfo = item.querySelector(".thumbnail-info");
-        let fileName = "Unknown File";
-        
-        if (thumbnailInfo) {
-          const fileNameElement = thumbnailInfo.querySelector("p");
-          if (fileNameElement) {
-            fileName = fileNameElement.textContent;
-          } else {
-            console.warn("Missing file name paragraph in thumbnail item");
-          }
-        } else {
-          console.warn("Missing thumbnail-info element in thumbnail item");
-          // Không return để vẫn tạo media item với tên mặc định
-        }
-
         const mediaItem = {
-          fileName: fileName,
-          filePath: item.dataset.path || item.dataset.originalPath || "",
-          isVideo: item.dataset.type === "video" || (item.querySelector("video") !== null),
+          fileName: item.querySelector(".file-name").textContent,
+          filePath: item.dataset.path,
+          isVideo: item.dataset.type === "video",
           width: parseInt(item.dataset.width) || 1280,
           height: parseInt(item.dataset.height) || 720,
-          duration: 5000000, // Default to 5 seconds (in microseconds)
-          
-          // Tìm kiếm duration-input nếu có
-          durationInSeconds: (function() {
-            const durationInput = item.querySelector(".duration-input");
-            if (durationInput && durationInput.value) {
-              // Chuyển đổi giây thành microseconds
-              return parseInt(durationInput.value) * 1000000;
-            }
-            return 5000000; // Mặc định 5 giây
-          })(),
-          original_width: parseInt(item.dataset.width) || 1280,
-          original_height: parseInt(item.dataset.height) || 720,
-          original_duration: (function() {
-            const durationInput = item.querySelector(".duration-input");
-            if (durationInput && durationInput.value) {
-              return parseInt(durationInput.value) * 1000000;
-            }
-            return 5000000; // Mặc định 5 giây
-          })(),
-          rotation: 0,
-          volume: 1.0,
-          source_platform: 0,
-          source_type: 0,
-          is_placeholder: false,
-          is_edit_mask: false,
-          is_tone_modify: false,
-          is_segmented: false,
-          is_hidden: false,
-          is_from_ve_project: false,
+          duration: parseInt(item.dataset.duration) || 5000000, // Default to 5 seconds (in microseconds)
         };
 
         // Get selected effect if any
-        try {
-          const selectedEffect = item.querySelector(".selected-effect");
-          if (selectedEffect && selectedEffect.dataset && selectedEffect.dataset.effectId) {
-            mediaItem.effectId = selectedEffect.dataset.effectId;
-            mediaItem.effectName = selectedEffect.dataset.effectName || "Unknown Effect";
-          }
-        } catch (effectError) {
-          console.warn("Error processing effect for item:", effectError);
+        const selectedEffect = item.querySelector(".selected-effect");
+        if (selectedEffect && selectedEffect.dataset.effectId) {
+          mediaItem.effectId = selectedEffect.dataset.effectId;
+          mediaItem.effectName = selectedEffect.dataset.effectName || "Unknown Effect";
         }
 
         // Get selected transition if any
-        try {
-          const selectedTransition = item.querySelector(".selected-transition");
-          if (selectedTransition && selectedTransition.dataset && selectedTransition.dataset.transitionId) {
-            mediaItem.transition = {
-              effect_id: selectedTransition.dataset.transitionId,
-              name: selectedTransition.dataset.transitionName || "Unknown Transition",
-              duration: parseInt(selectedTransition.dataset.duration) || 500000, // Default 0.5 seconds
-            };
-          }
-        } catch (transitionError) {
-          console.warn("Error processing transition for item:", transitionError);
+        const selectedTransition = item.querySelector(".selected-transition");
+        if (selectedTransition && selectedTransition.dataset.transitionId) {
+          mediaItem.transition = {
+            effect_id: selectedTransition.dataset.transitionId,
+            name: selectedTransition.dataset.transitionName || "Unknown Transition",
+            duration: parseInt(selectedTransition.dataset.duration) || 500000, // Default 0.5 seconds
+          };
         }
 
         mediaItems.push(mediaItem);
@@ -426,36 +385,55 @@ const ExportManager = (function () {
 
       console.log(`Processing ${mediaItems.length} media items`);
 
-      // Kiểm tra xem có media item nào không
-      if (mediaItems.length === 0) {
-        console.warn("No valid media items found. Creating a default media item.");
-        // Tạo một media item mặc định để tránh lỗi validation
-        mediaItems.push({
-          fileName: "Default Media",
-          filePath: "",
-          isVideo: false, // Sử dụng hình ảnh mặc định
-          width: 1280,
-          height: 720,
-          duration: 5000000, // 5 giây
-          original_width: 1280,
-          original_height: 720,
-          original_duration: 5000000,
-          rotation: 0.0, // Sử dụng số thực
-          volume: 1.0,
-          source_platform: 0,
-          source_type: 0,
-          is_placeholder: false,
-          is_edit_mask: false,
-          is_tone_modify: false,
-          is_segmented: false,
-          is_hidden: false,
-          is_from_ve_project: false,
-        });
-      }
-
-      // Chỉ sử dụng một vòng lặp duy nhất để xử lý tất cả các media items
+      // Create speeds, placeholders, sound mappings, and vocal separations for each media
       mediaItems.forEach((item, index) => {
-        // Xử lý effects nếu có
+        // Create speed element
+        const speedId = generateUUID();
+        capcutData.materials.speeds.push({
+          curve_speed: null,
+          id: speedId,
+          mode: 0,
+          speed: 1.0,
+          type: "speed",
+        });
+        idMap.speeds.push(speedId);
+
+        // Create placeholder
+        const placeholderId = generateUUID();
+        capcutData.materials.placeholder_infos.push({
+          error_path: "",
+          error_text: "",
+          id: placeholderId,
+          meta_type: "none",
+          res_path: "",
+          res_text: "",
+          type: "placeholder_info",
+        });
+        idMap.placeholders.push(placeholderId);
+
+        // Create sound channel mapping
+        const soundMappingId = generateUUID();
+        capcutData.materials.sound_channel_mappings.push({
+          audio_channel_mapping: 0,
+          id: soundMappingId,
+          is_config_open: false,
+          type: "",
+        });
+        idMap.soundMappings.push(soundMappingId);
+
+        // Create vocal separation
+        const vocalSeparationId = generateUUID();
+        capcutData.materials.vocal_separations.push({
+          choice: 0,
+          id: vocalSeparationId,
+          production_path: "",
+          removed_sounds: [],
+          time_range: null,
+          type: "vocal_separation",
+        });
+        idMap.vocalSeparations.push(vocalSeparationId);
+
+        // Create video effect if needed
         if (item.effectName && item.effectName !== "None" && item.effectId) {
           const effectId = generateUUID();
 
@@ -537,18 +515,14 @@ const ExportManager = (function () {
           
           // Thêm effect vào danh sách
           capcutData.materials.video_effects.push(effectObject);
-          // Đảm bảo mảng videoEffects có đủ phần tử
-          while (idMap.videoEffects.length <= index) {
-            idMap.videoEffects.push(null);
-          }
           idMap.videoEffects[index] = effectId;
         } else {
-          // Đảm bảo mảng videoEffects có đủ phần tử
-          while (idMap.videoEffects.length <= index) {
-            idMap.videoEffects.push(null);
-          }
           idMap.videoEffects[index] = null;
         }
+      });
+      
+      // Add media items and create segments
+      mediaItems.forEach((item, index) => {
         const mediaId = generateUUID();
         
         // Calculate target timerange
@@ -557,339 +531,157 @@ const ExportManager = (function () {
           startTime += mediaItems[i].duration;
         }
         
-        // Chuyển đổi đường dẫn Windows (backslash) sang đường dẫn Unix (forward slash)
-        const formattedPath = item.filePath.replace(/\\/g, '/');
-        
-        // Tạo đối tượng media theo thứ tự thuộc tính trong draft_content_image.json
-        // Sắp xếp các thuộc tính theo đúng thứ tự trong file mẫu
-        const mediaObject = {};
-        
-        // Thêm các thuộc tính theo đúng thứ tự trong draft_content_image.json
-        mediaObject.aigc_history_id = "";
-        mediaObject.aigc_item_id = "";
-        mediaObject.aigc_type = "none";
-        mediaObject.audio_fade = null;
-        mediaObject.beauty_body_preset_id = "";
-        mediaObject.beauty_face_auto_preset = {
-          name: "",
-          preset_id: "",
-          rate_map: ""
-        };
-        mediaObject.beauty_face_auto_preset_infos = [];
-        mediaObject.beauty_face_preset_infos = [];
-        mediaObject.cartoon_path = "";
-        mediaObject.category_id = "";
-        mediaObject.category_name = "local";
-        mediaObject.check_flag = 62978047;
-        mediaObject.crop = {
-          lower_left_x: 0.0,
-          lower_left_y: 1.0,
-          lower_right_x: 1.0,
-          lower_right_y: 1.0,
-          upper_left_x: 0.0,
-          upper_left_y: 0.0,
-          upper_right_x: 1.0,
-          upper_right_y: 0.0
-        };
-        mediaObject.crop_ratio = "free";
-        mediaObject.crop_scale = 1.0;
-        mediaObject.duration = 10800000000;  // Giá trị cố định từ file mẫu
-        mediaObject.extra_type_option = 0;
-        mediaObject.formula_id = "";
-        mediaObject.freeze = null;
-        mediaObject.has_audio = false;
-        mediaObject.has_sound_separated = false;
-        mediaObject.height = item.height;
-        mediaObject.id = mediaId;
-        mediaObject.intensifies_audio_path = "";
-        mediaObject.intensifies_path = "";
-        mediaObject.is_ai_generate_content = false;
-        mediaObject.is_copyright = false;
-        mediaObject.is_text_edit_overdub = false;
-        mediaObject.is_unified_beauty_mode = false;
-        mediaObject.live_photo_cover_path = "";
-        mediaObject.live_photo_timestamp = -1;
-        mediaObject.local_id = "";
-        mediaObject.local_material_from = "";
-        mediaObject.local_material_id = "";
-        mediaObject.material_id = "";
-        mediaObject.material_name = item.fileName;
-        mediaObject.material_url = "";
-        mediaObject.matting = {
-          custom_matting_id: "",
-          enable_matting_stroke: false,
-          expansion: 0,
-          feather: 0,
-          flag: 0,
-          has_use_quick_brush: false,
-          has_use_quick_eraser: false,
-          interactiveTime: [],
-          path: "",
-          reverse: false,
-          strokes: []
-        };
-        mediaObject.media_path = "";
-        mediaObject.multi_camera_info = null;
-        mediaObject.object_locked = null;
-        mediaObject.origin_material_id = "";
-        mediaObject.path = formattedPath;
-        mediaObject.picture_from = "none";
-        mediaObject.picture_set_category_id = "";
-        mediaObject.picture_set_category_name = "";
-        mediaObject.request_id = "";
-        mediaObject.reverse_intensifies_path = "";
-        mediaObject.reverse_path = "";
-        mediaObject.smart_match_info = null;
-        mediaObject.smart_motion = null;
-        mediaObject.source = 0;
-        mediaObject.source_platform = 0;
-        mediaObject.stable = {
-          matrix_path: "",
-          stable_level: 0,
-          time_range: {
-            duration: 0,
-            start: 0
-          }
-        };
-        mediaObject.team_id = "";
-        mediaObject.type = item.isVideo ? "video" : "photo";  // Sử dụng "photo" cho hình ảnh
-        mediaObject.video_algorithm = {
-          ai_background_configs: [],
-          ai_expression_driven: null,
-          ai_motion_driven: null,
-          aigc_generate: null,
-          algorithms: [],
-          complement_frame_config: null,
-          deflicker: null,
-          gameplay_configs: [],
-          motion_blur_config: null,
-          mouth_shape_driver: null,
-          noise_reduction: null,
-          path: "",
-          quality_enhance: null,
-          smart_complement_frame: null,
-          super_resolution: null,
-          time_range: null
-        };
-        mediaObject.width = item.width;
-        
-        // Thêm đối tượng media vào mảng videos
-        capcutData.materials.videos.push(mediaObject);
-        
-        idMap.mediaIds.push(mediaId);
-        
-        // Tạo các phần tử con cho mỗi media item
-        
-        // 1. Tạo speed
-        const speedId = generateUUID();
-        const speedObject = {
-          curve_speed: null,
-          id: speedId,
-          mode: 0,
-          speed: 1.0, // Giữ nguyên định dạng float
-          type: "speed"
-        };
-        capcutData.materials.speeds.push(speedObject);
-        idMap.speeds[index] = speedId;
-        
-        // 2. Tạo placeholder_info
-        const placeholderInfoId = generateUUID();
-        const placeholderInfoObject = {
-          error_path: "",
-          error_text: "",
-          id: placeholderInfoId,
-          meta_type: "none",
-          res_path: "",
-          res_text: "",
-          type: "placeholder_info"
-        };
-        capcutData.materials.placeholder_infos.push(placeholderInfoObject);
-        idMap.placeholderInfos[index] = placeholderInfoId;
-        
-        // 3. Tạo canvas
-        const canvasId = generateUUID();
-        const canvasObject = {
-          album_image: "",
-          blur: 0.0, // Giữ nguyên định dạng float
-          color: "",
-          id: canvasId,
-          image: "",
-          image_id: "",
-          image_name: "",
-          source_platform: 0,
-          team_id: "",
-          type: "canvas_color"
-        };
-        capcutData.materials.canvases.push(canvasObject);
-        idMap.canvases[index] = canvasId;
-        
-        // 4. Tạo sound_channel_mapping
-        const soundMappingId = generateUUID();
-        const soundMappingObject = {
-          audio_channel_mapping: 0,
-          id: soundMappingId,
-          is_config_open: false,
-          type: ""
-        };
-        capcutData.materials.sound_channel_mappings.push(soundMappingObject);
-        idMap.soundMappings[index] = soundMappingId;
-        
-        // 5. Tạo vocal_separation
-        const vocalSeparationId = generateUUID();
-        const vocalSeparationObject = {
-          choice: 0,
-          id: vocalSeparationId,
-          production_path: "",
-          removed_sounds: [],
-          time_range: null,
-          type: "vocal_separation"
-        };
-        capcutData.materials.vocal_separations.push(vocalSeparationObject);
-        idMap.vocalSeparations[index] = vocalSeparationId;
+        // Add media to materials.videos or materials.images based on type
+        if (item.isVideo) {
+          capcutData.materials.videos.push({
+            id: mediaId,
+            path: item.filePath,
+            name: item.fileName,
+            type: "video",
+            source_platform: 0,
+            source_type: 0,
+            height: item.height,
+            width: item.width,
+            duration: item.duration,
+            original_duration: item.duration,
+            original_width: item.width,
+            original_height: item.height,
+            rotation: 0,
+            volume: 1.0,
+            extra: {},
+            team_id: "",
+            is_placeholder: false,
+            is_edit_mask: false,
+            is_tone_modify: false,
+            is_segmented: false,
+            is_hidden: false,
+            is_from_ve_project: false,
+          });
+        } else {
+          capcutData.materials.images.push({
+            id: mediaId,
+            path: item.filePath,
+            name: item.fileName,
+            type: "image",
+            source_platform: 0,
+            source_type: 0,
+            height: item.height,
+            width: item.width,
+            duration: item.duration,
+            original_width: item.width,
+            original_height: item.height,
+            rotation: 0,
+            extra: {},
+            team_id: "",
+            is_placeholder: false,
+            is_edit_mask: false,
+            is_tone_modify: false,
+            is_segmented: false,
+            is_hidden: false,
+            is_from_ve_project: false,
+          });
+        }
         
         // Add extra material references
-        const extraRefs = [];
-        
-        // Thêm các tham chiếu vào extraRefs
-        extraRefs.push(speedId);
-        extraRefs.push(placeholderInfoId);
-        extraRefs.push(canvasId);
-        extraRefs.push(soundMappingId);
-        extraRefs.push(vocalSeparationId);
+        const extraRefs = [
+          idMap.speeds[index],
+          idMap.placeholders[index],
+          idMap.canvases[0],
+          idMap.soundMappings[index],
+          idMap.vocalSeparations[index],
+        ];
 
         // Add video effect if it exists
-        if (idMap.videoEffects && idMap.videoEffects[index]) {
+        if (idMap.videoEffects[index]) {
           extraRefs.push(idMap.videoEffects[index]);
           console.log(`Adding effect reference ${idMap.videoEffects[index]} to segment for media item ${item.fileName}`);
         }
 
-        // Tạo segment theo thứ tự thuộc tính trong draft_content_image.json
+        // Tạo segment với đầy đủ thuộc tính cần thiết cho CapCut
         const segmentId = generateUUID();
-        const segment = {};
-        
-        // Thêm các thuộc tính theo đúng thứ tự trong file mẫu
-        segment.caption_info = null;
-        segment.cartoon = false;
-        segment.clip = {
-          alpha: 1.0,
-          flip: {
-            horizontal: false,
-            vertical: false
+        const segment = {
+          id: segmentId,
+          material_id: mediaId,
+          // Phạm vi thời gian đích (thời gian trong timeline)
+          target_timerange: {
+            start: startTime,
+            duration: item.duration,
           },
-          rotation: 0.0,
-          scale: {
-            x: 1.0,
-            y: 1.0
+          // Phạm vi thời gian nguồn (thời gian trong file gốc)
+          source_timerange: {
+            start: 0,
+            duration: item.duration,
           },
-          transform: {
-            x: 0.0,
-            y: 0.0
-          }
+          // Tham chiếu đến các material khác
+          extra_material_refs: extraRefs,
+          // Các thuộc tính điều chỉnh
+          enable_adjust: true,
+          enable_color_curves: true,
+          enable_color_wheels: true,
+          enable_lut: true,
+          enable_video_mask: true,
+          // Tốc độ và âm lượng
+          speed: 1.0,
+          volume: 1.0,
+          visible: true,
+          // Thuộc tính clip
+          clip: {
+            alpha: 1.0,
+            flip: {
+              horizontal: false,
+              vertical: false,
+            },
+            rotation: 0.0,
+            scale: {
+              x: 1.0,
+              y: 1.0,
+            },
+            transform: {
+              x: 0.0,
+              y: 0.0,
+            },
+          },
+          // Thêm các thuộc tính cần thiết khác cho CapCut
+          render_index: 10000 + index, // Chỉ số render
+          track_render_index: 0, // Chỉ số render của track
+          state: 0, // Trạng thái
+          cartoon: false, // Hiệu ứng hoạt hình
+          intensifies_audio: false, // Tăng cường âm thanh
         };
-        segment.color_correct_alg_result = "";
-        segment.common_keyframes = [];
-        segment.desc = "";
-        segment.digital_human_template_group_id = "";
-        segment.enable_adjust = true;
-        segment.enable_adjust_mask = false;
-        segment.enable_color_correct_adjust = false;
-        segment.enable_color_curves = true;
-        segment.enable_color_match_adjust = false;
-        segment.enable_color_wheels = true;
-        segment.enable_hsl = false;
-        segment.enable_lut = true;
-        segment.enable_smart_color_adjust = false;
-        segment.enable_video_mask = true;
-        segment.extra_material_refs = extraRefs;
-        segment.group_id = "";
-        segment.hdr_settings = {
-          intensity: 1.0,
-          mode: 1,
-          nits: 1000
-        };
-        segment.id = segmentId;
-        segment.intensifies_audio = false;
-        segment.is_loop = false;
-        segment.is_placeholder = false;
-        segment.is_tone_modify = false;
-        segment.keyframe_refs = [];
-        segment.last_nonzero_volume = 1.0;
-        segment.lyric_keyframes = null;
-        segment.material_id = mediaId;
-        segment.raw_segment_id = "";
-        segment.render_index = 0;
-        segment.render_timerange = {
-          duration: 0,
-          start: 0
-        };
-        segment.responsive_layout = {
-          enable: false,
-          horizontal_pos_layout: 0,
-          size_layout: 0,
-          target_follow: "",
-          vertical_pos_layout: 0
-        };
-        segment.reverse = false;
-        segment.source_timerange = {
-          duration: item.duration,
-          start: 0
-        };
-        segment.speed = 1.0;
-        segment.state = 0;
-        segment.target_timerange = {
-          duration: item.duration,
-          start: startTime
-        };
-        segment.template_id = "";
-        segment.template_scene = "default";
-        segment.track_attribute = 0;
-        segment.track_render_index = 0;
-        segment.uniform_scale = {
-          on: true,
-          value: 1.0
-        };
-        segment.visible = true;
-        segment.volume = 1.0;
 
         // Thêm segment vào track video
         mainVideoTrack.segments.push(segment);
       });
       
       // Xử lý material_animations theo cấu trúc đúng
-      // Theo yêu cầu của người dùng, material_animations sẽ để rỗng (không có phần tử con)
-      // Đảm bảo mảng material_animations đã được khởi tạo
-      capcutData.materials.material_animations = [];
-      
-      // Cập nhật tổng thời lượng của dự án dựa trên các media items
-      let totalDuration = 0;
-      mediaItems.forEach(item => {
-        totalDuration += item.duration;
-      });
-      
-      // Đặt duration cho dự án
-      capcutData.duration = totalDuration;
-      
-      // Đảm bảo ID của dự án là chữ hoa
-      if (capcutData.id) {
-        capcutData.id = capcutData.id.toUpperCase();
-      }
-      
-      // Đảm bảo các thuộc tính khác theo cấu trúc draft_content_image.json
-      if (!capcutData.canvas_config) {
-        capcutData.canvas_config = {
-          background: null,
-          height: 1920,
-          ratio: "original",
-          width: 1440
+      if (capcutData.materials.material_animations.length === 0) {
+        // Tạo container cho material_animations nếu cần
+        const animationContainer = {
+          id: generateUUID(),
+          animations: [],
+          type: "material_animation_container"
         };
-      }
-      
-      if (!capcutData.free_render_index_mode_on) {
-        capcutData.free_render_index_mode_on = false;
-      }
-      
-      if (!capcutData.render_index_track_mode_on) {
-        capcutData.render_index_track_mode_on = true;
+        
+        // Thêm các animation mẫu nếu cần
+        const sampleAnimations = [
+          {
+            name: "Fade In",
+            type: "in",
+            duration: 500000, // 0.5 giây
+            id: generateUUID(),
+            category_name: "Basic"
+          },
+          {
+            name: "Fade Out",
+            type: "out",
+            duration: 500000, // 0.5 giây
+            id: generateUUID(),
+            category_name: "Basic"
+          }
+        ];
+        
+        animationContainer.animations = sampleAnimations;
+        capcutData.materials.material_animations.push(animationContainer);
       }
 
       // Kiểm tra tính hợp lệ của dữ liệu trước khi xuất file
@@ -901,8 +693,7 @@ const ExportManager = (function () {
       }
 
       // Download the JSON file or save it to the project folder
-      // Sử dụng indent 2 để tạo file JSON dễ đọc
-      const jsonString = JSON.stringify(capcutData, null, 2);
+      const jsonString = JSON.stringify(capcutData);
 
       console.log(
         "Current project state when exporting:",
