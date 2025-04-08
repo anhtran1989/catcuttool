@@ -769,6 +769,7 @@ const FileManager = (function () {
     processElectronFiles,
     createThumbnail,
     createElectronThumbnail,
+    createTransitionsElement,
     applyAnimation,
     applyPendingAnimations,
     updateTotalDuration,

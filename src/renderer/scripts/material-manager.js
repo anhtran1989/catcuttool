@@ -117,7 +117,7 @@ const MaterialManager = (function () {
                   if (['in', 'out', 'group'].includes(animation.type)) {
                     console.log(`Tìm thấy animation: ${animation.name}, Type: ${animation.type}`);
                     
-                    // Tạo animation mới
+                    // Tạo animation mới với đầy đủ thuộc tính cần thiết cho CapCut
                     const newAnimation = { ...animation };
                     newAnimation.animation_id = animation.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     newAnimation.icon = getIconForMaterialAnimation(animation.type, animation.name);
@@ -126,6 +126,20 @@ const MaterialManager = (function () {
                     // Đảm bảo có category_name
                     if (!newAnimation.category_name) {
                       newAnimation.category_name = animation.type === 'in' ? "Vào" : (animation.type === 'out' ? "Ra" : "Kết hợp");
+                    }
+                    
+                    // Đảm bảo có các thuộc tính quan trọng khác cho CapCut
+                    if (!newAnimation.segment) {
+                      newAnimation.segment = { start: 0, duration: newAnimation.duration || 500000 };
+                    }
+                    if (!newAnimation.tracks) {
+                      newAnimation.tracks = [];
+                    }
+                    if (!newAnimation.material_type) {
+                      newAnimation.material_type = "material_animation";
+                    }
+                    if (!newAnimation.version) {
+                      newAnimation.version = 1;
                     }
                     
                     newAnimations.push(newAnimation);
@@ -151,7 +165,7 @@ const MaterialManager = (function () {
             if (['in', 'out', 'group'].includes(obj.type)) {
               console.log(`Tìm thấy animation tại ${path}: ${obj.name}, Type: ${obj.type}`);
               
-              // Tạo animation mới với đầy đủ thông tin
+              // Tạo animation mới với đầy đủ thông tin cần thiết cho CapCut
               const newAnimation = { ...obj };
               
               // Đảm bảo các thuộc tính quan trọng luôn có
@@ -161,6 +175,20 @@ const MaterialManager = (function () {
               // Đảm bảo có category_name nếu không có
               if (!newAnimation.category_name) {
                 newAnimation.category_name = obj.type === 'in' ? "Vào" : (obj.type === 'out' ? "Ra" : "Kết hợp");
+              }
+              
+              // Đảm bảo có các thuộc tính quan trọng khác cho CapCut
+              if (!newAnimation.segment) {
+                newAnimation.segment = { start: 0, duration: newAnimation.duration || 500000 };
+              }
+              if (!newAnimation.tracks) {
+                newAnimation.tracks = [];
+              }
+              if (!newAnimation.material_type) {
+                newAnimation.material_type = "material_animation";
+              }
+              if (!newAnimation.version) {
+                newAnimation.version = 1;
               }
               
               // Thêm vào danh sách mới
@@ -403,11 +431,27 @@ const MaterialManager = (function () {
     // Tạo container cho các nút animation
     const animationButtonsContainer = document.createElement('div');
     animationButtonsContainer.className = 'animation-buttons';
+    
+    // Thiết lập style cho container để hiển thị nút theo hàng ngang phía trên ảnh
+    animationButtonsContainer.style.display = 'flex';
+    animationButtonsContainer.style.justifyContent = 'space-between';
+    animationButtonsContainer.style.width = '100%';
+    animationButtonsContainer.style.padding = '5px';
+    animationButtonsContainer.style.boxSizing = 'border-box';
+    animationButtonsContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+    animationButtonsContainer.style.borderRadius = '5px 5px 0 0';
 
     // Nút Animation Vào (In)
     const inButton = document.createElement('button');
     inButton.className = 'animation-in-button';
     inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Vào';
+    inButton.style.flex = '1';
+    inButton.style.margin = '0 2px';
+    inButton.style.padding = '5px';
+    inButton.style.border = '1px solid #ddd';
+    inButton.style.borderRadius = '3px';
+    inButton.style.backgroundColor = '#f8f9fa';
+    inButton.style.cursor = 'pointer';
     inButton.onclick = function(e) {
       e.stopPropagation();
       showAnimationDropdown(thumbnailItem, 'in', fileData, onApplyAnimation);
@@ -418,6 +462,13 @@ const MaterialManager = (function () {
     const groupButton = document.createElement('button');
     groupButton.className = 'animation-group-button';
     groupButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
+    groupButton.style.flex = '1';
+    groupButton.style.margin = '0 2px';
+    groupButton.style.padding = '5px';
+    groupButton.style.border = '1px solid #ddd';
+    groupButton.style.borderRadius = '3px';
+    groupButton.style.backgroundColor = '#f8f9fa';
+    groupButton.style.cursor = 'pointer';
     groupButton.onclick = function(e) {
       e.stopPropagation();
       showAnimationDropdown(thumbnailItem, 'group', fileData, onApplyAnimation);
@@ -428,6 +479,13 @@ const MaterialManager = (function () {
     const outButton = document.createElement('button');
     outButton.className = 'animation-out-button';
     outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> Ra';
+    outButton.style.flex = '1';
+    outButton.style.margin = '0 2px';
+    outButton.style.padding = '5px';
+    outButton.style.border = '1px solid #ddd';
+    outButton.style.borderRadius = '3px';
+    outButton.style.backgroundColor = '#f8f9fa';
+    outButton.style.cursor = 'pointer';
     outButton.onclick = function(e) {
       e.stopPropagation();
       showAnimationDropdown(thumbnailItem, 'out', fileData, onApplyAnimation);
@@ -441,6 +499,9 @@ const MaterialManager = (function () {
       // Tạo container để chứa các nút animation phía trên media
       const animationContainer = document.createElement('div');
       animationContainer.className = 'animation-container';
+      animationContainer.style.display = 'flex';
+      animationContainer.style.flexDirection = 'column';
+      animationContainer.style.width = '100%';
       
       // Thêm container nút vào animation container
       animationContainer.appendChild(animationButtonsContainer);
@@ -451,6 +512,10 @@ const MaterialManager = (function () {
       // Chèn animation container vào trước media element
       if (mediaParent) {
         mediaParent.insertBefore(animationContainer, mediaElement);
+        
+        // Đảm bảo media element vẫn hiển thị đúng sau khi thêm animation container
+        mediaElement.style.width = '100%';
+        mediaElement.style.display = 'block';
       } else {
         // Fallback nếu không tìm thấy mediaParent
         thumbnailItem.appendChild(animationButtonsContainer);

@@ -24,24 +24,54 @@ const TransitionManager = (function () {
         return;
       }
 
-      const newTransitions = draftContent.materials.transitions.map(transition => ({
-        name: transition.name,
-        effect_id: transition.effect_id,
-        is_overlap: transition.is_overlap || false,
-        duration: transition.duration || 0,
-        category_id: transition.category_id || "",
-        category_name: transition.category_name || "",
-        path: transition.path || "",
-        platform: transition.platform || "all",
-        resource_id: transition.resource_id || transition.effect_id,
-        source_platform: transition.source_platform || 1,
-        icon: getIconForTransition(transition.name)
-      }));
+      const newTransitions = draftContent.materials.transitions.map(transition => {
+        // Tạo đối tượng transition mới với tất cả các thuộc tính cần thiết cho CapCut
+        const newTransition = {
+          name: transition.name,
+          transition_id: transition.transition_id,
+          // Sử dụng duration từ transition nếu có, nếu không thì dùng giá trị mặc định
+          duration: transition.duration || 1000000, // Default duration: 1 second
+          category_id: transition.category_id || "",
+          category_name: transition.category_name || "",
+          path: transition.path || "",
+          platform: transition.platform || "all",
+          resource_id: transition.resource_id || transition.transition_id,
+          source_platform: transition.source_platform || 1,
+          // Các thuộc tính quan trọng khác cho CapCut
+          segment: transition.segment || { start: 0, duration: transition.duration || 1000000 },
+          tracks: transition.tracks || [],
+          type: transition.type || "transition",
+          material_type: transition.material_type || "transition",
+          version: transition.version || 1,
+          // Thêm icon cho giao diện
+          icon: getIconForTransition(transition.name)
+        };
+
+        // Sao chép các thuộc tính khác nếu có
+        if (transition.adjust_params) newTransition.adjust_params = transition.adjust_params;
+        if (transition.apply_target_type !== undefined) newTransition.apply_target_type = transition.apply_target_type;
+        if (transition.formula_id !== undefined) newTransition.formula_id = transition.formula_id;
+        if (transition.render_index !== undefined) newTransition.render_index = transition.render_index;
+        if (transition.materials) newTransition.materials = transition.materials;
+        if (transition.effect_id) newTransition.effect_id = transition.effect_id;
+        if (transition.start !== undefined) newTransition.start = transition.start;
+        if (transition.end !== undefined) newTransition.end = transition.end;
+        if (transition.material_id) newTransition.material_id = transition.material_id;
+
+        console.log(`Processed transition: ${transition.name}, ID: ${transition.transition_id}`);
+        return newTransition;
+      });
 
       // Cập nhật danh sách transitions bằng cách thêm các transitions mới
       mergeTransitions(newTransitions);
       
       console.log(`Updated transitions list: ${transitions.length} transitions available`);
+      
+      // Log chi tiết về các transitions đã được xử lý
+      console.log('=== TRANSITIONS DETAILS ===');
+      transitions.forEach(transition => {
+        console.log(`Name: ${transition.name}, ID: ${transition.transition_id}, Duration: ${transition.duration}, Category: ${transition.category_name}`);
+      });
     } catch (error) {
       console.error("Error updating transitions from draft content:", error);
     }

@@ -24,23 +24,54 @@ const EffectManager = (function () {
         return;
       }
 
-      const newEffects = draftContent.materials.video_effects.map(effect => ({
-        name: effect.name,
-        effect_id: effect.effect_id,
-        duration: 3000000, // Default duration
-        category_id: effect.category_id || "",
-        category_name: effect.category_name || "",
-        path: effect.path || "",
-        platform: effect.platform || "all",
-        resource_id: effect.resource_id || effect.effect_id,
-        source_platform: effect.source_platform || 1,
-        icon: getIconForEffect(effect.name)
-      }));
+      const newEffects = draftContent.materials.video_effects.map(effect => {
+        // Tạo đối tượng effect mới với tất cả các thuộc tính cần thiết cho CapCut
+        const newEffect = {
+          name: effect.name,
+          effect_id: effect.effect_id,
+          // Sử dụng duration từ effect nếu có, nếu không thì dùng giá trị mặc định
+          duration: effect.duration || 3000000,
+          category_id: effect.category_id || "",
+          category_name: effect.category_name || "",
+          path: effect.path || "",
+          platform: effect.platform || "all",
+          resource_id: effect.resource_id || effect.effect_id,
+          source_platform: effect.source_platform || 1,
+          // Các thuộc tính quan trọng khác cho CapCut
+          adjust_params: effect.adjust_params || [],
+          apply_target_type: effect.apply_target_type || 2,
+          type: effect.type || "video_effect",
+          enable_mask: effect.enable_mask !== undefined ? effect.enable_mask : true,
+          item_effect_type: effect.item_effect_type || 0,
+          value: effect.value !== undefined ? effect.value : 1.0,
+          // Thêm icon cho giao diện
+          icon: getIconForEffect(effect.name)
+        };
+
+        // Sao chép các thuộc tính khác nếu có
+        if (effect.effect_mask) newEffect.effect_mask = effect.effect_mask;
+        if (effect.common_keyframes) newEffect.common_keyframes = effect.common_keyframes;
+        if (effect.covering_relation_change !== undefined) newEffect.covering_relation_change = effect.covering_relation_change;
+        if (effect.formula_id !== undefined) newEffect.formula_id = effect.formula_id;
+        if (effect.render_index !== undefined) newEffect.render_index = effect.render_index;
+        if (effect.track_render_index !== undefined) newEffect.track_render_index = effect.track_render_index;
+        if (effect.version !== undefined) newEffect.version = effect.version;
+        if (effect.algorithm_artifact_path !== undefined) newEffect.algorithm_artifact_path = effect.algorithm_artifact_path;
+
+        console.log(`Processed effect: ${effect.name}, ID: ${effect.effect_id}`);
+        return newEffect;
+      });
 
       // Cập nhật danh sách effects bằng cách thêm các effects mới
       mergeEffects(newEffects);
       
       console.log(`Updated effects list: ${effects.length} effects available`);
+      
+      // Log chi tiết về các effects đã được xử lý
+      console.log('=== EFFECTS DETAILS ===');
+      effects.forEach(effect => {
+        console.log(`Name: ${effect.name}, ID: ${effect.effect_id}, Category: ${effect.category_name}`);
+      });
     } catch (error) {
       console.error("Error updating effects from draft content:", error);
     }
