@@ -82,13 +82,13 @@ const MaterialManager = (function () {
   }
 
   /**
-   * Cập nhật danh sách hiệu ứng từ draft_content.json
-   * @param {Object} draftContent Nội dung draft_content.json
+   * Cập nhật danh sách hiệu ứng từ draft_content_material.json
+   * @param {Object} draftContent Nội dung draft_content_material.json
    */
   function updateFromDraftContent(draftContent) {
     try {
       if (!draftContent) {
-        console.warn("Không tìm thấy dữ liệu trong draft_content.json");
+        console.warn("Không tìm thấy dữ liệu trong draft_content_material.json");
         return;
       }
 
@@ -184,7 +184,7 @@ const MaterialManager = (function () {
           }
         }
 
-        // Bắt đầu tìm kiếm đệ quy từ gốc của draft_content
+        // Bắt đầu tìm kiếm đệ quy từ gốc của draft_content_material
         findAnimationsRecursively(draftContent, 'draftContent');
       }
       

@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /**
- * Đọc các file draft_content và cập nhật danh sách effects/transitions
+ * Đọc các file draft_content và cập nhật danh sách effects/transitions/materials
  */
 function loadEffectsAndTransitions() {
   try {
@@ -100,9 +100,9 @@ function loadEffectsAndTransitions() {
       .catch(error => {
         console.warn("Could not load draft_content_transition.json:", error);
       });
-
-    // Đọc file draft_content.json chung
-    fetch('./draft_content.json')
+      
+    // Đọc file draft_content_material.json
+    fetch('./draft_content_material.json')
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -110,40 +110,84 @@ function loadEffectsAndTransitions() {
         return response.json();
       })
       .then(data => {
-        // Cập nhật cả effects và transitions từ file chung
-        UIManager.updateEffectsAndTransitions(data);
-        console.log("Effects and transitions updated from draft_content.json");
+        // Cập nhật material animations từ file
+        MaterialManager.updateFromDraftContent(data);
+        console.log("Material animations updated from draft_content_material.json");
       })
       .catch(error => {
-        console.warn("Could not load draft_content.json:", error);
+        console.warn("Could not load draft_content_material.json:", error);
       });
   } catch (error) {
-    console.error("Error loading effects and transitions:", error);
+    console.error("Error in loadEffectsAndTransitions:", error);
   }
 }
 
 /**
- * Cập nhật draft_content.json khi có thay đổi
+ * Cập nhật nội dung từ các file draft_content riêng biệt khi có thay đổi
  */
 function updateDraftContent() {
-  // Đọc file hiện tại
-  fetch('./draft_content.json')
+  // Đọc các file riêng biệt
+  const effectsPromise = fetch('./draft_content_effect.json')
     .then(response => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error loading effects! status: ${response.status}`);
       }
       return response.json();
     })
     .then(data => {
-      // Cập nhật hiển thị
-      UIManager.updateEffectsAndTransitions(data);
-      
-      // Gửi thông báo thành công
-      UIManager.showNotification("Effects and transitions updated successfully", "success");
+      // Cập nhật effects
+      UIManager.updateEffectsAndTransitions('effects', data);
+      return true;
     })
     .catch(error => {
-      console.error("Error updating draft content:", error);
-      UIManager.showNotification("Failed to update effects and transitions", "error");
+      console.error("Error updating effects content:", error);
+      return false;
+    });
+    
+  const transitionsPromise = fetch('./draft_content_transition.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error loading transitions! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Cập nhật transitions
+      UIManager.updateEffectsAndTransitions('transitions', data);
+      return true;
+    })
+    .catch(error => {
+      console.error("Error updating transitions content:", error);
+      return false;
+    });
+    
+  const materialsPromise = fetch('./draft_content_material.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error loading materials! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Cập nhật material animations
+      UIManager.updateEffectsAndTransitions('materials', data);
+      return true;
+    })
+    .catch(error => {
+      console.error("Error updating materials content:", error);
+      return false;
+    });
+    
+  // Đợi tất cả các promise hoàn thành
+  Promise.all([effectsPromise, transitionsPromise, materialsPromise])
+    .then(results => {
+      // Kiểm tra xem có bất kỳ lỗi nào không
+      const hasErrors = results.includes(false);
+      if (hasErrors) {
+        UIManager.showNotification("Some updates failed, check console for details", "warning");
+      } else {
+        UIManager.showNotification("Effects, transitions, and materials updated successfully", "success");
+      }
     });
 }
 

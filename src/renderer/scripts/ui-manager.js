@@ -864,32 +864,50 @@ const UIManager = (function () {
   }
 
   /**
-   * Cập nhật danh sách effects, transitions và material animations từ file draft_content.json
-   * @param {Object} draftContent Nội dung của file draft_content.json
+   * Cập nhật danh sách effects, transitions và material animations từ các file JSON riêng biệt
+   * @param {string} type Loại dữ liệu cần cập nhật ('effects', 'transitions', 'materials')
+   * @param {Object} data Nội dung của file JSON tương ứng
    */
-  function updateEffectsAndTransitions(draftContent) {
+  function updateEffectsAndTransitions(type, data) {
     try {
-      // Cập nhật effects từ draft_content.json
-      if (EffectManager && typeof EffectManager.updateFromDraftContent === 'function') {
-        EffectManager.updateFromDraftContent(draftContent);
+      if (!type || !data) {
+        console.warn("Missing type or data for updateEffectsAndTransitions");
+        return;
       }
 
-      // Cập nhật transitions từ draft_content.json
-      if (TransitionManager && typeof TransitionManager.updateFromDraftContent === 'function') {
-        TransitionManager.updateFromDraftContent(draftContent);
-      }
-      
-      // Cập nhật material animations từ draft_content.json
-      if (MaterialManager && typeof MaterialManager.updateFromDraftContent === 'function') {
-        MaterialManager.updateFromDraftContent(draftContent);
-        console.log("Material animations updated from draft_content.json");
+      switch (type) {
+        case 'effects':
+          // Cập nhật effects từ draft_content_effect.json
+          if (EffectManager && typeof EffectManager.updateFromDraftContent === 'function') {
+            EffectManager.updateFromDraftContent(data);
+            console.log("Effects updated from draft_content_effect.json");
+          }
+          break;
+
+        case 'transitions':
+          // Cập nhật transitions từ draft_content_transition.json
+          if (TransitionManager && typeof TransitionManager.updateFromDraftContent === 'function') {
+            TransitionManager.updateFromDraftContent(data);
+            console.log("Transitions updated from draft_content_transition.json");
+          }
+          break;
+
+        case 'materials':
+          // Cập nhật material animations từ draft_content_material.json
+          if (MaterialManager && typeof MaterialManager.updateFromDraftContent === 'function') {
+            MaterialManager.updateFromDraftContent(data);
+            console.log("Material animations updated from draft_content_material.json");
+          }
+          break;
+
+        default:
+          console.warn(`Unknown update type: ${type}`);
+          return;
       }
 
       // Tạo lại các dropdown để hiển thị danh sách đã cập nhật
       createGlobalEffectsDropdown();
       createGlobalTransitionsDropdown();
-
-      console.log("Updated effects and transitions dropdowns from draft content");
     } catch (error) {
       console.error("Error updating effects and transitions:", error);
     }
