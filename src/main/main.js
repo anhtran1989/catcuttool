@@ -59,6 +59,7 @@ function setupFileWatcher() {
     const filesToWatch = [
       path.join(rendererDir, "draft_content.json"),
       path.join(rendererDir, "draft_content_effect.json"),
+      path.join(rendererDir, "draft_content_material.json"),
       path.join(rendererDir, "draft_content_transition.json")
     ];
     
