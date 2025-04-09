@@ -369,7 +369,9 @@ const FileManager = (function () {
     // Add index number
     const thumbnailIndex = document.createElement("div");
     thumbnailIndex.className = "thumbnail-index";
-    thumbnailIndex.textContent = thumbnailList.children.length + 1;
+    // Đếm số lượng thumbnail-item thực tế thay vì tất cả children
+    const currentThumbnailCount = thumbnailList.querySelectorAll(".thumbnail-item").length;
+    thumbnailIndex.textContent = currentThumbnailCount + 1;
 
     let thumbnail;
 
