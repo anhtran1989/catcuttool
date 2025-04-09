@@ -860,6 +860,151 @@ const ExportManager = (function () {
       // Đảm bảo mảng material_animations đã được khởi tạo
       capcutData.materials.material_animations = [];
       
+      // Thêm track hiệu ứng vào danh sách tracks
+      try {
+        // Tạo mẫu track hiệu ứng trực tiếp
+        const effectTrackTemplate = {
+          attribute: 0,
+          flag: 0,
+          id: "", // Sẽ được tạo động
+          is_default_name: true,
+          name: "",
+          segments: [], // Sẽ được điền động
+          type: "effect"
+        };
+        
+        // Tạo mẫu segment hiệu ứng trực tiếp
+        const effectSegmentTemplate = {
+          caption_info: null,
+          cartoon: false,
+          clip: {
+            alpha: 1.0,
+            flip: {
+              horizontal: false,
+              vertical: false
+            },
+            rotation: 0.0,
+            scale: {
+              x: 1.0,
+              y: 1.0
+            },
+            transform: {
+              x: 0.0,
+              y: 0.0
+            }
+          },
+          color_correct_alg_result: "",
+          common_keyframes: [],
+          desc: "",
+          digital_human_template_group_id: "",
+          enable_adjust: false,
+          enable_adjust_mask: false,
+          enable_color_correct_adjust: false,
+          enable_color_curves: true,
+          enable_color_match_adjust: false,
+          enable_color_wheels: true,
+          enable_hsl: false,
+          enable_lut: false,
+          enable_smart_color_adjust: false,
+          enable_video_mask: true,
+          extra_material_refs: [],
+          group_id: "",
+          hdr_settings: {
+            intensity: 1.0,
+            mode: 1,
+            nits: 1000
+          },
+          id: "",
+          intensifies_audio: false,
+          is_loop: false,
+          is_placeholder: false,
+          is_tone_modify: false,
+          keyframe_refs: [],
+          last_nonzero_volume: 1.0,
+          lyric_keyframes: null,
+          material_id: "",
+          raw_segment_id: "",
+          render_index: 0,
+          render_timerange: {
+            duration: 0,
+            start: 0
+          },
+          responsive_layout: {
+            enable: false,
+            horizontal_pos_layout: 0,
+            size_layout: 0,
+            target_follow: "",
+            vertical_pos_layout: 0
+          },
+          reverse: false,
+          source_timerange: {
+            duration: 0,
+            start: 0
+          },
+          speed: 1.0,
+          state: 0,
+          target_timerange: {
+            duration: 0,
+            start: 0
+          },
+          template_id: "",
+          template_scene: "default",
+          track_attribute: 0,
+          track_render_index: 0,
+          uniform_scale: {
+            on: true,
+            value: 1.0
+          },
+          visible: true,
+          volume: 1.0
+        };
+        
+        // Tạo track hiệu ứng mới
+        const effectTrack = JSON.parse(JSON.stringify(effectTrackTemplate));
+        effectTrack.id = generateUUID();
+        effectTrack.name = "Effect Track";
+        
+        // Thêm segments vào track hiệu ứng nếu có hiệu ứng được áp dụng
+        mediaItems.forEach((item, index) => {
+          if (item.effectId && item.effectName && item.effectName !== "None") {
+            // Tạo segment hiệu ứng mới
+            const effectSegment = JSON.parse(JSON.stringify(effectSegmentTemplate));
+            effectSegment.id = generateUUID();
+            
+            // Thiết lập target_timerange để khớp với media item
+            let startTime = 0;
+            for (let i = 0; i < index; i++) {
+              startTime += mediaItems[i].duration;
+            }
+            
+            effectSegment.target_timerange = {
+              duration: item.duration,
+              start: startTime
+            };
+            
+            // Thiết lập material_id để liên kết với hiệu ứng
+            effectSegment.material_id = idMap.videoEffects[index];
+            
+            // Thêm segment vào track hiệu ứng
+            effectTrack.segments.push(effectSegment);
+          }
+        });
+        
+        // Chỉ thêm track hiệu ứng nếu có ít nhất một segment
+        if (effectTrack.segments.length > 0) {
+          // Đảm bảo danh sách tracks đã được khởi tạo
+          if (!capcutData.tracks) {
+            capcutData.tracks = [];
+          }
+          
+          // Thêm track hiệu ứng vào danh sách tracks
+          capcutData.tracks.push(effectTrack);
+          console.log("Added effect track with", effectTrack.segments.length, "segments");
+        }
+      } catch (effectTrackError) {
+        console.error("Error creating effect track:", effectTrackError);
+      }
+      
       // Cập nhật tổng thời lượng của dự án dựa trên các media items
       let totalDuration = 0;
       mediaItems.forEach(item => {

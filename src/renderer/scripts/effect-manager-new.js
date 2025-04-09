@@ -191,15 +191,15 @@ const EffectManager = (function() {
             id: effect.id,
             name: effect.name,
             type: effect.type,
-            effect_id: effect.effect_id || "",
-            category_id: effect.category_id || "",
-            category_name: effect.category_name || "",
-            path: effect.path || "",
-            adjust_params: effect.adjust_params || [],
-            apply_target_type: effect.apply_target_type || 2,
-            enable_mask: effect.enable_mask || true,
-            item_effect_type: effect.item_effect_type || 0,
-            value: effect.value || 1.0,
+            effect_id: effect.effect_id,
+            category_id: effect.category_id,
+            category_name: effect.category_name,
+            path: effect.path,
+            adjust_params: effect.adjust_params,
+            apply_target_type: effect.apply_target_type,
+            enable_mask: effect.enable_mask,
+            item_effect_type: effect.item_effect_type,
+            value: effect.value,
             icon: getIconForEffect(effect.name || "")
           };
         });
@@ -208,13 +208,6 @@ const EffectManager = (function() {
         mergeEffects(formattedEffects);
       } else {
         console.log("No effects found in materials.video_effects");
-        
-        // Tìm kiếm đệ quy trong cấu trúc JSON
-        const foundEffects = findEffectsRecursively(draftContent);
-        if (foundEffects.length > 0) {
-          console.log(`Found ${foundEffects.length} effects through recursive search`);
-          mergeEffects(foundEffects);
-        }
       }
       
       // Kiểm tra cấu trúc track effect để lấy thêm thông tin
@@ -247,51 +240,6 @@ const EffectManager = (function() {
     } catch (error) {
       console.error("Error updating effects from draft content:", error);
     }
-  }
-  
-  /**
-   * Tìm kiếm đệ quy các hiệu ứng trong cấu trúc JSON
-   * @param {Object} obj Đối tượng JSON cần tìm kiếm
-   * @param {Array} results Mảng kết quả (tùy chọn)
-   * @returns {Array} Mảng các hiệu ứng tìm thấy
-   */
-  function findEffectsRecursively(obj, results = []) {
-    if (!obj || typeof obj !== 'object') {
-      return results;
-    }
-    
-    // Kiểm tra nếu đối tượng có vẻ như là một hiệu ứng
-    if (obj.type === 'video_effect' && obj.name && obj.id) {
-      results.push({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-        effect_id: obj.effect_id || "",
-        category_id: obj.category_id || "",
-        category_name: obj.category_name || "",
-        path: obj.path || "",
-        adjust_params: obj.adjust_params || [],
-        apply_target_type: obj.apply_target_type || 2,
-        enable_mask: obj.enable_mask || true,
-        item_effect_type: obj.item_effect_type || 0,
-        value: obj.value || 1.0,
-        icon: getIconForEffect(obj.name || "")
-      });
-    }
-    
-    // Tìm kiếm trong các mảng
-    if (Array.isArray(obj)) {
-      obj.forEach(item => findEffectsRecursively(item, results));
-    } else {
-      // Tìm kiếm trong các thuộc tính của đối tượng
-      Object.values(obj).forEach(val => {
-        if (val && typeof val === 'object') {
-          findEffectsRecursively(val, results);
-        }
-      });
-    }
-    
-    return results;
   }
   
   /**
@@ -609,22 +557,6 @@ const EffectManager = (function() {
     return createEffectTrack([segment]);
   }
   
-  /**
-   * Trả về mẫu cấu trúc track hiệu ứng
-   * @returns {Object} Mẫu track hiệu ứng
-   */
-  function getEffectTrackTemplate() {
-    return JSON.parse(JSON.stringify(effectTrackTemplate));
-  }
-
-  /**
-   * Trả về mẫu cấu trúc segment hiệu ứng
-   * @returns {Object} Mẫu segment hiệu ứng
-   */
-  function getEffectSegmentTemplate() {
-    return JSON.parse(JSON.stringify(effectSegmentTemplate));
-  }
-
   // Public API
   return {
     init,
@@ -637,8 +569,6 @@ const EffectManager = (function() {
     updateEffectsUI,
     generateUUID,
     applyEffectsToDraftContent,
-    createDefaultEffectTrack,
-    getEffectTrackTemplate,
-    getEffectSegmentTemplate
+    createDefaultEffectTrack
   };
 })();
