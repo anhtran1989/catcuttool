@@ -324,17 +324,26 @@ const UIManager = (function () {
     dropdown.className = "effects-dropdown";
 
     // Lấy danh sách effects từ EffectManager
-    const effectOptions = [{
-      name: "None",
-      icon: "fas fa-ban"
-    }];
+    let effectOptions = [];
 
-    // Thêm effects từ EffectManager nếu có
+    // Lấy effects từ EffectManager nếu có
     if (EffectManager && typeof EffectManager.getEffects === 'function') {
       const managerEffects = EffectManager.getEffects();
       if (Array.isArray(managerEffects) && managerEffects.length > 0) {
-        effectOptions.push(...managerEffects);
+        effectOptions = managerEffects;
+      } else {
+        // Nếu không có effects từ EffectManager, thêm None mặc định
+        effectOptions = [{
+          name: "None",
+          icon: "fas fa-ban"
+        }];
       }
+    } else {
+      // Nếu không có EffectManager, thêm None mặc định
+      effectOptions = [{
+        name: "None",
+        icon: "fas fa-ban"
+      }];
     }
 
     // Add effect options to the dropdown

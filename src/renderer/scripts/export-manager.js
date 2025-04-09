@@ -401,7 +401,22 @@ const ExportManager = (function () {
           const selectedEffect = item.querySelector(".selected-effect");
           if (selectedEffect && selectedEffect.dataset && selectedEffect.dataset.effectId) {
             mediaItem.effectId = selectedEffect.dataset.effectId;
-            mediaItem.effectName = selectedEffect.dataset.effectName || "Unknown Effect";
+            mediaItem.effectName = selectedEffect.dataset.name || selectedEffect.textContent.trim() || "Unknown Effect";
+            
+            // Lấy effect duration từ dataset của selected-effect
+            if (selectedEffect.dataset.duration) {
+              mediaItem.effectDuration = parseInt(selectedEffect.dataset.duration) || 3000000; // Default 3 seconds if parsing fails
+            } else {
+              // Tìm input duration gần nhất
+              const durationInput = item.querySelector(".duration-input");
+              if (durationInput && durationInput.value) {
+                // Chuyển đổi từ giây sang microseconds
+                mediaItem.effectDuration = parseInt(durationInput.value) * 1000000 || 3000000;
+              } else {
+                mediaItem.effectDuration = 3000000; // Default 3 seconds
+              }
+            }
+            console.log(`Effect for item ${index}: ${mediaItem.effectName}, duration: ${mediaItem.effectDuration}`);
           }
         } catch (effectError) {
           console.warn("Error processing effect for item:", effectError);
@@ -977,10 +992,15 @@ const ExportManager = (function () {
               startTime += mediaItems[i].duration;
             }
             
+            // Sử dụng effectDuration nếu có, nếu không thì sử dụng media item duration
+            const segmentDuration = item.effectDuration || item.duration;
+            
             effectSegment.target_timerange = {
-              duration: item.duration,
+              duration: segmentDuration,
               start: startTime
             };
+            
+            console.log(`Effect segment for item ${index}: duration=${segmentDuration}, start=${startTime}`);
             
             // Thiết lập material_id để liên kết với hiệu ứng
             effectSegment.material_id = idMap.videoEffects[index];
