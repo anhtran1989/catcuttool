@@ -323,27 +323,28 @@ const UIManager = (function () {
     dropdown.id = "global-effects-dropdown";
     dropdown.className = "effects-dropdown";
 
-    // Lấy danh sách effects từ EffectManager
+    // Lấy danh sách effects từ EffectManagerModule mới
     let effectOptions = [];
 
-    // Lấy effects từ EffectManager nếu có
-    if (EffectManager && typeof EffectManager.getEffects === 'function') {
-      const managerEffects = EffectManager.getEffects();
+    // Lấy effects từ EffectManagerModule nếu có
+    if (window.EffectManagerModule && typeof window.EffectManagerModule.getEffects === 'function') {
+      const managerEffects = window.EffectManagerModule.getEffects();
       if (Array.isArray(managerEffects) && managerEffects.length > 0) {
         effectOptions = managerEffects;
       } else {
-        // Nếu không có effects từ EffectManager, thêm None mặc định
+        // Nếu không có effects từ EffectManagerModule, thêm None mặc định
         effectOptions = [{
           name: "None",
           icon: "fas fa-ban"
         }];
       }
     } else {
-      // Nếu không có EffectManager, thêm None mặc định
+      // Nếu không có EffectManagerModule, thêm None mặc định
       effectOptions = [{
         name: "None",
         icon: "fas fa-ban"
       }];
+      console.warn("EffectManagerModule not available for global effects dropdown");
     }
 
     // Add effect options to the dropdown
@@ -591,14 +592,15 @@ const UIManager = (function () {
     dropdown.id = "global-transitions-dropdown";
     dropdown.className = "transitions-dropdown effects-dropdown"; // Using effects-dropdown style
 
-    // Lấy danh sách transitions từ TransitionManager
+    // Lấy danh sách transitions từ TransitionManagerModule mới
     let transitionOptions = [];
 
-    // Nếu TransitionManager tồn tại và có getTransitions
-    if (TransitionManager && typeof TransitionManager.getTransitions === 'function') {
-      transitionOptions = TransitionManager.getTransitions();
+    // Nếu TransitionManagerModule tồn tại và có getTransitions
+    if (window.TransitionManagerModule && typeof window.TransitionManagerModule.getTransitions === 'function') {
+      transitionOptions = window.TransitionManagerModule.getTransitions();
     } else {
-      // Fallback nếu không có TransitionManager
+      // Fallback nếu không có TransitionManagerModule
+      console.warn("TransitionManagerModule not available for global transitions dropdown");
       transitionOptions = [
         {
           name: "Cut",

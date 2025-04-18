@@ -122,6 +122,7 @@ const EffectUI = (function() {
     // Tạo container để chứa nút hiệu ứng phía trên media
     const effectContainer = document.createElement('div');
     effectContainer.className = 'effect-container';
+    effectContainer.style.top = '45px'; // Đặt vị trí cố định dưới các nút animation
     
     // Thêm container nút vào effect container
     effectContainer.appendChild(effectButtonContainer);
@@ -132,12 +133,13 @@ const EffectUI = (function() {
       existingContainer.remove();
     }
     
-    // Thêm effect container vào thumbnail item
+    // Thêm vào đầu thumbnail item
     thumbnailItem.insertBefore(effectContainer, thumbnailItem.firstChild);
     
     // Đảm bảo effect container luôn hiển thị
     effectContainer.style.opacity = '1';
     effectContainer.style.visibility = 'visible';
+    effectContainer.style.display = 'flex';
   }
   
   /**
@@ -174,15 +176,15 @@ const EffectUI = (function() {
     style.textContent = `
       /* Effect container styles */
       .effect-container {
-        position: absolute;
-        top: 0px; /* Đặt nút hiệu ứng ở trên cùng */
-        left: 0;
+        position: relative;
         width: 100%;
         z-index: 30;
         display: flex !important;
         justify-content: center;
         opacity: 1 !important;
         visibility: visible !important;
+        margin-top: 5px;
+        margin-bottom: 5px;
       }
       
       /* Effect button container styles */
@@ -195,8 +197,8 @@ const EffectUI = (function() {
       
       /* Effect button styles */
       .effect-button {
-        padding: 6px 12px;
-        font-size: 0.85rem;
+        padding: 6px 15px;
+        font-size: 0.9rem;
         border-radius: 4px;
         cursor: pointer;
         display: flex;
@@ -204,16 +206,18 @@ const EffectUI = (function() {
         justify-content: center;
         transition: all 0.2s ease;
         background-color: #4a90e2;
-        border: 1px solid #3a80d2;
+        border: 1px solid #3a7cd0;
         color: white;
-        font-weight: 500;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        margin-bottom: 10px;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        margin-bottom: 0;
+        width: 100%;
+        max-width: 150px;
       }
       
       .effect-button:hover {
-        background-color: #3a80d2;
-        border-color: #2a70c2;
+        background-color: #3a7cd0;
+        border-color: #2a6dc0;
         color: white;
         transform: translateY(-1px);
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);

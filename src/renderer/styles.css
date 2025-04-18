@@ -241,14 +241,14 @@ p {
 }
 
 .thumbnail-item {
-  flex: 0 0 200px;
-  width: 200px;
-  margin-bottom: 15px;
-  margin-top: 45px; /* Thêm margin-top để tạo không gian cho animation buttons */
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  flex: 0 0 220px;
+  width: 220px;
+  margin-bottom: 20px;
+  margin-top: 30px; /* Tăng margin-top để có chỗ cho các nút animation */
+  border-radius: 10px;
+  overflow: visible; /* Cho phép các nội dung hiển thị bên ngoài thumbnail */
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
   background-color: white;
   position: relative;
   cursor: grab;
@@ -270,13 +270,19 @@ p {
 .thumbnail-item img,
 .thumbnail-item video {
   width: 100%;
-  height: 150px;
+  height: 160px;
   object-fit: cover;
   display: block;
+  border-radius: 0;
+  order: 2;
 }
 
 .thumbnail-info {
-  padding: 10px;
+  padding: 12px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fafafa;
+  border-radius: 0 0 10px 10px;
+  order: 3;
 }
 
 .thumbnail-info p {
@@ -286,15 +292,18 @@ p {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 500;
+  text-align: center;
 }
 
 /* Duration input styles */
 .duration-container {
   display: flex;
   align-items: center;
-  margin-top: 8px;
-  padding: 5px 0;
+  margin-top: 10px;
+  padding: 8px 0;
   border-top: 1px solid #eee;
+  justify-content: space-between;
 }
 
 .duration-label {
@@ -500,36 +509,41 @@ p {
 /* Animation buttons styles */
 .animation-container {
   width: 100%;
-  display: flex;
+  display: flex !important;
   justify-content: center;
-  margin-bottom: 5px;
-  opacity: 1;
+  margin-bottom: 0;
+  opacity: 1 !important;
+  visibility: visible !important;
   position: absolute;
-  top: -40px;
+  z-index: 30;
+  top: -25px; /* Đẹp nút lên trên hẳn bức ảnh */
   left: 0;
-  z-index: 20;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  border-radius: 5px 5px 0 0;
+  padding: 3px 0;
+  background-color: white;
+  border: 1px solid #eaeaea;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .animation-buttons {
   display: flex;
-  justify-content: space-between;
-  width: 100%;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-  padding: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  justify-content: center;
+  width: 95%;
+  padding: 0;
+  gap: 5px;
   opacity: 1 !important; /* Đảm bảo luôn hiển thị */
   visibility: visible !important; /* Đảm bảo luôn hiển thị */
-  background-color: white;
-  border: 1px solid #eaeaea;
+  border: none;
+  margin: 0 auto;
+  position: relative;
+  z-index: 31;
+  background-color: transparent;
 }
 
 .animation-buttons button {
   padding: 3px 6px;
-  font-size: 0.75rem;
-  border-radius: 3px;
+  font-size: 0.7rem;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -539,7 +553,7 @@ p {
   border: 1px solid #ddd;
   color: #333;
   font-weight: 500;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   flex: 1;
   margin: 0 2px;
 }
@@ -565,30 +579,45 @@ p {
   background-color: #e8f4ff;
   border: 1px solid #4a90e2;
   color: #4a90e2;
+  font-weight: 600;
+  min-width: 70px;
 }
 
 .animation-buttons .animation-in-button:hover {
-  background-color: #d0e7ff;
+  background-color: #4a90e2;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(74, 144, 226, 0.3);
 }
 
 .animation-buttons .animation-group-button {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
   border: 1px solid #666;
   color: #666;
+  font-weight: 600;
+  min-width: 70px;
 }
 
 .animation-buttons .animation-group-button:hover {
-  background-color: #e0e0e0;
+  background-color: #666;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(102, 102, 102, 0.3);
 }
 
 .animation-buttons .animation-out-button {
   background-color: #ffebeb;
   border: 1px solid #ff5e4c;
   color: #ff5e4c;
+  font-weight: 600;
+  min-width: 70px;
 }
 
 .animation-buttons .animation-out-button:hover {
-  background-color: #ffd7d7;
+  background-color: #ff5e4c;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(255, 94, 76, 0.3);
 }
 
 .animation-dropdown {

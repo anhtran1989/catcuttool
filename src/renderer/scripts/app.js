@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize file manager
   FileManager.init();
 
+  // Initialize material manager
+  MaterialManager.init();
+
   // Initialize template manager
   TemplateManager.init();
 
@@ -37,20 +40,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize drag and drop functionality
   DragDropManager.init();
 
-  // Initialize effect manager
-  EffectManager.init();
-
-  // Initialize transition manager
-  TransitionManager.init();
-
-  // Load effects và transitions từ các file draft_content
-  loadEffectsAndTransitions();
-
-  // Create global effects dropdown
-  UIManager.createGlobalEffectsDropdown();
-
-  // Create global transitions dropdown
-  UIManager.createGlobalTransitionsDropdown();
+  // Effect manager và Transition manager đã được khởi tạo trong module-loader-bridge.js
+  
+  // Chờ các module được tải xong trước khi sử dụng
+  setTimeout(() => {
+    // Load effects và transitions từ các file draft_content
+    loadEffectsAndTransitions();
+    
+    // Create global effects dropdown
+    if (typeof UIManager.createGlobalEffectsDropdown === 'function') {
+      UIManager.createGlobalEffectsDropdown();
+    }
+    
+    // Create global transitions dropdown
+    if (typeof UIManager.createGlobalTransitionsDropdown === 'function') {
+      UIManager.createGlobalTransitionsDropdown();
+    }
+  }, 1000); // Chờ 1 giây để đảm bảo các module đã được tải xong
 
   // Set the default tab
   document.getElementById("template-tab").style.display = "block";
@@ -76,9 +82,13 @@ function loadEffectsAndTransitions() {
         return response.json();
       })
       .then(data => {
-        // Cập nhật effects từ file
-        EffectManager.updateFromDraftContent(data);
-        console.log("Effects updated from draft_content_effect.json");
+        // Cập nhật effects từ file nếu EffectManagerModule đã được khởi tạo
+        if (window.EffectManagerModule && window.EffectManagerModule.updateFromDraftContent) {
+          window.EffectManagerModule.updateFromDraftContent(data);
+          console.log("Effects updated from draft_content_effect.json");
+        } else {
+          console.warn("EffectManagerModule not initialized yet");
+        }
       })
       .catch(error => {
         console.warn("Could not load draft_content_effect.json:", error);
@@ -93,9 +103,13 @@ function loadEffectsAndTransitions() {
         return response.json();
       })
       .then(data => {
-        // Cập nhật transitions từ file
-        TransitionManager.updateFromDraftContent(data);
-        console.log("Transitions updated from draft_content_transition.json");
+        // Cập nhật transitions từ file nếu TransitionManagerModule đã được khởi tạo
+        if (window.TransitionManagerModule && window.TransitionManagerModule.updateFromDraftContent) {
+          window.TransitionManagerModule.updateFromDraftContent(data);
+          console.log("Transitions updated from draft_content_transition.json");
+        } else {
+          console.warn("TransitionManagerModule not initialized yet");
+        }
       })
       .catch(error => {
         console.warn("Could not load draft_content_transition.json:", error);

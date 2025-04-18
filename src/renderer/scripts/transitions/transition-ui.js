@@ -122,6 +122,7 @@ const TransitionUI = (function() {
     // Tạo container để chứa nút hiệu ứng chuyển cảnh phía trên media
     const transitionContainer = document.createElement('div');
     transitionContainer.className = 'transition-container';
+    transitionContainer.style.top = '85px'; // Đặt vị trí cố định dưới nút hiệu ứng
     
     // Thêm container nút vào transition container
     transitionContainer.appendChild(transitionButtonContainer);
@@ -146,6 +147,7 @@ const TransitionUI = (function() {
     // Đảm bảo transition container luôn hiển thị
     transitionContainer.style.opacity = '1';
     transitionContainer.style.visibility = 'visible';
+    transitionContainer.style.display = 'flex';
   }
   
   /**
@@ -182,15 +184,15 @@ const TransitionUI = (function() {
     style.textContent = `
       /* Transition container styles */
       .transition-container {
-        position: absolute;
-        top: 35px; /* Đặt nút hiệu ứng chuyển cảnh dưới nút hiệu ứng */
-        left: 0;
+        position: relative;
         width: 100%;
         z-index: 29;
         display: flex !important;
         justify-content: center;
         opacity: 1 !important;
         visibility: visible !important;
+        margin-top: 5px;
+        margin-bottom: 5px;
       }
       
       /* Transition button container styles */
@@ -203,8 +205,8 @@ const TransitionUI = (function() {
       
       /* Transition button styles */
       .transition-button {
-        padding: 6px 12px;
-        font-size: 0.85rem;
+        padding: 6px 15px;
+        font-size: 0.9rem;
         border-radius: 4px;
         cursor: pointer;
         display: flex;
@@ -214,9 +216,11 @@ const TransitionUI = (function() {
         background-color: #f0ad4e;
         border: 1px solid #eea236;
         color: white;
-        font-weight: 500;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        margin-bottom: 10px;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        margin-bottom: 0;
+        width: 100%;
+        max-width: 150px;
       }
       
       .transition-button:hover {

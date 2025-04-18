@@ -2,6 +2,17 @@
  * File Manager - Handles file operations and thumbnails
  */
 const FileManager = (function () {
+  // Lưu trữ tham chiếu đến EffectManager
+  let effectManager = null;
+  
+  /**
+   * Đặt tham chiếu đến EffectManager
+   * @param {Object} manager - EffectManager instance
+   */
+  function setEffectManager(manager) {
+    effectManager = manager;
+    console.log('EffectManager reference set in FileManager');
+  }
   /**
    * Initialize file manager
    */
@@ -510,6 +521,9 @@ const FileManager = (function () {
       // Tạo container để chứa các nút animation phía trên media
       const animationContainer = document.createElement('div');
       animationContainer.className = 'animation-container';
+      animationContainer.style.display = 'flex';
+      animationContainer.style.opacity = '1';
+      animationContainer.style.visibility = 'visible';
       
       // Thêm container nút vào animation container
       animationContainer.appendChild(animationButtonsContainer);
@@ -819,6 +833,7 @@ const FileManager = (function () {
     applyPendingAnimations,
     updateTotalDuration,
     formatPathForCapcut,
-    formatFileSize
+    formatFileSize,
+    setEffectManager
   };
 })();

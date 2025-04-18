@@ -4,6 +4,28 @@
 const MaterialManager = (function () {
   // Danh sách các material animations đã được lưu
   let materialAnimations = [];
+  
+  // Lưu trữ tham chiếu đến EffectManager và TransitionManager
+  let effectManager = null;
+  let transitionManager = null;
+  
+  /**
+   * Đặt tham chiếu đến EffectManager
+   * @param {Object} manager - EffectManager instance
+   */
+  function setEffectManager(manager) {
+    effectManager = manager;
+    console.log('EffectManager reference set in MaterialManager');
+  }
+  
+  /**
+   * Đặt tham chiếu đến TransitionManager
+   * @param {Object} manager - TransitionManager instance
+   */
+  function setTransitionManager(manager) {
+    transitionManager = manager;
+    console.log('TransitionManager reference set in MaterialManager');
+  }
 
   /**
    * Lấy danh sách material animations hiện tại
@@ -764,6 +786,9 @@ const MaterialManager = (function () {
     // Tạo container để chứa các nút animation phía trên media
     const animationContainer = document.createElement('div');
     animationContainer.className = 'animation-container';
+    animationContainer.style.display = 'flex';
+    animationContainer.style.opacity = '1';
+    animationContainer.style.visibility = 'visible';
     
     // Thêm container nút vào animation container
     animationContainer.appendChild(animationButtonsContainer);
@@ -786,6 +811,8 @@ const MaterialManager = (function () {
     updateFromDraftContent,
     mergeMaterialAnimations,
     addAnimationButtons,
-    showAnimationDropdown
+    showAnimationDropdown,
+    setEffectManager,
+    setTransitionManager
   };
 })();
