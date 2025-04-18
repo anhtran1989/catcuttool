@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize drag and drop functionality
   DragDropManager.init();
 
-  // Initialize effect manager
+  // Initialize effect manager (sử dụng phiên bản đã tái cấu trúc)
   EffectManager.init();
 
   // Initialize transition manager
@@ -67,29 +67,72 @@ document.addEventListener("DOMContentLoaded", function () {
  */
 function loadEffectsAndTransitions() {
   try {
-    // Đọc file draft_content_effect.json
-    fetch('./draft_content_effect.json')
+    console.log("Starting to load effects and transitions...");
+    
+    // Đọc file draft_content_2.json để lấy hiệu ứng
+    console.log("Attempting to load draft_content_2.json...");
+    fetch('./draft_content_2.json')
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        console.log("draft_content_2.json loaded successfully");
         return response.json();
       })
       .then(data => {
+        console.log("draft_content_2.json parsed successfully");
+        // Log the effects found in the file
+        if (data.materials && data.materials.video_effects) {
+          console.log(`Found ${data.materials.video_effects.length} effects in draft_content_2.json`);
+          data.materials.video_effects.forEach((effect, index) => {
+            console.log(`${index + 1}. ${effect.name} (${effect.id})`);
+          });
+        } else {
+          console.log("No video_effects found in draft_content_2.json");
+        }
+        
         // Cập nhật effects từ file
         EffectManager.updateFromDraftContent(data);
-        console.log("Effects updated from draft_content_effect.json");
+        console.log("Effects updated from draft_content_2.json");
       })
       .catch(error => {
-        console.warn("Could not load draft_content_effect.json:", error);
+        console.warn("Could not load draft_content_2.json:", error);
+        
+        // Nếu không tìm thấy draft_content_2.json, thử với draft_content_effect.json
+        console.log("Falling back to draft_content_effect.json...");
+        fetch('./draft_content_effect.json')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            console.log("draft_content_effect.json loaded successfully");
+            return response.json();
+          })
+          .then(data => {
+            // Log the effects found in the file
+            if (data.materials && data.materials.video_effects) {
+              console.log(`Found ${data.materials.video_effects.length} effects in draft_content_effect.json`);
+            } else {
+              console.log("No video_effects found in draft_content_effect.json");
+            }
+            
+            // Cập nhật effects từ file
+            EffectManager.updateFromDraftContent(data);
+            console.log("Effects updated from draft_content_effect.json as fallback");
+          })
+          .catch(fallbackError => {
+            console.warn("Could not load draft_content_effect.json:", fallbackError);
+          });
       });
 
     // Đọc file draft_content_transition.json
+    console.log("Attempting to load draft_content_transition.json...");
     fetch('./draft_content_transition.json')
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        console.log("draft_content_transition.json loaded successfully");
         return response.json();
       })
       .then(data => {

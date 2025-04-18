@@ -237,6 +237,16 @@ const ExportManager = (function () {
     try {
       console.log("Processing template data");
 
+      // Các ID cố định cho extra_material_refs
+      const FIXED_IDS = {
+        SPEED: "3BF7C789-2C7B-4854-8C02-7998D0FE5F0C",
+        PLACEHOLDER_INFO: "FCA1D53E-E5F1-4563-8E75-A2C24F6648C8",
+        CANVAS: "3DD02A75-8633-4b86-9F31-81736C8BAEFB",
+        MATERIAL_ANIMATION: "DBD03595-6CB2-4f91-B2D6-D579740311EF",
+        SOUND_CHANNEL_MAPPING: "26CD7B3C-B5EE-4ee3-AD2E-AB8DE22E8BE1",
+        VOCAL_SEPARATION: "F431F8EF-20FF-4284-A2AB-5295379C5230"
+      };
+
       // Create a deep copy of the template - GIỮ NGUYÊN CẤU TRÚC GỐC
       const capcutData = JSON.parse(JSON.stringify(templateData));
       
@@ -245,13 +255,23 @@ const ExportManager = (function () {
         capcutData.materials = {};
       }
       
+      // Đảm bảo có loudnesses nếu chưa tồn tại
+      if (!capcutData.loudnesses) {
+        capcutData.loudnesses = [];
+      }
+
+      // Đảm bảo có extra_material_refs nếu chưa tồn tại
+      if (!capcutData.extra_material_refs) {
+        capcutData.extra_material_refs = [];
+      }
+      
       // Khởi tạo các mảng nếu chưa tồn tại
       const requiredArrays = [
         'videos', 'canvases', 'placeholder_infos', 'sound_channel_mappings', 
         'speeds', 'video_effects', 'vocal_separations', 'transitions', 'material_animations',
         'audios', 'texts', 'stickers', 'shapes', 'handwrites', 'filters', 'adjusts',
         'chromas', 'color_curves', 'hsl', 'log_color_wheels', 'primary_color_wheels',
-        'audio_effects', 'audio_fades', 'audio_track_indexes', 'audio_balances', 'loudnesses',
+        'audio_effects', 'audio_fades', 'audio_track_indexes', 'audio_balances',
         'placeholders', 'plugin_effects', 'realtime_denoises', 'smart_crops', 'smart_relights',
         'green_screens', 'time_marks', 'tail_leaders', 'text_templates', 'beats',
         'digital_humans', 'flowers', 'common_mask', 'manual_beautys', 'manual_deformations',
@@ -263,6 +283,126 @@ const ExportManager = (function () {
           capcutData.materials[arrayName] = [];
         }
       });
+      
+      // Đảm bảo các ID cố định đã có trong extra_material_refs
+      Object.values(FIXED_IDS).forEach(id => {
+        if (!capcutData.extra_material_refs.includes(id)) {
+          capcutData.extra_material_refs.push(id);
+        }
+      });
+
+      // Đảm bảo có ít nhất một material_animation với ID cố định
+      const materialAnimationExists = capcutData.materials.material_animations.some(
+        animation => animation.id === FIXED_IDS.MATERIAL_ANIMATION
+      );
+      
+      if (!materialAnimationExists) {
+        capcutData.materials.material_animations.push({
+          id: FIXED_IDS.MATERIAL_ANIMATION,
+          multi_language_current: "none",
+          type: "sticker_animation",
+          animations: []
+        });
+      }
+
+      // Đảm bảo có ít nhất một placeholder_info với ID cố định
+      const placeholderInfoExists = capcutData.materials.placeholder_infos.some(
+        info => info.id === FIXED_IDS.PLACEHOLDER_INFO
+      );
+      
+      if (!placeholderInfoExists) {
+        capcutData.materials.placeholder_infos.push({
+          id: FIXED_IDS.PLACEHOLDER_INFO,
+          error_path: "",
+          error_text: "",
+          meta_type: "none",
+          res_path: "",
+          res_text: "",
+          type: "placeholder_info"
+        });
+      }
+
+      // Đảm bảo có ít nhất một canvas với ID cố định
+      const canvasExists = capcutData.materials.canvases.some(
+        canvas => canvas.id === FIXED_IDS.CANVAS
+      );
+      
+      if (!canvasExists) {
+        capcutData.materials.canvases.push({
+          id: FIXED_IDS.CANVAS,
+          album_image: "",
+          blur: 0.0,
+          color: "",
+          image: "",
+          image_id: "",
+          image_name: "",
+          source_platform: 0,
+          team_id: "",
+          type: "canvas_color"
+        });
+      }
+
+      // Đảm bảo có ít nhất một speed với ID cố định
+      const speedExists = capcutData.materials.speeds.some(
+        speed => speed.id === FIXED_IDS.SPEED
+      );
+      
+      if (!speedExists) {
+        capcutData.materials.speeds.push({
+          id: FIXED_IDS.SPEED,
+          curve_speed: null,
+          mode: 0,
+          speed: 1.0,
+          type: "speed"
+        });
+      }
+
+      // Đảm bảo có ít nhất một sound_channel_mapping với ID cố định
+      const soundChannelMappingExists = capcutData.materials.sound_channel_mappings.some(
+        mapping => mapping.id === FIXED_IDS.SOUND_CHANNEL_MAPPING
+      );
+      
+      if (!soundChannelMappingExists) {
+        capcutData.materials.sound_channel_mappings.push({
+          id: FIXED_IDS.SOUND_CHANNEL_MAPPING,
+          audio_channel_mapping: 0,
+          is_config_open: false,
+          type: "none"
+        });
+      }
+
+      // Đảm bảo có ít nhất một vocal_separation với ID cố định
+      const vocalSeparationExists = capcutData.materials.vocal_separations.some(
+        separation => separation.id === FIXED_IDS.VOCAL_SEPARATION
+      );
+      
+      if (!vocalSeparationExists) {
+        capcutData.materials.vocal_separations.push({
+          id: FIXED_IDS.VOCAL_SEPARATION,
+          choice: 0,
+          production_path: "",
+          removed_sounds: [],
+          time_range: null,
+          type: "vocal_separation"
+        });
+      }
+
+      // Đảm bảo có ít nhất một loudness với material_id là ID của effect
+      if (capcutData.materials.video_effects.length > 0 && capcutData.loudnesses.length === 0) {
+        capcutData.materials.video_effects.forEach(effect => {
+          capcutData.loudnesses.push({
+            id: generateUUID(),
+            material_id: effect.id,
+            type: "video_effect",
+            loudness: 0,
+            enable: false,
+            file_id: "",
+            loudness_param: null,
+            target_loudness: 0.0,
+            time_range: null
+          });
+        });
+      }
       
       if (!capcutData.tracks) {
         capcutData.tracks = [];
@@ -1093,7 +1233,7 @@ const ExportManager = (function () {
 
         window.electron.send("save-project-file", {
           projectPath: projectPath,
-          fileName: "draft_content.json",
+          fileName: "draft_content_new.json",
           content: jsonString,
         });
         // Show immediate notification (will be updated when we get response from main process)
@@ -1105,7 +1245,7 @@ const ExportManager = (function () {
 
         const a = document.createElement("a");
         a.href = url;
-        a.download = "draft_content.json"; // Changed to match requested filename
+        a.download = "draft_content_new.json"; // Changed to match requested filename
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

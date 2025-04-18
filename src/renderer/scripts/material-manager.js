@@ -727,6 +727,9 @@ const MaterialManager = (function () {
   function addAnimationButtons(thumbnailItem, fileData, onApplyAnimation) {
     if (!thumbnailItem) return;
     
+    // Thêm CSS cho các nút animation nếu chưa có
+    addAnimationStyles();
+    
     // Tạo container cho các nút animation
     const animationButtonsContainer = document.createElement('div');
     animationButtonsContainer.className = 'animation-buttons';
@@ -768,12 +771,114 @@ const MaterialManager = (function () {
     // Thêm container nút vào animation container
     animationContainer.appendChild(animationButtonsContainer);
     
-    // Thêm animation container vào thumbnail item
-    thumbnailItem.appendChild(animationContainer);
+    // Kiểm tra xem đã có container nào chưa
+    const existingContainer = thumbnailItem.querySelector('.animation-container');
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+    
+    // Thêm animation container vào thumbnail item sau nút hiệu ứng
+    const effectContainer = thumbnailItem.querySelector('.effect-container');
+    if (effectContainer) {
+      thumbnailItem.insertBefore(animationContainer, effectContainer.nextSibling);
+    } else {
+      thumbnailItem.insertBefore(animationContainer, thumbnailItem.firstChild);
+    }
     
     // Đảm bảo animation container luôn hiển thị
     animationContainer.style.opacity = '1';
     animationContainer.style.visibility = 'visible';
+  }
+  
+  /**
+   * Thêm các styles CSS cho animation buttons
+   */
+  function addAnimationStyles() {
+    // Kiểm tra xem styles đã tồn tại chưa
+    if (document.getElementById('animation-styles')) {
+      return;
+    }
+    
+    // Tạo style element
+    const style = document.createElement('style');
+    style.id = 'animation-styles';
+    style.textContent = `
+      /* Animation container styles */
+      .animation-container {
+        position: absolute;
+        top: 40px; /* Đặt các nút animation dưới nút hiệu ứng */
+        left: 0;
+        width: 100%;
+        z-index: 25;
+        display: flex !important;
+        justify-content: center;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+      
+      /* Animation buttons container */
+      .animation-buttons {
+        display: flex !important;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        z-index: 25;
+      }
+      
+      /* Animation button styles */
+      .animation-in-button,
+      .animation-group-button,
+      .animation-out-button {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        color: #333;
+        font-weight: 500;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      
+      .animation-in-button:hover,
+      .animation-group-button:hover,
+      .animation-out-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+      }
+      
+      .animation-in-button {
+        background-color: #e8f4ff;
+        border-color: #4a90e2;
+        color: #4a90e2;
+      }
+      
+      .animation-group-button {
+        background-color: #f0f0f0;
+        border-color: #999;
+        color: #555;
+      }
+      
+      .animation-out-button {
+        background-color: #fff0f0;
+        border-color: #e25f5f;
+        color: #e25f5f;
+      }
+      
+      .animation-in-button i,
+      .animation-group-button i,
+      .animation-out-button i {
+        margin-right: 3px;
+        font-size: 0.75rem;
+      }
+    `;
+    
+    // Thêm vào head
+    document.head.appendChild(style);
   }
   
   // Public API

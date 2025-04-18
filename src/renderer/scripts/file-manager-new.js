@@ -286,14 +286,9 @@ const FileManager = (function () {
       thumbnailInfo.appendChild(pathInput);
       thumbnailInfo.appendChild(durationContainer);
 
-      // Tạo wrapper cho thumbnail và số thứ tự
-      const thumbnailWrapper = document.createElement("div");
-      thumbnailWrapper.className = "thumbnail-wrapper";
-      thumbnailWrapper.appendChild(thumbnail);
-      thumbnailWrapper.appendChild(thumbnailIndex); // Thêm số thứ tự vào bên trong wrapper
-      
       // Add elements to thumbnail item
-      thumbnailItem.appendChild(thumbnailWrapper);
+      thumbnailItem.appendChild(thumbnailIndex);
+      thumbnailItem.appendChild(thumbnail);
       thumbnailItem.appendChild(thumbnailInfo);
 
       // Add animation buttons if they exist in the MaterialManager
@@ -652,20 +647,14 @@ const FileManager = (function () {
   function formatPathForCapcut(path) {
     if (!path) return "";
 
-    // Chuẩn hóa đường dẫn theo định dạng của CapCut
-    // Thay thế tất cả dấu \ bằng /
-    let formattedPath = path.replace(/\\/g, "/");
-    
-    // Đảm bảo chỉ có một dấu / sau ký tự ổ đĩa (C:)
+    // Replace backslashes with forward slashes and ensure double slashes
+    let formattedPath = path.replace(/\\/g, "//");
+
+    // Fix Windows paths with drive letters (C:)
     if (/^[A-Za-z]:/.test(formattedPath)) {
-      // Loại bỏ tất cả các dấu / sau ký tự ổ đĩa và thêm một dấu /
-      formattedPath = formattedPath.replace(/^([A-Za-z]:)\/*/, "$1/");
+      formattedPath = formattedPath.replace(/^([A-Za-z]:)(?:\/)?/, "$1//");
     }
-    
-    // Đảm bảo không có nhiều dấu / liên tiếp
-    formattedPath = formattedPath.replace(/\/+/g, "/");
-    
-    console.log("Formatted path:", formattedPath);
+
     return formattedPath;
   }
 

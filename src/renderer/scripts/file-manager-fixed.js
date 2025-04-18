@@ -286,14 +286,9 @@ const FileManager = (function () {
       thumbnailInfo.appendChild(pathInput);
       thumbnailInfo.appendChild(durationContainer);
 
-      // Tạo wrapper cho thumbnail và số thứ tự
-      const thumbnailWrapper = document.createElement("div");
-      thumbnailWrapper.className = "thumbnail-wrapper";
-      thumbnailWrapper.appendChild(thumbnail);
-      thumbnailWrapper.appendChild(thumbnailIndex); // Thêm số thứ tự vào bên trong wrapper
-      
       // Add elements to thumbnail item
-      thumbnailItem.appendChild(thumbnailWrapper);
+      thumbnailItem.appendChild(thumbnailIndex);
+      thumbnailItem.appendChild(thumbnail);
       thumbnailItem.appendChild(thumbnailInfo);
 
       // Add animation buttons if they exist in the MaterialManager
