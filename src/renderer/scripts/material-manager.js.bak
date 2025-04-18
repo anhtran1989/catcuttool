@@ -416,10 +416,165 @@ const MaterialManager = (function () {
     ];
     
   }
+  
+  console.log(`UI animation type: ${animationType}, CapCut type: ${capCutType}`);
+  
+  // Lấy danh sách animation theo đúng type
+  const animations = getMaterialAnimationsByType(capCutType);
+  console.log(`Found ${animations.length} animations for type ${capCutType}`);
+  
+  // Kiểm tra xem có animation nào không
+  if (animations.length === 0) {
+    const noAnimations = document.createElement('div');
+    noAnimations.className = 'animation-dropdown-item no-animations';
+    noAnimations.textContent = 'Không có hiệu ứng nào';
+    animationList.appendChild(noAnimations);
+  } else {
+    // Hiển thị tất cả các hiệu ứng trong danh sách animations
+    animations.forEach(animation => {
+      const item = document.createElement('div');
+      item.className = 'animation-dropdown-item';
+      
+      // Thêm class đặc biệt cho option "None"
+      if (animation.animation_id === 'none') {
+        item.classList.add('none-option');
+      }
+   * @param {string} animationType - Loại animation (in, out, group)
+   * @param {Object} fileData - File data
+   * @param {Function} onApplyAnimation - Callback function to apply animation
+   */
+  function showAnimationDropdown(thumbnailItem, animationType, fileData, onApplyAnimation) {
+    // Xóa dropdown cũ nếu có
+    const existingDropdowns = document.querySelectorAll('.animation-dropdown');
+    existingDropdowns.forEach(dropdown => dropdown.remove());
+    
+    // Tạo dropdown mới
+    const dropdown = document.createElement('div');
+    dropdown.className = 'animation-dropdown';
 
-  /**
-   * Hiển thị dropdown chọn animation
-   * @param {HTMLElement} thumbnailItem - Thumbnail item element
+    // Thêm tiêu đề cho dropdown
+    const dropdownHeader = document.createElement('div');
+    dropdownHeader.className = 'animation-dropdown-header';
+    
+    let headerText = '';
+    switch (animationType) {
+      case 'in':
+        headerText = 'Hiệu ứng vào';
+        break;
+      case 'out':
+        headerText = 'Hiệu ứng ra';
+        break;
+      case 'group':
+        headerText = 'Hiệu ứng kết hợp';
+        break;
+      default:
+        headerText = 'Chọn hiệu ứng';
+    }
+    
+    dropdownHeader.textContent = headerText;
+    dropdown.appendChild(dropdownHeader);
+
+    // Tạo danh sách hiệu ứng
+    const animationList = document.createElement('div');
+    animationList.className = 'animation-list';
+
+    // Trong CapCut, tất cả các loại animation đều là: in, out, group
+    // Không cần mapping vì chúng ta sẽ sử dụng cùng tên trong UI
+    const typeMapping = {
+      'in': 'in',
+      'out': 'out',
+      'group': 'group'
+    };
+    
+    // Lấy đúng loại animation trong CapCut dựa trên loại UI
+    const capCutType = typeMapping[animationType];
+    if (!capCutType) {
+      console.error(`Invalid UI animation type: ${animationType}. Must be one of: in, out, group`);
+      return;
+    }
+    
+    console.log(`UI animation type: ${animationType}, CapCut type: ${capCutType}`);
+    
+    // Lấy danh sách animation theo đúng type
+    const animations = getMaterialAnimationsByType(capCutType);
+    console.log(`Found ${animations.length} animations for type ${capCutType}`);
+    
+    // Kiểm tra xem có animation nào không
+    if (animations.length === 0) {
+      const noAnimations = document.createElement('div');
+      noAnimations.className = 'animation-dropdown-item no-animations';
+      noAnimations.textContent = 'Không có hiệu ứng nào';
+      animationList.appendChild(noAnimations);
+    } else {
+      // Hiển thị tất cả các hiệu ứng trong danh sách animations
+      animations.forEach(animation => {
+        const item = document.createElement('div');
+        item.className = 'animation-dropdown-item';
+        
+        // Thêm class đặc biệt cho option "None"
+        if (animation.animation_id === 'none') {
+          item.classList.add('none-option');
+        }
+        
+        item.innerHTML = `<i class="${animation.icon}"></i> ${animation.name}`;
+        console.log(`Adding animation to dropdown: ${animation.name} (${animation.type})`);
+        
+        item.addEventListener('click', () => {
+          // Cập nhật text của button theo tên animation đã chọn
+          const currentButton = thumbnailItem.querySelector(`.animation-${animationType}-button`);
+          if (currentButton) {
+            currentButton.innerHTML = `<i class="${animation.icon}"></i> ${animation.name}`;
+          }
+          
+          // Nếu chọn animation kết hợp, reset 2 button in và out về None
+          if (animationType === 'group' && animation.animation_id !== 'none') {
+            const inButton = thumbnailItem.querySelector('.animation-in-button');
+            const outButton = thumbnailItem.querySelector('.animation-out-button');
+            
+            if (inButton) {
+              inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> None';
+              // Gọi onApplyAnimation với animation_id là 'none' cho button in
+              onApplyAnimation(fileData, 'none', 'in');
+            }
+            
+            if (outButton) {
+              outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> None';
+              // Gọi onApplyAnimation với animation_id là 'none' cho button out
+              onApplyAnimation(fileData, 'none', 'out');
+            }
+          }
+          
+          // Nếu chọn animation in hoặc out, reset button kết hợp về None
+          if ((animationType === 'in' || animationType === 'out') && animation.animation_id !== 'none') {
+            const groupButton = thumbnailItem.querySelector('.animation-group-button');
+            
+            if (groupButton) {
+              groupButton.innerHTML = '<i class="fas fa-object-group"></i> None';
+              // Gọi onApplyAnimation với animation là 'none' cho button group
+              onApplyAnimation(fileData, { animation_id: 'none', name: 'None', icon: 'fas fa-ban' }, 'group');
+            }
+          }
+          
+          // Gọi hàm onApplyAnimation để xử lý animation đã chọn
+          onApplyAnimation(fileData, animation, animationType);
+          
+          // Đóng dropdown
+          dropdown.classList.remove('show');
+          setTimeout(() => dropdown.remove(), 100);
+        });
+        animationList.appendChild(item);
+      });
+    }
+
+    dropdown.appendChild(animationList);
+    document.body.appendChild(dropdown);
+
+    // Định vị dropdown dựa trên vị trí của nút được nhấp
+    const button = thumbnailItem.querySelector(`.animation-${animationType}-button`);
+    if (button) {
+      const buttonRect = button.getBoundingClientRect();
+      const dropdownHeight = dropdown.offsetHeight;
+      const dropdownWidth = dropdown.offsetWidth;
       
       // Tính toán vị trí để tránh dropdown bị tràn ra ngoài viewport
       let top = buttonRect.bottom + 5;
@@ -459,152 +614,6 @@ const MaterialManager = (function () {
     setTimeout(() => {
       document.addEventListener('click', closeDropdown);
     }, 100);
-  }
-
-  /**
-   * Hiển thị dropdown chọn animation
-   * @param {HTMLElement} thumbnailItem - Thumbnail item element
-   * @param {string} animationType - Loại animation (in, out, group)
-   * @param {Object} fileData - File data
-   * @param {Function} onApplyAnimation - Callback function to apply animation
-   */
-  function showAnimationDropdown(thumbnailItem, animationType, fileData, onApplyAnimation) {
-    if (!thumbnailItem) return;
-    
-    // Kiểm tra xem đã có dropdown nào đang mở không
-    const existingDropdown = document.querySelector('.animation-dropdown');
-    if (existingDropdown) {
-      existingDropdown.remove();
-    }
-    
-    // Tạo dropdown container
-    const dropdown = document.createElement('div');
-    dropdown.className = 'animation-dropdown';
-    
-    // Xác định vị trí của dropdown
-    const thumbnailRect = thumbnailItem.getBoundingClientRect();
-    dropdown.style.position = 'absolute';
-    dropdown.style.top = `${thumbnailRect.top + window.scrollY + 40}px`; // Dưới nút animation
-    dropdown.style.left = `${thumbnailRect.left + window.scrollX}px`;
-    dropdown.style.width = `${thumbnailRect.width}px`;
-    dropdown.style.zIndex = '1000';
-    
-    // Thêm tiêu đề cho dropdown
-    const dropdownHeader = document.createElement('div');
-    dropdownHeader.className = 'animation-dropdown-header';
-    
-    // Xác định tiêu đề dựa trên loại animation
-    let headerText = 'Chọn hiệu ứng';
-    if (animationType === 'in') {
-      headerText = 'Hiệu ứng vào';
-    } else if (animationType === 'out') {
-      headerText = 'Hiệu ứng ra';
-    } else if (animationType === 'group') {
-      headerText = 'Hiệu ứng kết hợp';
-    }
-    
-    dropdownHeader.textContent = headerText;
-    dropdown.appendChild(dropdownHeader);
-
-    // Tạo danh sách hiệu ứng
-    const animationList = document.createElement('div');
-    animationList.className = 'animation-dropdown-list';
-    dropdown.appendChild(animationList);
-
-    // Lấy danh sách animation theo loại
-    const animations = getMaterialAnimationsByType(animationType);
-    console.log(`Found ${animations.length} animations for type ${animationType}`);
-    
-    // Kiểm tra xem có animation nào không
-    if (animations.length === 0) {
-      const noAnimations = document.createElement('div');
-      noAnimations.className = 'animation-dropdown-item no-animations';
-      noAnimations.textContent = 'Không có hiệu ứng nào';
-      animationList.appendChild(noAnimations);
-    } else {
-      // Hiển thị tất cả các hiệu ứng trong danh sách animations
-      animations.forEach(animation => {
-        const item = document.createElement('div');
-        item.className = 'animation-dropdown-item';
-        
-        // Thêm class đặc biệt cho option "None"
-        if (animation.animation_id === 'none') {
-          item.classList.add('none-option');
-        }
-        
-        // Thêm nội dung hiệu ứng
-        item.innerHTML = `<i class="${animation.icon || 'fas fa-magic'}"></i> ${animation.name}`;
-        
-        // Xử lý sự kiện click
-        item.addEventListener('click', () => {
-          // Áp dụng animation khi được chọn
-          if (typeof onApplyAnimation === 'function') {
-            onApplyAnimation(thumbnailItem, animation, animationType);
-          }
-          
-          // Cập nhật text của button theo tên animation đã chọn
-          const currentButton = thumbnailItem.querySelector(`.animation-${animationType}-button`);
-          if (currentButton) {
-            currentButton.innerHTML = `<i class="${animation.icon || 'fas fa-magic'}"></i> ${animation.name}`;
-          }
-          
-          // Nếu chọn animation kết hợp, reset 2 button in và out về None
-          if (animationType === 'group' && animation.animation_id !== 'none') {
-            const inButton = thumbnailItem.querySelector('.animation-in-button');
-            const outButton = thumbnailItem.querySelector('.animation-out-button');
-            
-            if (inButton) {
-              inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> None';
-              // Gọi onApplyAnimation với animation_id là 'none' cho button in
-              if (typeof onApplyAnimation === 'function') {
-                onApplyAnimation(thumbnailItem, { animation_id: 'none', name: 'None', icon: 'fas fa-ban' }, 'in');
-              }
-            }
-            
-            if (outButton) {
-              outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> None';
-              // Gọi onApplyAnimation với animation_id là 'none' cho button out
-              if (typeof onApplyAnimation === 'function') {
-                onApplyAnimation(thumbnailItem, { animation_id: 'none', name: 'None', icon: 'fas fa-ban' }, 'out');
-              }
-            }
-          }
-          
-          // Nếu chọn animation in hoặc out, reset button kết hợp về None
-          if ((animationType === 'in' || animationType === 'out') && animation.animation_id !== 'none') {
-            const groupButton = thumbnailItem.querySelector('.animation-group-button');
-            
-            if (groupButton) {
-              groupButton.innerHTML = '<i class="fas fa-object-group"></i> None';
-              // Gọi onApplyAnimation với animation là 'none' cho button group
-              if (typeof onApplyAnimation === 'function') {
-                onApplyAnimation(thumbnailItem, { animation_id: 'none', name: 'None', icon: 'fas fa-ban' }, 'group');
-              }
-            }
-          }
-          
-          // Đóng dropdown
-          dropdown.remove();
-        });
-        
-        // Thêm item vào danh sách
-        animationList.appendChild(item);
-      });
-    }
-    
-    // Thêm vào body
-    document.body.appendChild(dropdown);
-    
-    // Thêm sự kiện đóng dropdown khi click ra ngoài
-    document.addEventListener('click', closeDropdown);
-    
-    // Hàm đóng dropdown khi click ra ngoài
-    function closeDropdown(event) {
-      if (!dropdown.contains(event.target) && event.target !== thumbnailItem) {
-        dropdown.remove();
-        document.removeEventListener('click', closeDropdown);
-      }
-    }
   }
 
   /**
@@ -718,64 +727,6 @@ const MaterialManager = (function () {
     document.body.appendChild(showInfoButton);
   }
 
-  /**
-   * Thêm các button animation (Vào, Kết hợp, Ra) vào thumbnail
-   * @param {HTMLElement} thumbnailItem - Thumbnail item element
-   * @param {Object} fileData - File data
-   * @param {Function} onApplyAnimation - Callback function to apply animation
-   */
-  function addAnimationButtons(thumbnailItem, fileData, onApplyAnimation) {
-    if (!thumbnailItem) return;
-    
-    // Tạo container cho các nút animation
-    const animationButtonsContainer = document.createElement('div');
-    animationButtonsContainer.className = 'animation-buttons';
-    
-    // Nút Animation Vào (In)
-    const inButton = document.createElement('button');
-    inButton.className = 'animation-in-button';
-    inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Vào';
-    inButton.onclick = function(e) {
-      e.stopPropagation();
-      showAnimationDropdown(thumbnailItem, 'in', fileData, onApplyAnimation);
-    };
-    animationButtonsContainer.appendChild(inButton);
-
-    // Nút Animation Kết hợp (Group)
-    const groupButton = document.createElement('button');
-    groupButton.className = 'animation-group-button';
-    groupButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
-    groupButton.onclick = function(e) {
-      e.stopPropagation();
-      showAnimationDropdown(thumbnailItem, 'group', fileData, onApplyAnimation);
-    };
-    animationButtonsContainer.appendChild(groupButton);
-
-    // Nút Animation Ra (Out)
-    const outButton = document.createElement('button');
-    outButton.className = 'animation-out-button';
-    outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> Ra';
-    outButton.onclick = function(e) {
-      e.stopPropagation();
-      showAnimationDropdown(thumbnailItem, 'out', fileData, onApplyAnimation);
-    };
-    animationButtonsContainer.appendChild(outButton);
-
-    // Tạo container để chứa các nút animation phía trên media
-    const animationContainer = document.createElement('div');
-    animationContainer.className = 'animation-container';
-    
-    // Thêm container nút vào animation container
-    animationContainer.appendChild(animationButtonsContainer);
-    
-    // Thêm animation container vào thumbnail item
-    thumbnailItem.appendChild(animationContainer);
-    
-    // Đảm bảo animation container luôn hiển thị
-    animationContainer.style.opacity = '1';
-    animationContainer.style.visibility = 'visible';
-  }
-  
   // Public API
   return {
     init,

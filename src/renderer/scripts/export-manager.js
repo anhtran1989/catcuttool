@@ -771,6 +771,8 @@ const ExportManager = (function () {
         extraRefs.push(canvasId);
         extraRefs.push(soundMappingId);
         extraRefs.push(vocalSeparationId);
+        
+        // Không cần thêm loudness ID vì chưa có hiệu ứng
 
         // Add video effect if it exists
         if (idMap.videoEffects && idMap.videoEffects[index]) {
@@ -870,10 +872,14 @@ const ExportManager = (function () {
         mainVideoTrack.segments.push(segment);
       });
       
-      // Xử lý material_animations theo cấu trúc đúng
-      // Theo yêu cầu của người dùng, material_animations sẽ để rỗng (không có phần tử con)
-      // Đảm bảo mảng material_animations đã được khởi tạo
+      // Đảm bảo các mảng cần thiết được khởi tạo là rỗng
+      // Nếu chưa có hiệu ứng hay transition, các mảng này sẽ rỗng
       capcutData.materials.material_animations = [];
+      capcutData.materials.loudnesses = [];
+      capcutData.materials.manual_beautys = [];
+      capcutData.materials.manual_deformations = [];
+      capcutData.materials.material_colors = [];
+      capcutData.materials.multi_language_refs = [];
       
       // Thêm track hiệu ứng vào danh sách tracks
       try {

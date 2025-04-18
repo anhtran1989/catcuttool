@@ -466,13 +466,56 @@ const FileManager = (function () {
     thumbnailItem.appendChild(thumbnailInfo);
     
     // Thêm các button animation (Vào, Kết hợp, Ra) cho thumbnail
-    if (typeof MaterialManager !== 'undefined' && MaterialManager.addAnimationButtons) {
-      MaterialManager.addAnimationButtons(thumbnailItem, {
+    if (typeof window.MaterialManager !== 'undefined' && window.MaterialManager.addAnimationButtons) {
+      // Sử dụng null thay cho applyAnimation vì hàm này không được định nghĩa ở đây
+      window.MaterialManager.addAnimationButtons(thumbnailItem, {
         filePath: realPath,
         fileName: fileDetail.name,
         fileType: fileDetail.type,
         fileSize: fileDetail.size
-      }, applyAnimation);
+      }, null);
+    } else {
+      // Tạo các nút animation trực tiếp nếu MaterialManager không có sẵn
+      // Tạo container cho các nút animation
+      const animationButtonsContainer = document.createElement('div');
+      animationButtonsContainer.className = 'animation-buttons';
+      
+      // Nút Animation Vào (In)
+      const inButton = document.createElement('button');
+      inButton.className = 'animation-in-button';
+      inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Vào';
+      inButton.onclick = function(e) {
+        e.stopPropagation();
+      };
+      animationButtonsContainer.appendChild(inButton);
+
+      // Nút Animation Kết hợp (Group)
+      const groupButton = document.createElement('button');
+      groupButton.className = 'animation-group-button';
+      groupButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
+      groupButton.onclick = function(e) {
+        e.stopPropagation();
+      };
+      animationButtonsContainer.appendChild(groupButton);
+
+      // Nút Animation Ra (Out)
+      const outButton = document.createElement('button');
+      outButton.className = 'animation-out-button';
+      outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> Ra';
+      outButton.onclick = function(e) {
+        e.stopPropagation();
+      };
+      animationButtonsContainer.appendChild(outButton);
+
+      // Tạo container để chứa các nút animation phía trên media
+      const animationContainer = document.createElement('div');
+      animationContainer.className = 'animation-container';
+      
+      // Thêm container nút vào animation container
+      animationContainer.appendChild(animationButtonsContainer);
+      
+      // Thêm animation container vào thumbnail item
+      thumbnailItem.appendChild(animationContainer);
     }
 
     // If there's already at least one item in the list, add transition element before this one
