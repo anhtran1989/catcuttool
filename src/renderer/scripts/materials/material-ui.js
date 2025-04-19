@@ -188,62 +188,57 @@ const MaterialUI = (function() {
   function addAnimationButtons(thumbnailItem, fileData, onApplyAnimation) {
     if (!thumbnailItem) return;
     
-    // Tạo container cho các nút animation
-    const animationButtonsContainer = document.createElement('div');
-    animationButtonsContainer.className = 'animation-buttons';
+    // Kiểm tra xem đã có container chưa
+    let container = thumbnailItem.querySelector('.animation-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'animation-container';
+      thumbnailItem.appendChild(container);
+    }
     
-    // Nút Animation Vào (In)
+    // Tạo container cho các button
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'animation-buttons';
+    container.appendChild(buttonsContainer);
+    
+    // Button "Vào"
     const inButton = document.createElement('button');
     inButton.className = 'animation-in-button';
     inButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Vào';
     inButton.onclick = function(e) {
       e.stopPropagation();
-      if (typeof MaterialManager !== 'undefined' && MaterialManager.showAnimationDropdown) {
-        MaterialManager.showAnimationDropdown(thumbnailItem, 'in', fileData, onApplyAnimation);
-      }
+      showAnimationDropdown(thumbnailItem, 'in', fileData, onApplyAnimation, window.MaterialManager.getMaterialAnimations());
     };
-    animationButtonsContainer.appendChild(inButton);
-
-    // Nút Animation Kết hợp (Group)
+    buttonsContainer.appendChild(inButton);
+    
+    // Button "Kết hợp"
     const groupButton = document.createElement('button');
     groupButton.className = 'animation-group-button';
-    groupButton.innerHTML = '<i class="fas fa-object-group"></i> Kết hợp';
+    groupButton.innerHTML = '<i class="fas fa-object-group"></i>';
     groupButton.onclick = function(e) {
       e.stopPropagation();
-      if (typeof MaterialManager !== 'undefined' && MaterialManager.showAnimationDropdown) {
-        MaterialManager.showAnimationDropdown(thumbnailItem, 'group', fileData, onApplyAnimation);
-      }
+      showAnimationDropdown(thumbnailItem, 'group', fileData, onApplyAnimation, window.MaterialManager.getMaterialAnimations());
     };
-    animationButtonsContainer.appendChild(groupButton);
-
-    // Nút Animation Ra (Out)
+    buttonsContainer.appendChild(groupButton);
+    
+    // Button "Ra"
     const outButton = document.createElement('button');
     outButton.className = 'animation-out-button';
     outButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> Ra';
     outButton.onclick = function(e) {
       e.stopPropagation();
-      if (typeof MaterialManager !== 'undefined' && MaterialManager.showAnimationDropdown) {
-        MaterialManager.showAnimationDropdown(thumbnailItem, 'out', fileData, onApplyAnimation);
-      }
+      showAnimationDropdown(thumbnailItem, 'out', fileData, onApplyAnimation, window.MaterialManager.getMaterialAnimations());
     };
-    animationButtonsContainer.appendChild(outButton);
-
-    // Tạo container để chứa các nút animation phía trên media
-    const animationContainer = document.createElement('div');
-    animationContainer.className = 'animation-container';
-    animationContainer.style.display = 'flex';
-    animationContainer.style.opacity = '1';
-    animationContainer.style.visibility = 'visible';
+    buttonsContainer.appendChild(outButton);
     
-    // Thêm container nút vào animation container
-    animationContainer.appendChild(animationButtonsContainer);
+    // Ẩn container khi hover ra khỏi thumbnail
+    thumbnailItem.addEventListener('mouseenter', function() {
+      container.style.opacity = '1';
+    });
     
-    // Thêm animation container vào thumbnail item
-    thumbnailItem.appendChild(animationContainer);
-    
-    // Đảm bảo animation container luôn hiển thị
-    animationContainer.style.opacity = '1';
-    animationContainer.style.visibility = 'visible';
+    thumbnailItem.addEventListener('mouseleave', function() {
+      container.style.opacity = '0';
+    });
   }
   
   /**
@@ -369,42 +364,58 @@ const MaterialUI = (function() {
     style.textContent = `
       .animation-container {
         position: absolute;
-        top: 10px;
-        left: 10px;
+        top: -40px;
+        left: 0;
+        right: 0;
         z-index: 10;
         transition: opacity 0.3s ease;
+        display: flex;
+        justify-content: center;
       }
       
       .animation-buttons {
         display: flex;
-        gap: 5px;
+        gap: 2px;
+        background-color: transparent;
+        border-radius: 4px;
+        padding: 2px;
       }
       
       .animation-buttons button {
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 5px 8px;
-        font-size: 12px;
+        background-color: none;
+        color: #333;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 3px 8px;
+        font-size: 11px;
         cursor: pointer;
-        transition: background-color 0.3s ease;
+        transition: all 0.2s ease;
+        min-width: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       }
       
       .animation-buttons button:hover {
-        background-color: rgba(0, 0, 0, 0.9);
+        background-color:rgb(255, 255, 255);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
       }
       
       .animation-in-button {
-        border-left: 3px solid #4CAF50 !important;
+        border-bottom: 2px solid #4CAF50 !important;
+        color: #4CAF50;
       }
       
       .animation-group-button {
-        border-left: 3px solid #2196F3 !important;
+        border-bottom: 2px solid #2196F3 !important;
+        color: #2196F3;
       }
       
       .animation-out-button {
-        border-left: 3px solid #F44336 !important;
+        border-bottom: 2px solid #F44336 !important;
+        color: #F44336;
       }
       
       .animation-dropdown .animation-item:last-child {

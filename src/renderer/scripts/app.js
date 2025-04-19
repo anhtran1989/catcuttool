@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize file manager
   FileManager.init();
 
-  // MaterialManager đã được khởi tạo trong module-loader-bridge.js
+  // Các module đã được khởi tạo trong các bridge tương ứng
 
   // Initialize template manager
   TemplateManager.init();
@@ -66,38 +66,38 @@ document.addEventListener("DOMContentLoaded", function () {
 function loadEffectsAndTransitions() {
   try {
     // Kiểm tra xem DataLoader đã được khởi tạo chưa
-    if (window.DataLoaderModule) {
+    if (window.DataLoader) {
       console.log("Using DataLoader to load effects and transitions from draft_content_2.json");
       
       // Đăng ký callback để nhận dữ liệu khi tải xong
-      window.DataLoaderModule.onDataLoaded((data) => {
+      window.DataLoader.onDataLoaded((data) => {
         console.log("Data loaded from DataLoader");
         
         // Cập nhật effects
-        if (window.EffectManagerModule && window.EffectManagerModule.setEffects) {
-          const effects = window.DataLoaderModule.getEffects();
-          window.EffectManagerModule.setEffects(effects);
+        if (window.EffectManager && window.EffectManager.setEffects) {
+          const effects = window.DataLoader.getEffects();
+          window.EffectManager.setEffects(effects);
           console.log(`${effects.length} effects loaded from DataLoader`);
         }
         
         // Cập nhật transitions
-        if (window.TransitionManagerModule && window.TransitionManagerModule.setTransitions) {
-          const transitions = window.DataLoaderModule.getTransitions();
-          window.TransitionManagerModule.setTransitions(transitions);
+        if (window.TransitionManager && window.TransitionManager.setTransitions) {
+          const transitions = window.DataLoader.getTransitions();
+          window.TransitionManager.setTransitions(transitions);
           console.log(`${transitions.length} transitions loaded from DataLoader`);
         }
         
         // Cập nhật material animations
-        if (window.MaterialManagerModule && window.MaterialManagerModule.setMaterialAnimations) {
-          const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
-          // Truyền dữ liệu cho MaterialManagerModule
-          window.MaterialManagerModule.setMaterialAnimations(materialAnimations);
+        if (window.MaterialManager && window.MaterialManager.setMaterialAnimations) {
+          const materialAnimations = window.DataLoader.getMaterialAnimations();
+          // Truyền dữ liệu cho MaterialManager
+          window.MaterialManager.setMaterialAnimations(materialAnimations);
           console.log(`${materialAnimations.length} material animations loaded from DataLoader`);
         }
       });
       
       // Tải dữ liệu từ file draft_content_2.json
-      window.DataLoaderModule.loadData();
+      window.DataLoader.loadData();
     } else {
       console.warn("DataLoader not initialized yet, cannot load effects and transitions");
     }
@@ -114,30 +114,30 @@ function updateDraftContent() {
     console.log("Updating draft content from draft_content_2.json");
     
     // Kiểm tra xem DataLoader đã được khởi tạo chưa
-    if (window.DataLoaderModule) {
+    if (window.DataLoader) {
       // Tải lại dữ liệu từ file draft_content_2.json
-      window.DataLoaderModule.loadData()
+      window.DataLoader.loadData()
         .then(data => {
           console.log("Data reloaded from draft_content_2.json");
           
           // Cập nhật effects
-          if (window.EffectManagerModule && window.EffectManagerModule.setEffects) {
-            const effects = window.DataLoaderModule.getEffects();
-            window.EffectManagerModule.setEffects(effects);
+          if (window.EffectManager && window.EffectManager.setEffects) {
+            const effects = window.DataLoader.getEffects();
+            window.EffectManager.setEffects(effects);
             console.log(`${effects.length} effects updated from DataLoader`);
           }
           
           // Cập nhật transitions
-          if (window.TransitionManagerModule && window.TransitionManagerModule.setTransitions) {
-            const transitions = window.DataLoaderModule.getTransitions();
-            window.TransitionManagerModule.setTransitions(transitions);
+          if (window.TransitionManager && window.TransitionManager.setTransitions) {
+            const transitions = window.DataLoader.getTransitions();
+            window.TransitionManager.setTransitions(transitions);
             console.log(`${transitions.length} transitions updated from DataLoader`);
           }
           
           // Cập nhật material animations
-          if (window.MaterialManagerModule && window.MaterialManagerModule.setMaterialAnimations) {
-            const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
-            window.MaterialManagerModule.setMaterialAnimations(materialAnimations);
+          if (window.MaterialManager && window.MaterialManager.setMaterialAnimations) {
+            const materialAnimations = window.DataLoader.getMaterialAnimations();
+            window.MaterialManager.setMaterialAnimations(materialAnimations);
             console.log(`${materialAnimations.length} material animations updated from DataLoader`);
           }
           

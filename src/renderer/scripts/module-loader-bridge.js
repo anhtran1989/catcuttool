@@ -13,15 +13,12 @@ window.DataLoaderModule = null;
 function loadModules() {
   return new Promise(async (resolve, reject) => {
     try {
-      // Import các module
-      const moduleLoader = await import('./module-loader.js');
-      
+      // Sử dụng các biến global đã được đặt bởi các bridge
       // Lưu các module vào biến toàn cục
-      window.EffectManagerModule = moduleLoader.EffectManager;
-      window.TransitionManagerModule = moduleLoader.TransitionManager;
-      window.MaterialManagerModule = moduleLoader.MaterialManager;
-      window.EffectComparisonModule = moduleLoader.EffectComparison;
-      window.DataLoaderModule = moduleLoader.DataLoader;
+      window.EffectManagerModule = window.EffectManager;
+      window.TransitionManagerModule = window.TransitionManager;
+      window.MaterialManagerModule = window.MaterialManager;
+      window.DataLoaderModule = window.DataLoader;
       
       console.log('Modules loaded successfully');
       
@@ -55,7 +52,7 @@ function loadModules() {
       // Đăng ký callback cho DataLoader để cập nhật dữ liệu khi tải xong
       if (window.DataLoaderModule) {
         window.DataLoaderModule.onDataLoaded(() => {
-          console.log('Data loaded from draft_content_2.json');
+          console.log('Data loaded from draft_content_4.json');
           
           // Cập nhật effects từ DataLoader
           if (window.EffectManagerModule) {
