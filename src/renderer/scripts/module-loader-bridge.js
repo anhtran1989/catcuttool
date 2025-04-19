@@ -5,6 +5,7 @@
 // Biến toàn cục để lưu trữ các module
 window.EffectManagerModule = null;
 window.TransitionManagerModule = null;
+window.MaterialManagerModule = null;
 window.EffectComparisonModule = null;
 window.DataLoaderModule = null;
 
@@ -18,6 +19,7 @@ function loadModules() {
       // Lưu các module vào biến toàn cục
       window.EffectManagerModule = moduleLoader.EffectManager;
       window.TransitionManagerModule = moduleLoader.TransitionManager;
+      window.MaterialManagerModule = moduleLoader.MaterialManager;
       window.EffectComparisonModule = moduleLoader.EffectComparison;
       window.DataLoaderModule = moduleLoader.DataLoader;
       
@@ -38,6 +40,11 @@ function loadModules() {
       if (window.TransitionManagerModule) {
         window.TransitionManagerModule.init();
         console.log('TransitionManager initialized');
+      }
+      
+      if (window.MaterialManagerModule) {
+        window.MaterialManagerModule.init();
+        console.log('MaterialManager initialized');
       }
       
       if (window.EffectComparisonModule) {
@@ -70,6 +77,21 @@ function loadModules() {
             console.log(`${transitions.length} transitions loaded from DataLoader`);
           }
           
+          // Cập nhật material animations từ DataLoader
+          if (window.MaterialManagerModule) {
+            const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
+            window.MaterialManagerModule.setMaterialAnimations(materialAnimations);
+            console.log(`${materialAnimations.length} material animations loaded from DataLoader`);
+            
+            // Thiết lập tham chiếu giữa các module
+            if (window.EffectManagerModule) {
+              window.MaterialManagerModule.setEffectManager(window.EffectManagerModule);
+            }
+            if (window.TransitionManagerModule) {
+              window.MaterialManagerModule.setTransitionManager(window.TransitionManagerModule);
+            }
+          }
+          
           // Cập nhật global dropdowns sau khi các module đã được cập nhật dữ liệu
           if (window.UIManager) {
             if (typeof window.UIManager.createGlobalEffectsDropdown === 'function') {
@@ -94,15 +116,8 @@ function loadModules() {
         console.log('EffectManager reference set in FileManager');
       }
       
-      if (window.MaterialManager && typeof window.MaterialManager.setEffectManager === 'function') {
-        window.MaterialManager.setEffectManager(window.EffectManagerModule);
-        console.log('EffectManager reference set in MaterialManager');
-      }
-      
-      if (window.MaterialManager && typeof window.MaterialManager.setTransitionManager === 'function') {
-        window.MaterialManager.setTransitionManager(window.TransitionManagerModule);
-        console.log('TransitionManager reference set in MaterialManager');
-      }
+      // Lưu ý: MaterialManager đã được thay thế bằng MaterialManagerModule
+      // và các tham chiếu đã được thiết lập trong callback onDataLoaded
       
       // Thêm các nút hiệu ứng và chuyển cảnh vào các thumbnail hiện có
       addButtonsToExistingThumbnails();

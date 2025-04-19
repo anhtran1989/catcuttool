@@ -28,8 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize file manager
   FileManager.init();
 
-  // Initialize material manager
-  MaterialManager.init();
+  // MaterialManager đã được khởi tạo trong module-loader-bridge.js
 
   // Initialize template manager
   TemplateManager.init();
@@ -89,14 +88,10 @@ function loadEffectsAndTransitions() {
         }
         
         // Cập nhật material animations
-        if (window.MaterialManager && window.MaterialManager.updateFromDraftContent) {
+        if (window.MaterialManagerModule && window.MaterialManagerModule.setMaterialAnimations) {
           const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
-          // Truyền dữ liệu cho MaterialManager
-          window.MaterialManager.updateFromDraftContent({
-            materials: {
-              material_animations: materialAnimations
-            }
-          });
+          // Truyền dữ liệu cho MaterialManagerModule
+          window.MaterialManagerModule.setMaterialAnimations(materialAnimations);
           console.log(`${materialAnimations.length} material animations loaded from DataLoader`);
         }
       });
@@ -140,13 +135,9 @@ function updateDraftContent() {
           }
           
           // Cập nhật material animations
-          if (window.MaterialManager && window.MaterialManager.updateFromDraftContent) {
+          if (window.MaterialManagerModule && window.MaterialManagerModule.setMaterialAnimations) {
             const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
-            window.MaterialManager.updateFromDraftContent({
-              materials: {
-                material_animations: materialAnimations
-              }
-            });
+            window.MaterialManagerModule.setMaterialAnimations(materialAnimations);
             console.log(`${materialAnimations.length} material animations updated from DataLoader`);
           }
           

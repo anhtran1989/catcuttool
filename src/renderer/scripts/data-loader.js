@@ -249,6 +249,81 @@ const DataLoader = (function() {
     return 'fas fa-exchange-alt';
   }
   
+  /**
+   * Lấy danh sách material animations từ dữ liệu đã tải
+   * @returns {Array} Danh sách material animations
+   */
+  function getMaterialAnimations() {
+    if (!loadedData || !loadedData.materials) {
+      return [];
+    }
+    
+    // Lấy material animations từ material_animations
+    const materialAnimations = loadedData.materials.material_animations || [];
+    
+    // Thêm các trường cần thiết cho mỗi material animation
+    return materialAnimations.map(animation => {
+      // Xác định loại animation (in, out, group)
+      let type = 'group'; // Mặc định là group
+      
+      // Phân loại dựa trên tên
+      if (animation.name) {
+        const nameLower = animation.name.toLowerCase();
+        if (nameLower.includes('vào') || nameLower.includes('in')) {
+          type = 'in';
+        } else if (nameLower.includes('ra') || nameLower.includes('out')) {
+          type = 'out';
+        }
+      }
+      
+      return {
+        ...animation,
+        type: animation.type || type,
+        icon: getIconForAnimation(animation.name, type)
+      };
+    });
+  }
+  
+  /**
+   * Tìm icon phù hợp cho animation dựa trên tên và loại
+   * @param {string} name Tên của animation
+   * @param {string} type Loại animation (in, out, group)
+   * @returns {string} Class của icon
+   */
+  function getIconForAnimation(name, type) {
+    if (!name) return 'fas fa-magic';
+    
+    // Mặc định icon dựa trên loại
+    let defaultIcon = 'fas fa-magic';
+    if (type === 'in') defaultIcon = 'fas fa-sign-in-alt';
+    else if (type === 'out') defaultIcon = 'fas fa-sign-out-alt';
+    else if (type === 'group') defaultIcon = 'fas fa-object-group';
+    
+    const nameLower = name.toLowerCase();
+    
+    // Ánh xạ tên với icon
+    const iconMap = {
+      'zoom': 'fas fa-search-plus',
+      'phóng to': 'fas fa-search-plus',
+      'thu nhỏ': 'fas fa-search-minus',
+      'lắc': 'fas fa-arrows-alt',
+      'rung': 'fas fa-arrows-alt',
+      'xoay': 'fas fa-sync',
+      'quay': 'fas fa-sync',
+      'fade': 'fas fa-eye-slash',
+      'mờ dần': 'fas fa-eye-slash'
+    };
+    
+    // Tìm icon phù hợp
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (nameLower.includes(key)) {
+        return icon;
+      }
+    }
+    
+    return defaultIcon;
+  }
+  
   // Public API
   return {
     init,
