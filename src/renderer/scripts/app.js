@@ -44,19 +44,12 @@ document.addEventListener("DOMContentLoaded", function () {
   
   // Chờ các module được tải xong trước khi sử dụng
   setTimeout(() => {
-    // Load effects và transitions từ các file draft_content
-    loadEffectsAndTransitions();
+    // Các module đã được tải trong module-loader-bridge.js
+    // và dữ liệu được tải từ file draft_content_2.json thông qua DataLoader
+    console.log("App ready, modules should be loaded from DataLoader");
     
-    // Create global effects dropdown
-    if (typeof UIManager.createGlobalEffectsDropdown === 'function') {
-      UIManager.createGlobalEffectsDropdown();
-    }
-    
-    // Create global transitions dropdown
-    if (typeof UIManager.createGlobalTransitionsDropdown === 'function') {
-      UIManager.createGlobalTransitionsDropdown();
-    }
-  }, 1000); // Chờ 1 giây để đảm bảo các module đã được tải xong
+    // Các dropdown đã được tạo trong callback onDataLoaded của DataLoader
+  }, 500);
 
   // Set the default tab
   document.getElementById("template-tab").style.display = "block";
@@ -69,140 +62,135 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /**
- * Đọc các file draft_content và cập nhật danh sách effects/transitions/materials
+ * Đọc file draft_content_2.json và cập nhật danh sách effects/transitions/materials
  */
 function loadEffectsAndTransitions() {
   try {
-    // Đọc file draft_content_effect.json
-    fetch('./draft_content_effect.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    // Kiểm tra xem DataLoader đã được khởi tạo chưa
+    if (window.DataLoaderModule) {
+      console.log("Using DataLoader to load effects and transitions from draft_content_2.json");
+      
+      // Đăng ký callback để nhận dữ liệu khi tải xong
+      window.DataLoaderModule.onDataLoaded((data) => {
+        console.log("Data loaded from DataLoader");
+        
+        // Cập nhật effects
+        if (window.EffectManagerModule && window.EffectManagerModule.setEffects) {
+          const effects = window.DataLoaderModule.getEffects();
+          window.EffectManagerModule.setEffects(effects);
+          console.log(`${effects.length} effects loaded from DataLoader`);
         }
-        return response.json();
-      })
-      .then(data => {
-        // Cập nhật effects từ file nếu EffectManagerModule đã được khởi tạo
-        if (window.EffectManagerModule && window.EffectManagerModule.updateFromDraftContent) {
-          window.EffectManagerModule.updateFromDraftContent(data);
-          console.log("Effects updated from draft_content_effect.json");
-        } else {
-          console.warn("EffectManagerModule not initialized yet");
+        
+        // Cập nhật transitions
+        if (window.TransitionManagerModule && window.TransitionManagerModule.setTransitions) {
+          const transitions = window.DataLoaderModule.getTransitions();
+          window.TransitionManagerModule.setTransitions(transitions);
+          console.log(`${transitions.length} transitions loaded from DataLoader`);
         }
-      })
-      .catch(error => {
-        console.warn("Could not load draft_content_effect.json:", error);
-      });
-
-    // Đọc file draft_content_transition.json
-    fetch('./draft_content_transition.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        
+        // Cập nhật material animations
+        if (window.MaterialManager && window.MaterialManager.updateFromDraftContent) {
+          const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
+          // Truyền dữ liệu cho MaterialManager
+          window.MaterialManager.updateFromDraftContent({
+            materials: {
+              material_animations: materialAnimations
+            }
+          });
+          console.log(`${materialAnimations.length} material animations loaded from DataLoader`);
         }
-        return response.json();
-      })
-      .then(data => {
-        // Cập nhật transitions từ file nếu TransitionManagerModule đã được khởi tạo
-        if (window.TransitionManagerModule && window.TransitionManagerModule.updateFromDraftContent) {
-          window.TransitionManagerModule.updateFromDraftContent(data);
-          console.log("Transitions updated from draft_content_transition.json");
-        } else {
-          console.warn("TransitionManagerModule not initialized yet");
-        }
-      })
-      .catch(error => {
-        console.warn("Could not load draft_content_transition.json:", error);
       });
       
-    // Đọc file draft_content_material.json
-    fetch('./draft_content_material.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Cập nhật material animations từ file
-        MaterialManager.updateFromDraftContent(data);
-        console.log("Material animations updated from draft_content_material.json");
-      })
-      .catch(error => {
-        console.warn("Could not load draft_content_material.json:", error);
-      });
+      // Tải dữ liệu từ file draft_content_2.json
+      window.DataLoaderModule.loadData();
+    } else {
+      console.warn("DataLoader not initialized yet, cannot load effects and transitions");
+    }
   } catch (error) {
-    console.error("Error in loadEffectsAndTransitions:", error);
+    console.error("Error loading effects and transitions:", error);
   }
 }
 
 /**
- * Cập nhật nội dung từ các file draft_content riêng biệt khi có thay đổi
+ * Cập nhật nội dung từ file draft_content_2.json khi có thay đổi
  */
 function updateDraftContent() {
-  // Đọc các file riêng biệt
-  const effectsPromise = fetch('./draft_content_effect.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error loading effects! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      // Cập nhật effects
-      UIManager.updateEffectsAndTransitions('effects', data);
-      return true;
-    })
-    .catch(error => {
-      console.error("Error updating effects content:", error);
-      return false;
-    });
+  try {
+    console.log("Updating draft content from draft_content_2.json");
     
-  const transitionsPromise = fetch('./draft_content_transition.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error loading transitions! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      // Cập nhật transitions
-      UIManager.updateEffectsAndTransitions('transitions', data);
-      return true;
-    })
-    .catch(error => {
-      console.error("Error updating transitions content:", error);
-      return false;
-    });
-    
-  const materialsPromise = fetch('./draft_content_material.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error loading materials! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      // Cập nhật material animations
-      UIManager.updateEffectsAndTransitions('materials', data);
-      return true;
-    })
-    .catch(error => {
-      console.error("Error updating materials content:", error);
-      return false;
-    });
-    
-  // Đợi tất cả các promise hoàn thành
-  Promise.all([effectsPromise, transitionsPromise, materialsPromise])
-    .then(results => {
-      // Kiểm tra xem có bất kỳ lỗi nào không
-      const hasErrors = results.includes(false);
-      if (hasErrors) {
-        UIManager.showNotification("Some updates failed, check console for details", "warning");
-      } else {
-        UIManager.showNotification("Effects, transitions, and materials updated successfully", "success");
-      }
-    });
+    // Kiểm tra xem DataLoader đã được khởi tạo chưa
+    if (window.DataLoaderModule) {
+      // Tải lại dữ liệu từ file draft_content_2.json
+      window.DataLoaderModule.loadData()
+        .then(data => {
+          console.log("Data reloaded from draft_content_2.json");
+          
+          // Cập nhật effects
+          if (window.EffectManagerModule && window.EffectManagerModule.setEffects) {
+            const effects = window.DataLoaderModule.getEffects();
+            window.EffectManagerModule.setEffects(effects);
+            console.log(`${effects.length} effects updated from DataLoader`);
+          }
+          
+          // Cập nhật transitions
+          if (window.TransitionManagerModule && window.TransitionManagerModule.setTransitions) {
+            const transitions = window.DataLoaderModule.getTransitions();
+            window.TransitionManagerModule.setTransitions(transitions);
+            console.log(`${transitions.length} transitions updated from DataLoader`);
+          }
+          
+          // Cập nhật material animations
+          if (window.MaterialManager && window.MaterialManager.updateFromDraftContent) {
+            const materialAnimations = window.DataLoaderModule.getMaterialAnimations();
+            window.MaterialManager.updateFromDraftContent({
+              materials: {
+                material_animations: materialAnimations
+              }
+            });
+            console.log(`${materialAnimations.length} material animations updated from DataLoader`);
+          }
+          
+          // Cập nhật danh sách thumbnails
+          if (data && FileManager && FileManager.updateThumbnails) {
+            FileManager.updateThumbnails(data);
+            console.log("Thumbnails updated from draft_content_2.json");
+          }
+          
+          // Cập nhật global dropdowns
+          if (window.UIManager) {
+            if (typeof window.UIManager.createGlobalEffectsDropdown === 'function') {
+              window.UIManager.createGlobalEffectsDropdown();
+              console.log('Global effects dropdown updated');
+            }
+            
+            if (typeof window.UIManager.createGlobalTransitionsDropdown === 'function') {
+              window.UIManager.createGlobalTransitionsDropdown();
+              console.log('Global transitions dropdown updated');
+            }
+          }
+        })
+        .catch(error => {
+          console.error("Error reloading data from draft_content_2.json:", error);
+        });
+    } else {
+      console.warn("DataLoader not initialized yet, cannot update draft content");
+      
+      // Fallback: Tải file draft_content.json cho thumbnails
+      fetch('./draft_content.json')
+        .then(response => response.json())
+        .then(data => {
+          if (data && FileManager && FileManager.updateThumbnails) {
+            FileManager.updateThumbnails(data);
+            console.log("Thumbnails updated from draft_content.json (fallback)");
+          }
+        })
+        .catch(error => {
+          console.warn("Could not load draft_content.json (fallback):", error);
+        });
+    }
+  } catch (error) {
+    console.error("Error in updateDraftContent:", error);
+  }
 }
 
 /**

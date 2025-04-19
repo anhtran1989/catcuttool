@@ -5,6 +5,8 @@
 // Biến toàn cục để lưu trữ các module
 window.EffectManagerModule = null;
 window.TransitionManagerModule = null;
+window.EffectComparisonModule = null;
+window.DataLoaderModule = null;
 
 // Hàm để tải các module
 function loadModules() {
@@ -16,10 +18,18 @@ function loadModules() {
       // Lưu các module vào biến toàn cục
       window.EffectManagerModule = moduleLoader.EffectManager;
       window.TransitionManagerModule = moduleLoader.TransitionManager;
+      window.EffectComparisonModule = moduleLoader.EffectComparison;
+      window.DataLoaderModule = moduleLoader.DataLoader;
       
       console.log('Modules loaded successfully');
       
-      // Khởi tạo các module
+      // Khởi tạo DataLoader trước tiên
+      if (window.DataLoaderModule) {
+        window.DataLoaderModule.init();
+        console.log('DataLoader initialized');
+      }
+      
+      // Khởi tạo các module khác
       if (window.EffectManagerModule) {
         window.EffectManagerModule.init();
         console.log('EffectManager initialized');
@@ -30,37 +40,53 @@ function loadModules() {
         console.log('TransitionManager initialized');
       }
       
-      // Tải dữ liệu từ các file JSON
-      const effectsPromise = fetch('./draft_content_effect.json')
-        .then(response => response.json())
-        .then(data => {
+      if (window.EffectComparisonModule) {
+        window.EffectComparisonModule.init();
+        console.log('EffectComparison initialized');
+      }
+      
+      // Đăng ký callback cho DataLoader để cập nhật dữ liệu khi tải xong
+      if (window.DataLoaderModule) {
+        window.DataLoaderModule.onDataLoaded(() => {
+          console.log('Data loaded from draft_content_2.json');
+          
+          // Cập nhật effects từ DataLoader
           if (window.EffectManagerModule) {
-            window.EffectManagerModule.updateFromDraftContent(data);
-            console.log('Effects loaded from draft_content_effect.json');
+            const effects = window.DataLoaderModule.getEffects();
+            window.EffectManagerModule.setEffects(effects);
+            console.log(`${effects.length} effects loaded from DataLoader`);
+            
+            // So sánh dữ liệu effects
+            if (window.EffectComparisonModule) {
+              window.EffectComparisonModule.compareEffects(effects);
+              console.log('Effects comparison initialized');
+            }
           }
-          return true;
-        })
-        .catch(error => {
-          console.warn('Could not load draft_content_effect.json:', error);
-          return false;
-        });
-      
-      const transitionsPromise = fetch('./draft_content_transition.json')
-        .then(response => response.json())
-        .then(data => {
+          
+          // Cập nhật transitions từ DataLoader
           if (window.TransitionManagerModule) {
-            window.TransitionManagerModule.updateFromDraftContent(data);
-            console.log('Transitions loaded from draft_content_transition.json');
+            const transitions = window.DataLoaderModule.getTransitions();
+            window.TransitionManagerModule.setTransitions(transitions);
+            console.log(`${transitions.length} transitions loaded from DataLoader`);
           }
-          return true;
-        })
-        .catch(error => {
-          console.warn('Could not load draft_content_transition.json:', error);
-          return false;
+          
+          // Cập nhật global dropdowns sau khi các module đã được cập nhật dữ liệu
+          if (window.UIManager) {
+            if (typeof window.UIManager.createGlobalEffectsDropdown === 'function') {
+              window.UIManager.createGlobalEffectsDropdown();
+              console.log('Global effects dropdown created after data loaded');
+            }
+            
+            if (typeof window.UIManager.createGlobalTransitionsDropdown === 'function') {
+              window.UIManager.createGlobalTransitionsDropdown();
+              console.log('Global transitions dropdown created after data loaded');
+            }
+          }
         });
-      
-      // Chờ tải xong dữ liệu
-      await Promise.all([effectsPromise, transitionsPromise]);
+        
+        // Bắt đầu tải dữ liệu từ một file duy nhất
+        window.DataLoaderModule.loadData();
+      }
       
       // Gắn các module vào các đối tượng hiện có nếu cần
       if (window.FileManager && typeof window.FileManager.setEffectManager === 'function') {
@@ -121,19 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // Khởi tạo sự kiện để thông báo các module đã sẵn sàng
       const event = new CustomEvent('modulesReady');
       document.dispatchEvent(event);
-      
-      // Cập nhật global dropdowns sau khi các module đã sẵn sàng
-      if (window.UIManager) {
-        if (typeof window.UIManager.createGlobalEffectsDropdown === 'function') {
-          window.UIManager.createGlobalEffectsDropdown();
-          console.log('Global effects dropdown created');
-        }
-        
-        if (typeof window.UIManager.createGlobalTransitionsDropdown === 'function') {
-          window.UIManager.createGlobalTransitionsDropdown();
-          console.log('Global transitions dropdown created');
-        }
-      }
     }).catch(error => {
       console.error('Error initializing modules:', error);
     });

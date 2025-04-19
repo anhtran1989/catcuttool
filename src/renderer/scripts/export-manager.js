@@ -479,7 +479,7 @@ const ExportManager = (function () {
           
           console.log(`Creating effect for item ${index}: ${item.effectName}, effect_id: ${item.effectId}`);
 
-          // Tạo đối tượng effect
+          // Tạo đối tượng effect đầy đủ theo cấu trúc chuẩn CapCut
           let effectObject;
           
           if (templateEffect) {
@@ -493,6 +493,11 @@ const ExportManager = (function () {
             // Cập nhật resource_id nếu cần
             if (!effectObject.resource_id) {
               effectObject.resource_id = item.effectId;
+            }
+            
+            // Đảm bảo có render_index phù hợp
+            if (!effectObject.render_index) {
+              effectObject.render_index = 11000 + index;
             }
           } else {
             // Nếu không tìm thấy trong template, tạo mới với các giá trị mặc định
@@ -541,12 +546,21 @@ const ExportManager = (function () {
               enable_mask: true,
               covering_relation_change: 0,
               platform: "all",
-              render_index: 0,
+              render_index: 11000 + index, // Đảm bảo render_index bắt đầu từ 11000 cho hiệu ứng
               request_id: generateUUID().replace(/-/g, ""),
               resource_id: item.effectId,
               source_platform: 1,
               value: 1.0,
               version: "",
+              time_range: null,
+              common_keyframes: [],
+              effect_mask: null,
+              formula_id: "",
+              item_effect_type: 0,
+              path: "",
+              track_render_index: 0,
+              apply_time_range: null,
+              disable_effect_faces: null
             };
           }
           

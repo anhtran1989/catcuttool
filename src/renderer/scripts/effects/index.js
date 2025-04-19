@@ -3,7 +3,6 @@
  */
 
 // Import các module con
-import { EffectLoader } from './effect-loader.js';
 import { EffectUI } from './effect-ui.js';
 import { EffectUtils } from './effect-utils.js';
 import { EffectProcessor } from './effect-processor.js';
@@ -27,11 +26,29 @@ const EffectManager = (function() {
       icon: "fas fa-ban"
     }];
     
-    // Tải effects từ file draft_content_2.json
-    EffectLoader.loadEffectsFromDraftContent(effects, mergeEffects);
-    
     // Thêm styles CSS cho hiệu ứng
     EffectUI.addEffectStyles();
+  }
+  
+  /**
+   * Đặt danh sách hiệu ứng từ DataLoader
+   * @param {Array} newEffects Danh sách hiệu ứng mới
+   */
+  function setEffects(newEffects) {
+    console.log(`Setting ${newEffects.length} effects from DataLoader`);
+    
+    // Đảm bảo luôn có effect "None"
+    if (!effects.some(e => e.id === "none")) {
+      effects = [{
+        id: "none",
+        name: "None",
+        type: "video_effect",
+        icon: "fas fa-ban"
+      }];
+    }
+    
+    // Gộp danh sách hiệu ứng mới
+    mergeEffects(newEffects);
   }
   
   /**
@@ -98,13 +115,8 @@ const EffectManager = (function() {
   return {
     init,
     getEffects,
+    setEffects,
     mergeEffects,
-    updateFromDraftContent: function(draftContent) {
-      EffectLoader.updateFromDraftContent(draftContent, effects, mergeEffects);
-    },
-    loadEffectsFromDraftContent: function() {
-      EffectLoader.loadEffectsFromDraftContent(effects, mergeEffects);
-    },
     updateEffectsUI: EffectUI.updateEffectsUI,
     showEffectDropdown: function(thumbnailItem, fileData, onApplyEffect) {
       EffectUI.showEffectDropdown(thumbnailItem, fileData, onApplyEffect, effects);

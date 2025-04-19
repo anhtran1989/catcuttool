@@ -3,7 +3,6 @@
  */
 
 // Import các module con
-import { TransitionLoader } from './transition-loader.js';
 import { TransitionUI } from './transition-ui.js';
 import { TransitionUtils } from './transition-utils.js';
 import { TransitionProcessor } from './transition-processor.js';
@@ -27,11 +26,29 @@ const TransitionManager = (function() {
       icon: "fas fa-ban"
     }];
     
-    // Tải transitions từ file draft_content_transition.json
-    TransitionLoader.loadTransitionsFromDraftContent(transitions, mergeTransitions);
-    
     // Thêm styles CSS cho hiệu ứng chuyển cảnh
     TransitionUI.addTransitionStyles();
+  }
+  
+  /**
+   * Đặt danh sách hiệu ứng chuyển cảnh từ DataLoader
+   * @param {Array} newTransitions Danh sách hiệu ứng chuyển cảnh mới
+   */
+  function setTransitions(newTransitions) {
+    console.log(`Setting ${newTransitions.length} transitions from DataLoader`);
+    
+    // Đảm bảo luôn có transition "None"
+    if (!transitions.some(t => t.id === "none")) {
+      transitions = [{
+        id: "none",
+        name: "None",
+        type: "transition",
+        icon: "fas fa-ban"
+      }];
+    }
+    
+    // Gộp danh sách hiệu ứng chuyển cảnh mới
+    mergeTransitions(newTransitions);
   }
   
   /**
@@ -98,13 +115,8 @@ const TransitionManager = (function() {
   return {
     init,
     getTransitions,
+    setTransitions,
     mergeTransitions,
-    updateFromDraftContent: function(draftContent) {
-      TransitionLoader.updateFromDraftContent(draftContent, transitions, mergeTransitions);
-    },
-    loadTransitionsFromDraftContent: function() {
-      TransitionLoader.loadTransitionsFromDraftContent(transitions, mergeTransitions);
-    },
     updateTransitionsUI: TransitionUI.updateTransitionsUI,
     showTransitionDropdown: function(thumbnailItem, fileData, onApplyTransition) {
       TransitionUI.showTransitionDropdown(thumbnailItem, fileData, onApplyTransition, transitions);
